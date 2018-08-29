@@ -9,11 +9,9 @@
 struct Light
 {
     float3 Strength;
-    float FalloffStart; // point/spot light only
-    float3 Direction;   // directional/spot light only
-    float FalloffEnd;   // point/spot light only
-    float3 Position;    // point light only
-    float SpotPower;    // spot light only
+    float pad1; 
+	float3 Direction;
+    float pad2;   
 };
 
 struct Material
