@@ -170,7 +170,6 @@ bool CrateApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
- 
 	LoadTextures();
     BuildRootSignature();
 	BuildDescriptorHeaps();
@@ -197,7 +196,7 @@ void CrateApp::OnResize()
     D3DApp::OnResize();
 
     // The window resized, so update the aspect ratio and recompute the projection matrix.
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.33f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
     XMStoreFloat4x4(&mProj, P);
 }
 
@@ -610,6 +609,7 @@ void CrateApp::BuildMaterials()
 
 void CrateApp::BuildRenderItems()
 {
+	// Add the first box
 	auto boxRitem = std::make_unique<RenderItem>();
 	boxRitem->ObjCBIndex = 0;
 	boxRitem->Mat = mMaterials["brick"].get();
@@ -618,6 +618,8 @@ void CrateApp::BuildRenderItems()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+	XMStoreFloat4x4(&(boxRitem->World), XMMatrixTranslation(2.0f, 0.0f, 0.0f));
+
 	mAllRitems.push_back(std::move(boxRitem));
 
 	// All the render items are opaque.
