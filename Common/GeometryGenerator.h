@@ -93,13 +93,6 @@ public:
     MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
 
 	///<summary>
-	/// Creates a cylinder parallel to the y-axis, and centered about the origin.  
-	/// The bottom and top radius can vary to form various cone shapes rather than true
-	// cylinders.  The slices and stacks parameters control the degree of tessellation.
-	///</summary>
-    MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-
-	///<summary>
 	/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
 	/// at the origin with the specified width and depth.
 	///</summary>
@@ -113,7 +106,5 @@ public:
 private:
 	void Subdivide(MeshData& meshData);
     Vertex MidPoint(const Vertex& v0, const Vertex& v1);
-    void BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
-    void BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
 };
 
