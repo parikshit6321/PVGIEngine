@@ -72,7 +72,6 @@ private:
 
     void OnKeyboardInput(const GameTimer& gt);
 	void UpdateCamera(const GameTimer& gt);
-	void AnimateMaterials(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
@@ -123,11 +122,6 @@ private:
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
-	float mTheta = 1.3f*XM_PI;
-	float mPhi = 0.4f*XM_PI;
-	float mRadius = 2.5f;
-
-    POINT mLastMousePos;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -226,7 +220,6 @@ void CrateApp::Update(const GameTimer& gt)
         CloseHandle(eventHandle);
     }
 
-	AnimateMaterials(gt);
 	UpdateObjectCBs(gt);
 	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
@@ -294,9 +287,6 @@ void CrateApp::Draw(const GameTimer& gt)
 
 void CrateApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
-
     SetCapture(mhMainWnd);
 }
 
@@ -309,32 +299,13 @@ void CrateApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
     if((btnState & MK_LBUTTON) != 0)
     {
-        // Make each pixel correspond to a quarter of a degree.
-        float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
-
-        // Update angles based on input to orbit camera around box.
-        mTheta += dx;
-        mPhi += dy;
-
-        // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+        
     }
     else if((btnState & MK_RBUTTON) != 0)
     {
-        // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.05f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.05f*static_cast<float>(y - mLastMousePos.y);
-
-        // Update the camera radius based on input.
-        mRadius += dx - dy;
-
-        // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+        
     }
 
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
 }
  
 void CrateApp::OnKeyboardInput(const GameTimer& gt)
@@ -344,9 +315,9 @@ void CrateApp::OnKeyboardInput(const GameTimer& gt)
 void CrateApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = mRadius*sinf(mPhi)*cosf(mTheta);
-	mEyePos.z = mRadius*sinf(mPhi)*sinf(mTheta);
-	mEyePos.y = mRadius*cosf(mPhi);
+	mEyePos.x = 0.0f;
+	mEyePos.z = -5.0f;
+	mEyePos.y = 1.0f;
 
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
@@ -355,11 +326,6 @@ void CrateApp::UpdateCamera(const GameTimer& gt)
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&mView, view);
-}
-
-void CrateApp::AnimateMaterials(const GameTimer& gt)
-{
-	
 }
 
 void CrateApp::UpdateObjectCBs(const GameTimer& gt)
@@ -449,14 +415,14 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 
 void CrateApp::LoadTextures()
 {
-	auto woodCrateTex = std::make_unique<Texture>();
-	woodCrateTex->Name = "woodCrateTex";
-	woodCrateTex->Filename = L"../../Textures/WoodCrate01.dds";
+	auto bricksTex = std::make_unique<Texture>();
+	bricksTex->Name = "bricksTex";
+	bricksTex->Filename = L"../../Textures/bricks.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), woodCrateTex->Filename.c_str(),
-		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+		mCommandList.Get(), bricksTex->Filename.c_str(),
+		bricksTex->Resource, bricksTex->UploadHeap));
  
-	mTextures[woodCrateTex->Name] = std::move(woodCrateTex);
+	mTextures[bricksTex->Name] = std::move(bricksTex);
 }
 
 void CrateApp::BuildRootSignature()
@@ -515,17 +481,17 @@ void CrateApp::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto woodCrateTex = mTextures["woodCrateTex"]->Resource;
+	auto bricksTex = mTextures["bricksTex"]->Resource;
  
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = woodCrateTex->GetDesc().Format;
+	srvDesc.Format = bricksTex->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = woodCrateTex->GetDesc().MipLevels;
+	srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	md3dDevice->CreateShaderResourceView(woodCrateTex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
 }
 
 void CrateApp::BuildShadersAndInputLayout()
@@ -635,22 +601,22 @@ void CrateApp::BuildFrameResources()
 
 void CrateApp::BuildMaterials()
 {
-	auto woodCrate = std::make_unique<Material>();
-	woodCrate->Name = "woodCrate";
-	woodCrate->MatCBIndex = 0;
-	woodCrate->DiffuseSrvHeapIndex = 0;
-	woodCrate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	woodCrate->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	woodCrate->Roughness = 0.2f;
+	auto brick = std::make_unique<Material>();
+	brick->Name = "brick";
+	brick->MatCBIndex = 0;
+	brick->DiffuseSrvHeapIndex = 0;
+	brick->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	brick->Roughness = 0.2f;
 
-	mMaterials["woodCrate"] = std::move(woodCrate);
+	mMaterials["brick"] = std::move(brick);
 }
 
 void CrateApp::BuildRenderItems()
 {
 	auto boxRitem = std::make_unique<RenderItem>();
 	boxRitem->ObjCBIndex = 0;
-	boxRitem->Mat = mMaterials["woodCrate"].get();
+	boxRitem->Mat = mMaterials["brick"].get();
 	boxRitem->Geo = mGeometries["boxGeo"].get();
 	boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
