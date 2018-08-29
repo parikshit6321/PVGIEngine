@@ -188,7 +188,7 @@ struct Light
     float pad2 = 0.0f;                           
 };
 
-#define MaxLights 16
+#define MaxLights 1
 
 struct MaterialConstants
 {
