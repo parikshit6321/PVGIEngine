@@ -402,8 +402,8 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
-	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 1.0f };
+	mMainPassCB.SunLightStrength = { 1.0f, 1.0f, 1.0f, 1.0f };
+	mMainPassCB.SunLightDirection = { 0.5f, -0.5f, 0.5f, 1.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

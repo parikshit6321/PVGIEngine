@@ -35,7 +35,8 @@ cbuffer cbPass : register(b1)
     float gTotalTime;
     float gDeltaTime;
     float4 gAmbientLight;
-	Light gLights[MaxLights];
+	float4 gSunLightStrength;
+	float4 gSunLightDirection;
 };
 
 cbuffer cbMaterial : register(b2)
@@ -98,7 +99,7 @@ float4 PS(VertexOut pin) : SV_Target
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+    float4 directLight = ComputeLighting(gSunLightStrength, gSunLightDirection, mat, pin.PosW,
         pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;

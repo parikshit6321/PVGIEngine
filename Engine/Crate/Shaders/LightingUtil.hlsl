@@ -4,16 +4,6 @@
 // Contains API for shader lighting.
 //***************************************************************************************
 
-#define MaxLights 1
-
-struct Light
-{
-    float3 Strength;
-    float pad1; 
-	float3 Direction;
-    float pad2;   
-};
-
 struct Material
 {
     float4 DiffuseAlbedo;
@@ -53,22 +43,22 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for directional lights.
 //---------------------------------------------------------------------------------------
-float3 ComputeDirectionalLight(Light L, Material mat, float3 normal, float3 toEye)
+float3 ComputeDirectionalLight(float4 sunLightStrength, float4 sunLightDirection, Material mat, float3 normal, float3 toEye)
 {
     // The light vector aims opposite the direction the light rays travel.
-    float3 lightVec = -L.Direction;
+    float3 lightVec = -1.0f * sunLightDirection.rgb;
 
     // Scale light down by Lambert's cosine law.
     float ndotl = max(dot(lightVec, normal), 0.0f);
-    float3 lightStrength = L.Strength * ndotl;
+    float3 lightStrength = sunLightStrength.rgb * ndotl;
 
-    return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
+    return BlinnPhong(lightStrength.rgb, lightVec, normal, toEye, mat);
 }
 
-float4 ComputeLighting(Light gLights[MaxLights], Material mat,
+float4 ComputeLighting(float4 sunLightStrength, float4 sunLightDirection, Material mat,
                        float3 pos, float3 normal, float3 toEye,
                        float3 shadowFactor)
 {
-    float3 result = shadowFactor * ComputeDirectionalLight(gLights[0], mat, normal, toEye);
+    float3 result = shadowFactor * ComputeDirectionalLight(sunLightStrength, sunLightDirection, mat, normal, toEye);
     return float4(result, 0.0f);
 }
