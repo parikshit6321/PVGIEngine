@@ -1,52 +1,10 @@
-//***************************************************************************************
-// LightingUtil.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//
-// Contains API for shader lighting.
-//***************************************************************************************
-
-struct Material
-{
-    float4 DiffuseAlbedo;
-    float3 FresnelR0;
-    float Shininess;
-};
-
-// Schlick gives an approximation to Fresnel reflectance (see pg. 233 "Real-Time Rendering 3rd Ed.").
-// R0 = ( (n-1)/(n+1) )^2, where n is the index of refraction.
-float3 SchlickFresnel(float3 R0, float3 normal, float3 lightVec)
-{
-    float cosIncidentAngle = saturate(dot(normal, lightVec));
-
-    float f0 = 1.0f - cosIncidentAngle;
-    float3 reflectPercent = R0 + (1.0f - R0)*(f0*f0*f0*f0*f0);
-
-    return reflectPercent;
-}
-
-float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat)
-{
-    const float m = mat.Shininess * 256.0f;
-    float3 halfVec = normalize(toEye + lightVec);
-
-    float roughnessFactor = (m + 8.0f)*pow(max(dot(halfVec, normal), 0.0f), m) / 8.0f;
-    float3 fresnelFactor = SchlickFresnel(mat.FresnelR0, halfVec, lightVec);
-
-    float3 specAlbedo = fresnelFactor*roughnessFactor;
-
-    // Our spec formula goes outside [0,1] range, but we are 
-    // doing LDR rendering.  So scale it down a bit.
-    specAlbedo = specAlbedo / (specAlbedo + 1.0f);
-
-    return (mat.DiffuseAlbedo.rgb + specAlbedo) * lightStrength;
-}
-
 //---------------------------------------------------------------------------------------
 // Transforms a normal map sample to world space.
 //---------------------------------------------------------------------------------------
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
 {
 	// Uncompress each component from [0,1] to [-1,1].
-	float3 normalT = 2.0f*normalMapSample - 1.0f;
+	float3 normalT = ((2.0f * normalMapSample) - 1.0f);
 
 	// Build orthonormal basis.
 	float3 N = unitNormalW;
@@ -61,25 +19,43 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 	return bumpedNormalW;
 }
 
-//---------------------------------------------------------------------------------------
-// Evaluates the lighting equation for directional lights.
-//---------------------------------------------------------------------------------------
-float3 ComputeDirectionalLight(float4 sunLightStrength, float4 sunLightDirection, Material mat, float3 normal, float3 toEye)
+float3 fresnelSchlick(float cosTheta, float3 F0)
 {
-    // The light vector aims opposite the direction the light rays travel.
-    float3 lightVec = -1.0f * sunLightDirection.rgb;
-
-    // Scale light down by Lambert's cosine law.
-    float ndotl = max(dot(lightVec, normal), 0.0f);
-    float3 lightStrength = sunLightStrength.rgb * ndotl;
-
-    return BlinnPhong(lightStrength.rgb, lightVec, normal, toEye, mat);
+	return (F0 + ((1.0f - F0) * pow((1.0f - cosTheta), 5.0f)));
 }
 
-float4 ComputeLighting(float4 sunLightStrength, float4 sunLightDirection, Material mat,
-                       float3 pos, float3 normal, float3 toEye,
-                       float3 shadowFactor)
+float DistributionGGX(float3 N, float3 H, float roughness)
 {
-    float3 result = shadowFactor * ComputeDirectionalLight(sunLightStrength, sunLightDirection, mat, normal, toEye);
-    return float4(result, 0.0f);
+	const float PI = 3.14159265359;
+
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0f);
+	float NdotH2 = NdotH * NdotH;
+
+	float num = a2;
+	float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+	denom = PI * denom * denom;
+
+	return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+	float r = (roughness + 1.0f);
+	float k = (r*r) / 8.0f;
+
+	float num = NdotV;
+	float denom = NdotV * (1.0f - k) + k;
+
+	return num / denom;
+}
+float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
+	float NdotV = max(dot(N, V), 0.0f);
+	float NdotL = max(dot(N, L), 0.0f);
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
 }
