@@ -8,7 +8,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D    gDiffuseMap : register(t0);
-Texture2D	 gNormalMap : register(t1);
+Texture2D	 gNormalGlossMap : register(t1);
 SamplerState gsamAnisotropicWrap  : register(s4);
 
 // Constant data that varies per frame.
@@ -43,7 +43,7 @@ cbuffer cbMaterial : register(b2)
 {
 	float4 gDiffuseAlbedo;
     float3 gFresnelR0;
-    float  gRoughness;
+    float  gMetallic;
     float4x4 gMatTransform;
 };
 
@@ -90,8 +90,8 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
     float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC);
-	float4 normalT = gNormalMap.Sample(gsamAnisotropicWrap, pin.TexC);
-
+	float4 normalT = gNormalGlossMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float gloss = normalT.a;
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
@@ -100,8 +100,7 @@ float4 PS(VertexOut pin) : SV_Target
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
-    const float shininess = 1.0f - gRoughness;
-    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+    Material mat = { diffuseAlbedo, gFresnelR0, gloss };
     float3 shadowFactor = 1.0f;
     float4 directLight = ComputeLighting(gSunLightStrength, gSunLightDirection, mat, pin.PosW,
         pixelNormalW, toEyeW, shadowFactor);

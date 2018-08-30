@@ -366,7 +366,7 @@ void CrateApp::UpdateMaterialCBs(const GameTimer& gt)
 			MaterialConstants matConstants;
 			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
 			matConstants.FresnelR0 = mat->FresnelR0;
-			matConstants.Roughness = mat->Roughness;
+			matConstants.Metallic = mat->Metallic;
 			XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 
 			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
@@ -724,7 +724,7 @@ void CrateApp::BuildMaterials()
 	brick->DiffuseSrvHeapIndex = 0;
 	brick->NormalSrvHeapIndex = 1;
 	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	brick->Roughness = 0.6f;
+	brick->Metallic = 0.0f;
 
 	auto brick2 = std::make_unique<Material>();
 	brick2->Name = "brick2";
@@ -732,7 +732,7 @@ void CrateApp::BuildMaterials()
 	brick2->DiffuseSrvHeapIndex = 2;
 	brick2->NormalSrvHeapIndex = 3;
 	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	brick2->Roughness = 0.6f;
+	brick2->Metallic = 0.0f;
 
 	auto tile = std::make_unique<Material>();
 	tile->Name = "tile";
@@ -740,7 +740,7 @@ void CrateApp::BuildMaterials()
 	tile->DiffuseSrvHeapIndex = 4;
 	tile->NormalSrvHeapIndex = 5;
 	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	tile->Roughness = 0.1f;
+	tile->Metallic = 0.0f;
 
 	mMaterials["brick"] = std::move(brick);
 	mMaterials["brick2"] = std::move(brick2);
