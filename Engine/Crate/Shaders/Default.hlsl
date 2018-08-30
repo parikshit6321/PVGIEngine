@@ -128,7 +128,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	kD *= (1.0f - gMetallic);
 
-	float3 diffuse = kD * DiffuseBurley(albedo, roughness, NdotV, NdotL, VdotH);
+	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
 	
 	float4 directLight = float4(((diffuse + specular) * (gSunLightStrength.rgb * NdotL)), albedo.a);
 
