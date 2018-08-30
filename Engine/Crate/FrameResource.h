@@ -37,6 +37,7 @@ struct Vertex
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT3 Normal;
 	DirectX::XMFLOAT2 TexC;
+	DirectX::XMFLOAT3 Tangent;
 };
 
 // Stores the resources needed for the CPU to build the command lists

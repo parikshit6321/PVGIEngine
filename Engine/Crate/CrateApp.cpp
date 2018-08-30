@@ -531,6 +531,7 @@ void CrateApp::BuildShadersAndInputLayout()
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
     };
 }
 
@@ -569,6 +570,7 @@ void CrateApp::BuildShapeGeometry()
 		vertices[k].Pos = box.Vertices[i].Position;
 		vertices[k].Normal = box.Vertices[i].Normal;
 		vertices[k].TexC = box.Vertices[i].TexC;
+		vertices[k].Tangent = box.Vertices[i].TangentU;
 	}
 
 	for (size_t i = 0; i < box2.Vertices.size(); ++i, ++k)
@@ -576,6 +578,7 @@ void CrateApp::BuildShapeGeometry()
 		vertices[k].Pos = box2.Vertices[i].Position;
 		vertices[k].Normal = box2.Vertices[i].Normal;
 		vertices[k].TexC = box2.Vertices[i].TexC;
+		vertices[k].Tangent = box2.Vertices[i].TangentU;
 	}
 
 	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
@@ -583,6 +586,7 @@ void CrateApp::BuildShapeGeometry()
 		vertices[k].Pos = grid.Vertices[i].Position;
 		vertices[k].Normal = grid.Vertices[i].Normal;
 		vertices[k].TexC = grid.Vertices[i].TexC;
+		vertices[k].Tangent = grid.Vertices[i].TangentU;
 	}
 
 	std::vector<std::uint16_t> indices;
