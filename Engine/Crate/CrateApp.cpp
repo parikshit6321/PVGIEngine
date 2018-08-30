@@ -409,6 +409,13 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 
 void CrateApp::LoadTextures()
 {
+	auto skyTex = std::make_unique<Texture>();
+	skyTex->Name = "skyTex";
+	skyTex->Filename = L"../../Textures/grasscube1024.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), skyTex->Filename.c_str(),
+		skyTex->Resource, skyTex->UploadHeap));
+
 	auto bricksTex = std::make_unique<Texture>();
 	bricksTex->Name = "bricksTex";
 	bricksTex->Filename = L"../../Textures/bricks.dds";
@@ -450,6 +457,8 @@ void CrateApp::LoadTextures()
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), tileNormalTex->Filename.c_str(),
 		tileNormalTex->Resource, tileNormalTex->UploadHeap));
+
+	mTextures[skyTex->Name] = std::move(skyTex);
 
 	mTextures[bricksTex->Name] = std::move(bricksTex);
 	mTextures[bricksNormalTex->Name] = std::move(bricksNormalTex);
@@ -507,7 +516,7 @@ void CrateApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 6;
+	srvHeapDesc.NumDescriptors = 7;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -517,12 +526,25 @@ void CrateApp::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
+	auto skyTex = mTextures["skyTex"]->Resource;
 	auto bricksTex = mTextures["bricksTex"]->Resource;
 	auto bricksNormalTex = mTextures["bricksNormalTex"]->Resource;
 	auto bricks2Tex = mTextures["bricks2Tex"]->Resource;
 	auto bricks2NormalTex = mTextures["bricks2NormalTex"]->Resource;
 	auto tileTex = mTextures["tileTex"]->Resource;
 	auto tileNormalTex = mTextures["tileNormalTex"]->Resource;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC skyTexDesc = {};
+	skyTexDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	skyTexDesc.Format = skyTex->GetDesc().Format;
+	skyTexDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	skyTexDesc.TextureCube.MostDetailedMip = 0;
+	skyTexDesc.TextureCube.MipLevels = skyTex->GetDesc().MipLevels;
+	skyTexDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+	md3dDevice->CreateShaderResourceView(skyTex.Get(), &skyTexDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -721,24 +743,24 @@ void CrateApp::BuildMaterials()
 	auto brick = std::make_unique<Material>();
 	brick->Name = "brick";
 	brick->MatCBIndex = 0;
-	brick->DiffuseSrvHeapIndex = 0;
-	brick->NormalSrvHeapIndex = 1;
+	brick->DiffuseSrvHeapIndex = 1;
+	brick->NormalSrvHeapIndex = 2;
 	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick->Metallic = 0.0f;
 
 	auto brick2 = std::make_unique<Material>();
 	brick2->Name = "brick2";
 	brick2->MatCBIndex = 1;
-	brick2->DiffuseSrvHeapIndex = 2;
-	brick2->NormalSrvHeapIndex = 3;
+	brick2->DiffuseSrvHeapIndex = 3;
+	brick2->NormalSrvHeapIndex = 4;
 	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick2->Metallic = 0.0f;
 
 	auto tile = std::make_unique<Material>();
 	tile->Name = "tile";
 	tile->MatCBIndex = 2;
-	tile->DiffuseSrvHeapIndex = 4;
-	tile->NormalSrvHeapIndex = 5;
+	tile->DiffuseSrvHeapIndex = 5;
+	tile->NormalSrvHeapIndex = 6;
 	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	tile->Metallic = 0.0f;
 
