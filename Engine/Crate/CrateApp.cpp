@@ -315,7 +315,7 @@ void CrateApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
 	mEyePos.x = 0.0f;
-	mEyePos.z = -5.0f;
+	mEyePos.z = -3.0f;
 	mEyePos.y = 1.0f;
 
 	// Build the view matrix.
@@ -416,12 +416,26 @@ void CrateApp::LoadTextures()
 		mCommandList.Get(), bricksTex->Filename.c_str(),
 		bricksTex->Resource, bricksTex->UploadHeap));
  
+	auto bricksNormalTex = std::make_unique<Texture>();
+	bricksNormalTex->Name = "bricksNormalTex";
+	bricksNormalTex->Filename = L"../../Textures/bricks_nmap.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), bricksNormalTex->Filename.c_str(),
+		bricksNormalTex->Resource, bricksNormalTex->UploadHeap));
+
 	auto bricks2Tex = std::make_unique<Texture>();
 	bricks2Tex->Name = "bricks2Tex";
 	bricks2Tex->Filename = L"../../Textures/bricks2.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2Tex->Filename.c_str(),
 		bricks2Tex->Resource, bricks2Tex->UploadHeap));
+
+	auto bricks2NormalTex = std::make_unique<Texture>();
+	bricks2NormalTex->Name = "bricks2NormalTex";
+	bricks2NormalTex->Filename = L"../../Textures/bricks2_nmap.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), bricks2NormalTex->Filename.c_str(),
+		bricks2NormalTex->Resource, bricks2NormalTex->UploadHeap));
 
 	auto tileTex = std::make_unique<Texture>();
 	tileTex->Name = "tileTex";
@@ -430,15 +444,27 @@ void CrateApp::LoadTextures()
 		mCommandList.Get(), tileTex->Filename.c_str(),
 		tileTex->Resource, tileTex->UploadHeap));
 
+	auto tileNormalTex = std::make_unique<Texture>();
+	tileNormalTex->Name = "tileNormalTex";
+	tileNormalTex->Filename = L"../../Textures/tile_nmap.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tileNormalTex->Filename.c_str(),
+		tileNormalTex->Resource, tileNormalTex->UploadHeap));
+
 	mTextures[bricksTex->Name] = std::move(bricksTex);
+	mTextures[bricksNormalTex->Name] = std::move(bricksNormalTex);
+
 	mTextures[bricks2Tex->Name] = std::move(bricks2Tex);
+	mTextures[bricks2NormalTex->Name] = std::move(bricks2NormalTex);
+	
 	mTextures[tileTex->Name] = std::move(tileTex);
+	mTextures[tileNormalTex->Name] = std::move(tileNormalTex);
 }
 
 void CrateApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
     // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -481,7 +507,7 @@ void CrateApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 6;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -492,8 +518,11 @@ void CrateApp::BuildDescriptorHeaps()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	auto bricksTex = mTextures["bricksTex"]->Resource;
+	auto bricksNormalTex = mTextures["bricksNormalTex"]->Resource;
 	auto bricks2Tex = mTextures["bricks2Tex"]->Resource;
+	auto bricks2NormalTex = mTextures["bricks2NormalTex"]->Resource;
 	auto tileTex = mTextures["tileTex"]->Resource;
+	auto tileNormalTex = mTextures["tileNormalTex"]->Resource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -507,6 +536,13 @@ void CrateApp::BuildDescriptorHeaps()
 
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
+	srvDesc.Format = bricksNormalTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = bricksNormalTex->GetDesc().MipLevels;
+
+	md3dDevice->CreateShaderResourceView(bricksNormalTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
 	srvDesc.Format = bricks2Tex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = bricks2Tex->GetDesc().MipLevels;
 
@@ -514,10 +550,24 @@ void CrateApp::BuildDescriptorHeaps()
 
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
+	srvDesc.Format = bricks2NormalTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = bricks2NormalTex->GetDesc().MipLevels;
+
+	md3dDevice->CreateShaderResourceView(bricks2NormalTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
 	srvDesc.Format = tileTex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
 
 	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = tileNormalTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = tileNormalTex->GetDesc().MipLevels;
+
+	md3dDevice->CreateShaderResourceView(tileNormalTex.Get(), &srvDesc, hDescriptor);
 }
 
 void CrateApp::BuildShadersAndInputLayout()
@@ -672,20 +722,23 @@ void CrateApp::BuildMaterials()
 	brick->Name = "brick";
 	brick->MatCBIndex = 0;
 	brick->DiffuseSrvHeapIndex = 0;
+	brick->NormalSrvHeapIndex = 1;
 	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick->Roughness = 0.6f;
 
 	auto brick2 = std::make_unique<Material>();
 	brick2->Name = "brick2";
 	brick2->MatCBIndex = 1;
-	brick2->DiffuseSrvHeapIndex = 1;
+	brick2->DiffuseSrvHeapIndex = 2;
+	brick2->NormalSrvHeapIndex = 3;
 	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick2->Roughness = 0.6f;
 
 	auto tile = std::make_unique<Material>();
 	tile->Name = "tile";
 	tile->MatCBIndex = 2;
-	tile->DiffuseSrvHeapIndex = 2;
+	tile->DiffuseSrvHeapIndex = 4;
+	tile->NormalSrvHeapIndex = 5;
 	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	tile->Roughness = 0.1f;
 
@@ -705,7 +758,7 @@ void CrateApp::BuildRenderItems()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-	XMStoreFloat4x4(&(boxRitem->World), XMMatrixTranslation(2.0f, 0.0f, 0.0f));
+	XMStoreFloat4x4(&(boxRitem->World), XMMatrixTranslation(1.0f, 0.0f, 0.0f));
 
 	mAllRitems.push_back(std::move(boxRitem));
 
@@ -718,7 +771,7 @@ void CrateApp::BuildRenderItems()
 	box2Ritem->IndexCount = box2Ritem->Geo->DrawArgs["box2"].IndexCount;
 	box2Ritem->StartIndexLocation = box2Ritem->Geo->DrawArgs["box2"].StartIndexLocation;
 	box2Ritem->BaseVertexLocation = box2Ritem->Geo->DrawArgs["box2"].BaseVertexLocation;
-	XMStoreFloat4x4(&(box2Ritem->World), XMMatrixTranslation(-2.0f, 0.0f, 0.0f));
+	XMStoreFloat4x4(&(box2Ritem->World), XMMatrixTranslation(-1.0f, 0.0f, 0.0f));
 
 	mAllRitems.push_back(std::move(box2Ritem));
 

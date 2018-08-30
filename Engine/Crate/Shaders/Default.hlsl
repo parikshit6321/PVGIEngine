@@ -8,6 +8,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D    gDiffuseMap : register(t0);
+Texture2D	 gNormalMap : register(t1);
 SamplerState gsamAnisotropicWrap  : register(s4);
 
 // Constant data that varies per frame.
