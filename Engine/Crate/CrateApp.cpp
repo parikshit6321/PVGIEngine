@@ -588,7 +588,6 @@ void CrateApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
-	GeometryGenerator::MeshData box2 = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
 
 	SubmeshGeometry boxSubmesh;
@@ -596,19 +595,12 @@ void CrateApp::BuildShapeGeometry()
 	boxSubmesh.StartIndexLocation = 0;
 	boxSubmesh.BaseVertexLocation = 0;
 
-	SubmeshGeometry box2Submesh;
-	box2Submesh.IndexCount = (UINT)box2.Indices32.size();
-	box2Submesh.StartIndexLocation = box.Indices32.size();
-	box2Submesh.BaseVertexLocation = box.Vertices.size();
-
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
-	gridSubmesh.StartIndexLocation = box2Submesh.StartIndexLocation + box2.Indices32.size();
-	gridSubmesh.BaseVertexLocation = box2Submesh.BaseVertexLocation + box2.Vertices.size();
+	gridSubmesh.StartIndexLocation = box.Indices32.size();
+	gridSubmesh.BaseVertexLocation = box.Vertices.size();
 
-	auto totalVertexCount = (box.Vertices.size() +
-		box2.Vertices.size() +
-		grid.Vertices.size());
+	auto totalVertexCount = (box.Vertices.size() + grid.Vertices.size());
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
@@ -622,14 +614,6 @@ void CrateApp::BuildShapeGeometry()
 		vertices[k].Tangent = box.Vertices[i].TangentU;
 	}
 
-	for (size_t i = 0; i < box2.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = box2.Vertices[i].Position;
-		vertices[k].Normal = box2.Vertices[i].Normal;
-		vertices[k].TexC = box2.Vertices[i].TexC;
-		vertices[k].Tangent = box2.Vertices[i].TangentU;
-	}
-
 	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = grid.Vertices[i].Position;
@@ -641,7 +625,6 @@ void CrateApp::BuildShapeGeometry()
 	std::vector<std::uint16_t> indices;
 
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
-	indices.insert(indices.end(), std::begin(box2.GetIndices16()), std::end(box2.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -668,7 +651,6 @@ void CrateApp::BuildShapeGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["box"] = boxSubmesh;
-	geo->DrawArgs["box2"] = box2Submesh;
 	geo->DrawArgs["grid"] = gridSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
@@ -768,9 +750,9 @@ void CrateApp::BuildRenderItems()
 	box2Ritem->Mat = mMaterials["brick2"].get();
 	box2Ritem->Geo = mGeometries["DemoScene"].get();
 	box2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	box2Ritem->IndexCount = box2Ritem->Geo->DrawArgs["box2"].IndexCount;
-	box2Ritem->StartIndexLocation = box2Ritem->Geo->DrawArgs["box2"].StartIndexLocation;
-	box2Ritem->BaseVertexLocation = box2Ritem->Geo->DrawArgs["box2"].BaseVertexLocation;
+	box2Ritem->IndexCount = box2Ritem->Geo->DrawArgs["box"].IndexCount;
+	box2Ritem->StartIndexLocation = box2Ritem->Geo->DrawArgs["box"].StartIndexLocation;
+	box2Ritem->BaseVertexLocation = box2Ritem->Geo->DrawArgs["box"].BaseVertexLocation;
 	XMStoreFloat4x4(&(box2Ritem->World), XMMatrixTranslation(-1.0f, 0.0f, 0.0f));
 
 	mAllRitems.push_back(std::move(box2Ritem));
