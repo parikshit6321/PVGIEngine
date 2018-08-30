@@ -672,7 +672,6 @@ void CrateApp::BuildMaterials()
 	brick->Name = "brick";
 	brick->MatCBIndex = 0;
 	brick->DiffuseSrvHeapIndex = 0;
-	brick->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick->Roughness = 0.6f;
 
@@ -680,7 +679,6 @@ void CrateApp::BuildMaterials()
 	brick2->Name = "brick2";
 	brick2->MatCBIndex = 1;
 	brick2->DiffuseSrvHeapIndex = 1;
-	brick2->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	brick2->Roughness = 0.6f;
 
@@ -688,7 +686,6 @@ void CrateApp::BuildMaterials()
 	tile->Name = "tile";
 	tile->MatCBIndex = 2;
 	tile->DiffuseSrvHeapIndex = 2;
-	tile->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	tile->Roughness = 0.1f;
 
