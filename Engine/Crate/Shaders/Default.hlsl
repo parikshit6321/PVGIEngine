@@ -90,9 +90,12 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
     float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 normalT = gNormalMap.Sample(gsamAnisotropicWrap, pin.TexC);
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
+
+	float3 pixelNormalW = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
 
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
@@ -101,7 +104,7 @@ float4 PS(VertexOut pin) : SV_Target
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
     float4 directLight = ComputeLighting(gSunLightStrength, gSunLightDirection, mat, pin.PosW,
-        pin.NormalW, toEyeW, shadowFactor);
+        pixelNormalW, toEyeW, shadowFactor);
 
     // Common convention to take alpha from diffuse material.
     directLight.a = diffuseAlbedo.a;
