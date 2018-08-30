@@ -27,7 +27,6 @@ struct PassConstants
     float TotalTime = 0.0f;
     float DeltaTime = 0.0f;
 
-    DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
 	DirectX::XMFLOAT4 SunLightStrength = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT4 SunLightDirection = { 0.5f, -0.5f, 0.5f, 1.0f };
 };

@@ -34,7 +34,6 @@ cbuffer cbPass : register(b1)
     float gFarZ;
     float gTotalTime;
     float gDeltaTime;
-    float4 gAmbientLight;
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
 };
@@ -97,19 +96,14 @@ float4 PS(VertexOut pin) : SV_Target
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
-    // Light terms.
-    float4 ambient = gAmbientLight*diffuseAlbedo;
-
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
     float4 directLight = ComputeLighting(gSunLightStrength, gSunLightDirection, mat, pin.PosW,
         pin.NormalW, toEyeW, shadowFactor);
 
-    float4 litColor = ambient + directLight;
-
     // Common convention to take alpha from diffuse material.
-    litColor.a = diffuseAlbedo.a;
+    directLight.a = diffuseAlbedo.a;
 
-    return litColor;
+    return directLight;
 }
