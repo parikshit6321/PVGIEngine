@@ -417,7 +417,23 @@ void CrateApp::LoadTextures()
 		mCommandList.Get(), bricksTex->Filename.c_str(),
 		bricksTex->Resource, bricksTex->UploadHeap));
  
+	auto bricks2Tex = std::make_unique<Texture>();
+	bricks2Tex->Name = "bricks2Tex";
+	bricks2Tex->Filename = L"../../Textures/bricks2.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), bricks2Tex->Filename.c_str(),
+		bricks2Tex->Resource, bricks2Tex->UploadHeap));
+
+	auto tileTex = std::make_unique<Texture>();
+	tileTex->Name = "tileTex";
+	tileTex->Filename = L"../../Textures/tile.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tileTex->Filename.c_str(),
+		tileTex->Resource, tileTex->UploadHeap));
+
 	mTextures[bricksTex->Name] = std::move(bricksTex);
+	mTextures[bricks2Tex->Name] = std::move(bricks2Tex);
+	mTextures[tileTex->Name] = std::move(tileTex);
 }
 
 void CrateApp::BuildRootSignature()
@@ -466,7 +482,7 @@ void CrateApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.NumDescriptors = 3;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -477,7 +493,9 @@ void CrateApp::BuildDescriptorHeaps()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	auto bricksTex = mTextures["bricksTex"]->Resource;
- 
+	auto bricks2Tex = mTextures["bricks2Tex"]->Resource;
+	auto tileTex = mTextures["tileTex"]->Resource;
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = bricksTex->GetDesc().Format;
@@ -487,6 +505,20 @@ void CrateApp::BuildDescriptorHeaps()
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = bricks2Tex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = bricks2Tex->GetDesc().MipLevels;
+
+	md3dDevice->CreateShaderResourceView(bricks2Tex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = tileTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
+
+	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
 }
 
 void CrateApp::BuildShadersAndInputLayout()
@@ -506,29 +538,64 @@ void CrateApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
- 
+	GeometryGenerator::MeshData box2 = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
+
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
 	boxSubmesh.StartIndexLocation = 0;
 	boxSubmesh.BaseVertexLocation = 0;
 
- 
-	std::vector<Vertex> vertices(box.Vertices.size());
+	SubmeshGeometry box2Submesh;
+	box2Submesh.IndexCount = (UINT)box2.Indices32.size();
+	box2Submesh.StartIndexLocation = box.Indices32.size();
+	box2Submesh.BaseVertexLocation = box.Vertices.size();
 
-	for(size_t i = 0; i < box.Vertices.size(); ++i)
+	SubmeshGeometry gridSubmesh;
+	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
+	gridSubmesh.StartIndexLocation = box2Submesh.StartIndexLocation + box2.Indices32.size();
+	gridSubmesh.BaseVertexLocation = box2Submesh.BaseVertexLocation + box2.Vertices.size();
+
+	auto totalVertexCount = (box.Vertices.size() +
+		box2.Vertices.size() +
+		grid.Vertices.size());
+
+	std::vector<Vertex> vertices(totalVertexCount);
+
+	UINT k = 0;
+
+	for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
 	{
-		vertices[i].Pos = box.Vertices[i].Position;
-		vertices[i].Normal = box.Vertices[i].Normal;
-		vertices[i].TexC = box.Vertices[i].TexC;
+		vertices[k].Pos = box.Vertices[i].Position;
+		vertices[k].Normal = box.Vertices[i].Normal;
+		vertices[k].TexC = box.Vertices[i].TexC;
 	}
 
-	std::vector<std::uint16_t> indices = box.GetIndices16();
+	for (size_t i = 0; i < box2.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = box2.Vertices[i].Position;
+		vertices[k].Normal = box2.Vertices[i].Normal;
+		vertices[k].TexC = box2.Vertices[i].TexC;
+	}
+
+	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = grid.Vertices[i].Position;
+		vertices[k].Normal = grid.Vertices[i].Normal;
+		vertices[k].TexC = grid.Vertices[i].TexC;
+	}
+
+	std::vector<std::uint16_t> indices;
+
+	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
+	indices.insert(indices.end(), std::begin(box2.GetIndices16()), std::end(box2.GetIndices16()));
+	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "boxGeo";
+	geo->Name = "DemoScene";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -548,6 +615,8 @@ void CrateApp::BuildShapeGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["box"] = boxSubmesh;
+	geo->DrawArgs["box2"] = box2Submesh;
+	geo->DrawArgs["grid"] = gridSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -602,9 +671,27 @@ void CrateApp::BuildMaterials()
 	brick->DiffuseSrvHeapIndex = 0;
 	brick->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	brick->Roughness = 0.2f;
+	brick->Roughness = 0.6f;
+
+	auto brick2 = std::make_unique<Material>();
+	brick2->Name = "brick2";
+	brick2->MatCBIndex = 1;
+	brick2->DiffuseSrvHeapIndex = 1;
+	brick2->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	brick2->Roughness = 0.6f;
+
+	auto tile = std::make_unique<Material>();
+	tile->Name = "tile";
+	tile->MatCBIndex = 2;
+	tile->DiffuseSrvHeapIndex = 2;
+	tile->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	tile->Roughness = 0.1f;
 
 	mMaterials["brick"] = std::move(brick);
+	mMaterials["brick2"] = std::move(brick2);
+	mMaterials["tile"] = std::move(tile);
 }
 
 void CrateApp::BuildRenderItems()
@@ -613,7 +700,7 @@ void CrateApp::BuildRenderItems()
 	auto boxRitem = std::make_unique<RenderItem>();
 	boxRitem->ObjCBIndex = 0;
 	boxRitem->Mat = mMaterials["brick"].get();
-	boxRitem->Geo = mGeometries["boxGeo"].get();
+	boxRitem->Geo = mGeometries["DemoScene"].get();
 	boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
@@ -621,6 +708,33 @@ void CrateApp::BuildRenderItems()
 	XMStoreFloat4x4(&(boxRitem->World), XMMatrixTranslation(2.0f, 0.0f, 0.0f));
 
 	mAllRitems.push_back(std::move(boxRitem));
+
+	// Add the second box
+	auto box2Ritem = std::make_unique<RenderItem>();
+	box2Ritem->ObjCBIndex = 1;
+	box2Ritem->Mat = mMaterials["brick2"].get();
+	box2Ritem->Geo = mGeometries["DemoScene"].get();
+	box2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	box2Ritem->IndexCount = box2Ritem->Geo->DrawArgs["box2"].IndexCount;
+	box2Ritem->StartIndexLocation = box2Ritem->Geo->DrawArgs["box2"].StartIndexLocation;
+	box2Ritem->BaseVertexLocation = box2Ritem->Geo->DrawArgs["box2"].BaseVertexLocation;
+	XMStoreFloat4x4(&(box2Ritem->World), XMMatrixTranslation(-2.0f, 0.0f, 0.0f));
+
+	mAllRitems.push_back(std::move(box2Ritem));
+
+	// Add the grid
+	auto gridRitem = std::make_unique<RenderItem>();
+	gridRitem->ObjCBIndex = 2;
+	gridRitem->Mat = mMaterials["tile"].get();
+	gridRitem->Geo = mGeometries["DemoScene"].get();
+	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+	XMStoreFloat4x4(&(gridRitem->World), XMMatrixTranslation(0.0f, -1.0f, 2.0f));
+	XMStoreFloat4x4(&(gridRitem->TexTransform), XMMatrixScaling(5.0f, 5.0f, 1.0f));
+
+	mAllRitems.push_back(std::move(gridRitem));
 
 	// All the render items are opaque.
 	for(auto& e : mAllRitems)
@@ -714,4 +828,3 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> CrateApp::GetStaticSamplers()
 		linearWrap, linearClamp, 
 		anisotropicWrap, anisotropicClamp };
 }
-
