@@ -1,3 +1,5 @@
+#define PI 3.14159265359
+
 //---------------------------------------------------------------------------------------
 // Transforms a normal map sample to world space.
 //---------------------------------------------------------------------------------------
@@ -19,18 +21,24 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 	return bumpedNormalW;
 }
 
-float3 fresnelSchlick(float cosTheta, float3 F0)
+float3 DiffuseBurley(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
+{
+	float roughnessSq = Roughness * Roughness;
+	float FD90 = 0.5f + (2 * VoH * VoH * roughnessSq);
+	float FdV = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoV), 5.0f));
+	float FdL = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoL), 5.0f));
+	return DiffuseColor * ((1 / PI) * FdV * FdL);
+}
+
+float3 FresnelSchlick(float cosTheta, float3 F0)
 {
 	return (F0 + ((1.0f - F0) * pow((1.0f - cosTheta), 5.0f)));
 }
 
-float DistributionGGX(float3 N, float3 H, float roughness)
+float DistributionGGX(float NdotH, float roughness)
 {
-	const float PI = 3.14159265359;
-
 	float a = roughness * roughness;
 	float a2 = a * a;
-	float NdotH = max(dot(N, H), 0.0f);
 	float NdotH2 = NdotH * NdotH;
 
 	float num = a2;
@@ -50,12 +58,10 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 
 	return num / denom;
 }
-float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
-	float NdotV = max(dot(N, V), 0.0f);
-	float NdotL = max(dot(N, L), 0.0f);
 	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
 	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
+	
 	return ggx1 * ggx2;
 }

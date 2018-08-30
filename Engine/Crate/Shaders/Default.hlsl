@@ -101,21 +101,26 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
 	float3 H = normalize(V + L);
 
-	// Cook Torrance BRDF : (DFG) / (4 * (Wo.n) * (Wi.n))
+	float NdotV = max(dot(N, V), 0.0f);
+	float NdotL = max(dot(N, L), 0.0f);
+	float VdotH = max(dot(V, H), 0.0f);
+	float NdotH = max(dot(N, H), 0.0f);
+
+	// BRDF : Disney Diffuse + GGX Specular
 
 	// Calculate Fresnel effect
 	float3 F0 = float3(0.04f, 0.04f, 0.04f);
 	F0 = lerp(F0, albedo.rgb, gMetallic);
-	float3 F = fresnelSchlick(max(dot(H, V), 0.0f), F0);
+	float3 F = FresnelSchlick(VdotH, F0);
 
 	// Calculate Normal distribution function
-	float NDF = DistributionGGX(N, H, roughness);
+	float NDF = DistributionGGX(NdotH, roughness);
 
 	// Calculate Geometry function
-	float G = GeometrySmith(N, V, L, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
 
 	float3 numerator = (F * NDF * G);
-	float denominator = (4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f));
+	float denominator = (4.0f * NdotV * NdotL);
 	float3 specular = numerator / max(denominator, 0.001f);
 
 	float3 kS = F;
@@ -123,10 +128,9 @@ float4 PS(VertexOut pin) : SV_Target
 
 	kD *= (1.0f - gMetallic);
 
-	const float PI = 3.14159265359;
-
-	float NdotL = max(dot(N, L), 0.0f);
-	float4 directLight = float4((((kD * (albedo.rgb / PI)) + specular) * (gSunLightStrength.rgb * NdotL)), albedo.a);
+	float3 diffuse = kD * DiffuseBurley(albedo, roughness, NdotV, NdotL, VdotH);
+	
+	float4 directLight = float4(((diffuse + specular) * (gSunLightStrength.rgb * NdotL)), albedo.a);
 
 	return directLight;
 }
