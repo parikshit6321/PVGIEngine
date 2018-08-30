@@ -81,18 +81,6 @@ public:
     MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
 
 	///<summary>
-	/// Creates a sphere centered at the origin with the given radius.  The
-	/// slices and stacks parameters control the degree of tessellation.
-	///</summary>
-    MeshData CreateSphere(float radius, uint32 sliceCount, uint32 stackCount);
-
-	///<summary>
-	/// Creates a geosphere centered at the origin with the given radius.  The
-	/// depth controls the level of tessellation.
-	///</summary>
-    MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
-
-	///<summary>
 	/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
 	/// at the origin with the specified width and depth.
 	///</summary>
