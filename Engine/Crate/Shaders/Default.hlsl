@@ -132,5 +132,12 @@ float4 PS(VertexOut pin) : SV_Target
 	
 	float4 directLight = float4(((diffuse + specular) * (gSunLightStrength.rgb * NdotL)), albedo.a);
 
+	// ACES Tonemapping
+	directLight.rgb = ACESFitted(directLight.rgb);
+
+	// Gamma Correction
+	float gc = (1.0f / 2.2f);
+	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
+
 	return directLight;
 }
