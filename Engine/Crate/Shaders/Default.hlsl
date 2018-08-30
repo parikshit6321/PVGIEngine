@@ -7,8 +7,9 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
-Texture2D    gDiffuseMap : register(t0);
+Texture2D    gDiffuseOpacityMap : register(t0);
 Texture2D	 gNormalGlossMap : register(t1);
+
 SamplerState gsamAnisotropicWrap  : register(s4);
 
 // Constant data that varies per frame.
@@ -89,7 +90,13 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 albedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 albedo = gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float opacity = albedo.a;
+
+	// Discard the current fragment if it's not opaque.
+	if (opacity < 0.1f)
+		discard;
+
 	float4 normalT = gNormalGlossMap.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = (1.0f - normalT.a);
 	// Interpolating normal can unnormalize it, so renormalize it.
@@ -130,7 +137,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
 	
-	float4 directLight = float4(((diffuse + specular) * (gSunLightStrength.rgb * NdotL)), albedo.a);
+	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
 
 	// ACES Tonemapping
 	directLight.rgb = ACESFitted(directLight.rgb);
@@ -139,5 +146,5 @@ float4 PS(VertexOut pin) : SV_Target
 	float gc = (1.0f / 2.2f);
 	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
 
-	return directLight;
+	return float4(directLight, 1.0f);
 }

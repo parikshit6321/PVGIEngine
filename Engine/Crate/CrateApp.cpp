@@ -425,14 +425,14 @@ void CrateApp::LoadTextures()
 
 	auto bricks2Tex = std::make_unique<Texture>();
 	bricks2Tex->Name = "bricks2Tex";
-	bricks2Tex->Filename = L"../../Textures/bricks2.dds";
+	bricks2Tex->Filename = L"../../Textures/RockGraniteAlbedoOpacity.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2Tex->Filename.c_str(),
 		bricks2Tex->Resource, bricks2Tex->UploadHeap));
 
 	auto bricks2NormalTex = std::make_unique<Texture>();
 	bricks2NormalTex->Name = "bricks2NormalTex";
-	bricks2NormalTex->Filename = L"../../Textures/bricks2_nmap.dds";
+	bricks2NormalTex->Filename = L"../../Textures/RockGraniteNormalGloss.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2NormalTex->Filename.c_str(),
 		bricks2NormalTex->Resource, bricks2NormalTex->UploadHeap));
