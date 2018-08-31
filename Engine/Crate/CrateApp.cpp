@@ -411,42 +411,42 @@ void CrateApp::LoadTextures()
 {
 	auto bricksTex = std::make_unique<Texture>();
 	bricksTex->Name = "bricksTex";
-	bricksTex->Filename = L"../../Textures/bricks.dds";
+	bricksTex->Filename = L"../../Textures/RoughWall/RoughWallAlbedoOpacity.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricksTex->Filename.c_str(),
 		bricksTex->Resource, bricksTex->UploadHeap));
  
 	auto bricksNormalTex = std::make_unique<Texture>();
 	bricksNormalTex->Name = "bricksNormalTex";
-	bricksNormalTex->Filename = L"../../Textures/bricks_nmap.dds";
+	bricksNormalTex->Filename = L"../../Textures/RoughWall/RoughWallNormalGloss.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricksNormalTex->Filename.c_str(),
 		bricksNormalTex->Resource, bricksNormalTex->UploadHeap));
 
 	auto bricks2Tex = std::make_unique<Texture>();
 	bricks2Tex->Name = "bricks2Tex";
-	bricks2Tex->Filename = L"../../Textures/RockGraniteAlbedoOpacity.dds";
+	bricks2Tex->Filename = L"../../Textures/SlateRock/SlateRockAlbedoOpacity.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2Tex->Filename.c_str(),
 		bricks2Tex->Resource, bricks2Tex->UploadHeap));
 
 	auto bricks2NormalTex = std::make_unique<Texture>();
 	bricks2NormalTex->Name = "bricks2NormalTex";
-	bricks2NormalTex->Filename = L"../../Textures/RockGraniteNormalGloss.dds";
+	bricks2NormalTex->Filename = L"../../Textures/SlateRock/SlateRockNormalGloss.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2NormalTex->Filename.c_str(),
 		bricks2NormalTex->Resource, bricks2NormalTex->UploadHeap));
 
 	auto tileTex = std::make_unique<Texture>();
 	tileTex->Name = "tileTex";
-	tileTex->Filename = L"../../Textures/tile.dds";
+	tileTex->Filename = L"../../Textures/ForestGround/ForestGroundAlbedoOpacity.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), tileTex->Filename.c_str(),
 		tileTex->Resource, tileTex->UploadHeap));
 
 	auto tileNormalTex = std::make_unique<Texture>();
 	tileNormalTex->Name = "tileNormalTex";
-	tileNormalTex->Filename = L"../../Textures/tile_nmap.dds";
+	tileNormalTex->Filename = L"../../Textures/ForestGround/ForestGroundNormalGloss.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), tileNormalTex->Filename.c_str(),
 		tileNormalTex->Resource, tileNormalTex->UploadHeap));
