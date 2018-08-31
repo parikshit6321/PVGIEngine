@@ -51,6 +51,31 @@ struct RenderItem
     int BaseVertexLocation = 0;
 };
 
+struct SceneObject
+{
+	SceneObject() = default;
+
+	std::string			meshName;
+	std::string			diffuseOpacityTextureName;
+	std::string			normalRoughnessTextureName;
+	XMFLOAT3			position;
+	XMFLOAT3			rotation;
+	XMFLOAT3			scale;
+};
+
+struct Scene
+{
+	Scene() = default;
+
+	std::string			name;
+	XMFLOAT3			cameraPosition;
+	XMFLOAT3			lightDirection;
+	XMFLOAT3			lightStrength;
+	UINT				numberOfObjects;
+
+	std::vector<std::unique_ptr<SceneObject>> objectsInScene;
+};
+
 class CrateApp : public D3DApp
 {
 public:
