@@ -114,6 +114,5 @@ protected:
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	int mClientWidth = 800;
 	int mClientHeight = 600;
-	float mTriangleCountInMil = 0.0f;
 };
 

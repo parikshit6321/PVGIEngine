@@ -519,11 +519,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::DepthStencilView()const
 	return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-void D3DApp::SetTriangleCount(double triangleCount)
-{
-	mTriangleCountInMil = (float)(triangleCount / 1000000.0);
-}
-
 void D3DApp::CalculateFrameStats()
 {
 	// Code computes the average frames per second, and also the 
@@ -543,13 +538,10 @@ void D3DApp::CalculateFrameStats()
 
         wstring fpsStr = to_wstring(fps);
         wstring mspfStr = to_wstring(mspf);
-		wstring triangleCountInMilStr = to_wstring(mTriangleCountInMil);
-
-        wstring windowText = mMainWndCaption +
-            L"    FPS: " + fpsStr +
-            L"   MS: " + mspfStr +
-			L"   Triangles: " + triangleCountInMilStr + L" million";
-
+		
+		wstring windowText = mMainWndCaption +
+			L"    FPS: " + fpsStr +
+			L"   MS: " + mspfStr;
         SetWindowText(mhMainWnd, windowText.c_str());
 		
 		// Reset for next average.

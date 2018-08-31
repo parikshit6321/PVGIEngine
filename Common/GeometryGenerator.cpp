@@ -300,3 +300,38 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
 
     return meshData;
 }
+
+GeometryGenerator::MeshData GeometryGenerator::LoadModel(std::string modelName)
+{
+	std::ifstream inputFile;
+	inputFile.open("../../Assets/Meshes/" + modelName + ".txt", std::fstream::in);
+
+	std::string name;
+	size_t numberOfVertices;
+	size_t numberOfIndices;
+
+	inputFile >> numberOfVertices;
+	inputFile >> numberOfIndices;
+
+	MeshData meshData;
+
+	meshData.Vertices.resize(numberOfVertices);
+	meshData.Indices32.resize(numberOfIndices);
+
+	for (size_t i = 0; i < numberOfVertices; ++i)
+	{
+		inputFile >> meshData.Vertices[i].Position.x >> meshData.Vertices[i].Position.y >> meshData.Vertices[i].Position.z;
+		inputFile >> meshData.Vertices[i].Normal.x >> meshData.Vertices[i].Normal.y >> meshData.Vertices[i].Normal.z;
+		inputFile >> meshData.Vertices[i].TangentU.x >> meshData.Vertices[i].TangentU.y >> meshData.Vertices[i].TangentU.z;
+		inputFile >> meshData.Vertices[i].TexC.x >> meshData.Vertices[i].TexC.y;
+	}
+
+	for (size_t i = 0; i < numberOfIndices; ++i)
+	{
+		inputFile >> meshData.Indices32[i];
+	}
+
+	inputFile.close();
+
+	return meshData;
+}

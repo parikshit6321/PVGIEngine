@@ -7,9 +7,6 @@
 #include "../../Common/UploadBuffer.h"
 #include "../../Common/GeometryGenerator.h"
 #include "FrameResource.h"
-#include <iostream>
-#include <iomanip>
-#include <fstream>
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -62,7 +59,7 @@ struct SceneObject
 	std::string			diffuseOpacityTextureName;
 	std::string			normalRoughnessTextureName;
 	XMFLOAT3			position;
-	XMFLOAT3			rotation;
+	XMFLOAT4			rotation;
 	XMFLOAT3			scale;
 };
 
@@ -133,6 +130,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
@@ -152,6 +150,7 @@ private:
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
 	Scene mScene;
+	UINT mNumTexturesLoaded = 0;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -469,7 +468,7 @@ void CrateApp::LoadScene(std::string sceneFilePath)
 		inputFile >> mScene.objectsInScene[i].diffuseOpacityTextureName;
 		inputFile >> mScene.objectsInScene[i].normalRoughnessTextureName;
 		inputFile >> mScene.objectsInScene[i].position.x >> mScene.objectsInScene[i].position.y >> mScene.objectsInScene[i].position.z;
-		inputFile >> mScene.objectsInScene[i].rotation.x >> mScene.objectsInScene[i].rotation.y >> mScene.objectsInScene[i].rotation.z;
+		inputFile >> mScene.objectsInScene[i].rotation.x >> mScene.objectsInScene[i].rotation.y >> mScene.objectsInScene[i].rotation.z >> mScene.objectsInScene[i].rotation.w;
 		inputFile >> mScene.objectsInScene[i].scale.x >> mScene.objectsInScene[i].scale.y >> mScene.objectsInScene[i].scale.z;
 	}
 
@@ -478,56 +477,44 @@ void CrateApp::LoadScene(std::string sceneFilePath)
 
 void CrateApp::LoadTextures()
 {
-	auto bricksTex = std::make_unique<Texture>();
-	bricksTex->Name = "bricksTex";
-	bricksTex->Filename = L"../../Textures/RoughWall/RoughWallAlbedoOpacity.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricksTex->Filename.c_str(),
-		bricksTex->Resource, bricksTex->UploadHeap));
- 
-	auto bricksNormalTex = std::make_unique<Texture>();
-	bricksNormalTex->Name = "bricksNormalTex";
-	bricksNormalTex->Filename = L"../../Textures/RoughWall/RoughWallNormalGloss.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricksNormalTex->Filename.c_str(),
-		bricksNormalTex->Resource, bricksNormalTex->UploadHeap));
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	{
+		if (mTextures.find(mScene.objectsInScene[i].diffuseOpacityTextureName) == mTextures.end())
+		{
+			std::wstringstream ws;
+			ws << mScene.objectsInScene[i].diffuseOpacityTextureName.c_str();
+			std::wstring wsName = ws.str();
 
-	auto bricks2Tex = std::make_unique<Texture>();
-	bricks2Tex->Name = "bricks2Tex";
-	bricks2Tex->Filename = L"../../Textures/SlateRock/SlateRockAlbedoOpacity.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricks2Tex->Filename.c_str(),
-		bricks2Tex->Resource, bricks2Tex->UploadHeap));
+			auto tex = std::make_unique<Texture>();
+			tex->Name = mScene.objectsInScene[i].diffuseOpacityTextureName;
+			tex->Filename = L"../../Assets/Textures/" + wsName + L".dds";
+			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+				mCommandList.Get(), tex->Filename.c_str(),
+				tex->Resource, tex->UploadHeap));
 
-	auto bricks2NormalTex = std::make_unique<Texture>();
-	bricks2NormalTex->Name = "bricks2NormalTex";
-	bricks2NormalTex->Filename = L"../../Textures/SlateRock/SlateRockNormalGloss.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricks2NormalTex->Filename.c_str(),
-		bricks2NormalTex->Resource, bricks2NormalTex->UploadHeap));
+			mTextures[tex->Name] = std::move(tex);
 
-	auto tileTex = std::make_unique<Texture>();
-	tileTex->Name = "tileTex";
-	tileTex->Filename = L"../../Textures/ForestGround/ForestGroundAlbedoOpacity.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), tileTex->Filename.c_str(),
-		tileTex->Resource, tileTex->UploadHeap));
+			++mNumTexturesLoaded;
+		}
 
-	auto tileNormalTex = std::make_unique<Texture>();
-	tileNormalTex->Name = "tileNormalTex";
-	tileNormalTex->Filename = L"../../Textures/ForestGround/ForestGroundNormalGloss.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), tileNormalTex->Filename.c_str(),
-		tileNormalTex->Resource, tileNormalTex->UploadHeap));
+		if (mTextures.find(mScene.objectsInScene[i].normalRoughnessTextureName) == mTextures.end())
+		{
+			std::wstringstream ws;
+			ws << mScene.objectsInScene[i].normalRoughnessTextureName.c_str();
+			std::wstring wsName = ws.str();
 
-	mTextures[bricksTex->Name] = std::move(bricksTex);
-	mTextures[bricksNormalTex->Name] = std::move(bricksNormalTex);
+			auto tex = std::make_unique<Texture>();
+			tex->Name = mScene.objectsInScene[i].normalRoughnessTextureName;
+			tex->Filename = L"../../Assets/Textures/" + wsName + L".dds";
+			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+				mCommandList.Get(), tex->Filename.c_str(),
+				tex->Resource, tex->UploadHeap));
 
-	mTextures[bricks2Tex->Name] = std::move(bricks2Tex);
-	mTextures[bricks2NormalTex->Name] = std::move(bricks2NormalTex);
-	
-	mTextures[tileTex->Name] = std::move(tileTex);
-	mTextures[tileNormalTex->Name] = std::move(tileNormalTex);
+			mTextures[tex->Name] = std::move(tex);
+
+			++mNumTexturesLoaded;
+		}
+	}
 }
 
 void CrateApp::BuildRootSignature()
@@ -576,7 +563,7 @@ void CrateApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 6;
+	srvHeapDesc.NumDescriptors = mNumTexturesLoaded;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -586,57 +573,27 @@ void CrateApp::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto bricksTex = mTextures["bricksTex"]->Resource;
-	auto bricksNormalTex = mTextures["bricksNormalTex"]->Resource;
-	auto bricks2Tex = mTextures["bricks2Tex"]->Resource;
-	auto bricks2NormalTex = mTextures["bricks2NormalTex"]->Resource;
-	auto tileTex = mTextures["tileTex"]->Resource;
-	auto tileNormalTex = mTextures["tileNormalTex"]->Resource;
-
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = bricksTex->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
+	auto it = mTextures.begin();
 
-	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	while (it != mTextures.end())
+	{
+		srvDesc.Format = it->second->Resource->GetDesc().Format;
+		srvDesc.Texture2D.MipLevels = it->second->Resource->GetDesc().MipLevels;
 
-	srvDesc.Format = bricksNormalTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = bricksNormalTex->GetDesc().MipLevels;
+		md3dDevice->CreateShaderResourceView(it->second->Resource.Get(), &srvDesc, hDescriptor);
 
-	md3dDevice->CreateShaderResourceView(bricksNormalTex.Get(), &srvDesc, hDescriptor);
+		++it;
 
-	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+		if (it != mTextures.end())
+			hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	}
 
-	srvDesc.Format = bricks2Tex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = bricks2Tex->GetDesc().MipLevels;
-
-	md3dDevice->CreateShaderResourceView(bricks2Tex.Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
-	srvDesc.Format = bricks2NormalTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = bricks2NormalTex->GetDesc().MipLevels;
-
-	md3dDevice->CreateShaderResourceView(bricks2NormalTex.Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
-	srvDesc.Format = tileTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
-
-	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
-	srvDesc.Format = tileNormalTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = tileNormalTex->GetDesc().MipLevels;
-
-	md3dDevice->CreateShaderResourceView(tileNormalTex.Get(), &srvDesc, hDescriptor);
 }
 
 void CrateApp::BuildShadersAndInputLayout()
@@ -656,51 +613,55 @@ void CrateApp::BuildShadersAndInputLayout()
 void CrateApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
-	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
+	
+	size_t totalVertexCount = 0;
+	size_t currentStartIndexCount = 0;
+	size_t currentBaseVertexLocation = 0;
+	
+	std::vector<Vertex> vertices;
+	std::vector<std::uint16_t> indices;
 
-	SubmeshGeometry boxSubmesh;
-	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
-	boxSubmesh.StartIndexLocation = 0;
-	boxSubmesh.BaseVertexLocation = 0;
-
-	SubmeshGeometry gridSubmesh;
-	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
-	gridSubmesh.StartIndexLocation = box.Indices32.size();
-	gridSubmesh.BaseVertexLocation = box.Vertices.size();
-
-	auto totalVertexCount = (box.Vertices.size() + grid.Vertices.size());
-
-	std::vector<Vertex> vertices(totalVertexCount);
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = mScene.name;
 
 	UINT k = 0;
 
-	for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
 	{
-		vertices[k].Pos = box.Vertices[i].Position;
-		vertices[k].Normal = box.Vertices[i].Normal;
-		vertices[k].TexC = box.Vertices[i].TexC;
-		vertices[k].Tangent = box.Vertices[i].TangentU;
+		if (mSubMeshes.find(mScene.objectsInScene[i].meshName) == mSubMeshes.end())
+		{
+			GeometryGenerator::MeshData tempMesh = geoGen.LoadModel(mScene.objectsInScene[i].meshName);
+
+			totalVertexCount += tempMesh.Vertices.size();
+
+			auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
+			tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
+			tempSubMesh->StartIndexLocation = currentStartIndexCount;
+			tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
+
+			currentStartIndexCount += tempMesh.Indices32.size();
+			currentBaseVertexLocation += tempMesh.Vertices.size();
+
+			mSubMeshes[mScene.objectsInScene[i].meshName] = std::move(tempSubMesh);
+
+			vertices.resize(totalVertexCount);
+
+			for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
+			{
+				vertices[k].Pos = tempMesh.Vertices[i].Position;
+				vertices[k].Normal = tempMesh.Vertices[i].Normal;
+				vertices[k].TexC = tempMesh.Vertices[i].TexC;
+				vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
+			}
+
+			indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
+
+			geo->DrawArgs[mScene.objectsInScene[i].meshName] = *mSubMeshes[mScene.objectsInScene[i].meshName];
+		}
 	}
-
-	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = grid.Vertices[i].Position;
-		vertices[k].Normal = grid.Vertices[i].Normal;
-		vertices[k].TexC = grid.Vertices[i].TexC;
-		vertices[k].Tangent = grid.Vertices[i].TangentU;
-	}
-
-	std::vector<std::uint16_t> indices;
-
-	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
-	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "DemoScene";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -718,9 +679,6 @@ void CrateApp::BuildShapeGeometry()
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
-
-	geo->DrawArgs["box"] = boxSubmesh;
-	geo->DrawArgs["grid"] = gridSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -769,87 +727,55 @@ void CrateApp::BuildFrameResources()
 
 void CrateApp::BuildMaterials()
 {
-	auto brick = std::make_unique<Material>();
-	brick->Name = "brick";
-	brick->MatCBIndex = 0;
-	brick->DiffuseSrvHeapIndex = 0;
-	brick->NormalSrvHeapIndex = 1;
-	brick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	brick->Metallic = 0.0f;
+	int currentCBIndex = 0;
+	int currentHeapIndex = 0;
 
-	auto brick2 = std::make_unique<Material>();
-	brick2->Name = "brick2";
-	brick2->MatCBIndex = 1;
-	brick2->DiffuseSrvHeapIndex = 2;
-	brick2->NormalSrvHeapIndex = 3;
-	brick2->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	brick2->Metallic = 0.0f;
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	{
+		if (mMaterials.find(mScene.objectsInScene[i].meshName + "Material") == mMaterials.end())
+		{
+			auto mat = std::make_unique<Material>();
+			mat->Name = mScene.objectsInScene[i].meshName + "Material";
+			mat->MatCBIndex = currentCBIndex++;
+			mat->DiffuseSrvHeapIndex = currentHeapIndex++;
+			mat->NormalSrvHeapIndex = currentHeapIndex++;
+			mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+			mat->Metallic = 0.0f;
 
-	auto tile = std::make_unique<Material>();
-	tile->Name = "tile";
-	tile->MatCBIndex = 2;
-	tile->DiffuseSrvHeapIndex = 4;
-	tile->NormalSrvHeapIndex = 5;
-	tile->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	tile->Metallic = 0.0f;
-
-	mMaterials["brick"] = std::move(brick);
-	mMaterials["brick2"] = std::move(brick2);
-	mMaterials["tile"] = std::move(tile);
+			mMaterials[mat->Name] = std::move(mat);
+		}
+	}
 }
 
 void CrateApp::BuildRenderItems()
 {
-	// Add the first box
-	auto boxRitem = std::make_unique<RenderItem>();
-	boxRitem->ObjCBIndex = 0;
-	boxRitem->Mat = mMaterials["brick"].get();
-	boxRitem->Geo = mGeometries["DemoScene"].get();
-	boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-	XMStoreFloat4x4(&(boxRitem->World), XMMatrixTranslation(1.0f, 0.0f, 0.0f));
+	int currentCBIndex = 0;
 
-	mAllRitems.push_back(std::move(boxRitem));
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	{
+		auto rItem = std::make_unique<RenderItem>();
+		rItem->ObjCBIndex = currentCBIndex++;
+		rItem->Mat = mMaterials[mScene.objectsInScene[i].meshName + "Material"].get();
+		rItem->Geo = mGeometries[mScene.name].get();
+		rItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rItem->IndexCount = rItem->Geo->DrawArgs[mScene.objectsInScene[i].meshName].IndexCount;
+		rItem->StartIndexLocation = rItem->Geo->DrawArgs[mScene.objectsInScene[i].meshName].StartIndexLocation;
+		rItem->BaseVertexLocation = rItem->Geo->DrawArgs[mScene.objectsInScene[i].meshName].BaseVertexLocation;
+		
+		XMStoreFloat4x4(&(rItem->World), 
+			XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
+			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
+			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z));
 
-	// Add the second box
-	auto box2Ritem = std::make_unique<RenderItem>();
-	box2Ritem->ObjCBIndex = 1;
-	box2Ritem->Mat = mMaterials["brick2"].get();
-	box2Ritem->Geo = mGeometries["DemoScene"].get();
-	box2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	box2Ritem->IndexCount = box2Ritem->Geo->DrawArgs["box"].IndexCount;
-	box2Ritem->StartIndexLocation = box2Ritem->Geo->DrawArgs["box"].StartIndexLocation;
-	box2Ritem->BaseVertexLocation = box2Ritem->Geo->DrawArgs["box"].BaseVertexLocation;
-	XMStoreFloat4x4(&(box2Ritem->World), XMMatrixTranslation(-1.0f, 0.0f, 0.0f));
-
-	mAllRitems.push_back(std::move(box2Ritem));
-
-	// Add the grid
-	auto gridRitem = std::make_unique<RenderItem>();
-	gridRitem->ObjCBIndex = 2;
-	gridRitem->Mat = mMaterials["tile"].get();
-	gridRitem->Geo = mGeometries["DemoScene"].get();
-	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
-	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-	XMStoreFloat4x4(&(gridRitem->World), XMMatrixTranslation(0.0f, -1.0f, 2.0f));
-	XMStoreFloat4x4(&(gridRitem->TexTransform), XMMatrixScaling(5.0f, 5.0f, 1.0f));
-
-	mAllRitems.push_back(std::move(gridRitem));
-
-	double totalIndexCount = 0.0;
+		mAllRitems.push_back(std::move(rItem));
+	}
 
 	// All the render items are opaque.
 	for (auto& e : mAllRitems)
 	{
 		mOpaqueRitems.push_back(e.get());
-		totalIndexCount += e->IndexCount;
 	}
 
-	SetTriangleCount(totalIndexCount / 3.0);
 }
 
 void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
