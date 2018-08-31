@@ -226,7 +226,7 @@ void CrateApp::OnResize()
     D3DApp::OnResize();
 
     // The window resized, so update the aspect ratio and recompute the projection matrix.
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.33f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.33f*MathHelper::Pi, AspectRatio(), 0.1f, 500.0f);
     XMStoreFloat4x4(&mProj, P);
 }
 
@@ -426,8 +426,8 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.EyePosW = mEyePos;
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
-	mMainPassCB.NearZ = 1.0f;
-	mMainPassCB.FarZ = 1000.0f;
+	mMainPassCB.NearZ = 0.1f;
+	mMainPassCB.FarZ = 500.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.SunLightStrength = { mScene.lightStrength.x, mScene.lightStrength.y, mScene.lightStrength.z, 1.0f };
