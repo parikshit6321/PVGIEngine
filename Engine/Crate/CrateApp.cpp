@@ -199,7 +199,7 @@ bool CrateApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	LoadScene("../../Assets/Scenes/DemoScene1.txt");
+	LoadScene("../../Assets/Scenes/DemoScene2.txt");
 	LoadTextures();
     BuildRootSignature();
 	BuildDescriptorHeaps();
