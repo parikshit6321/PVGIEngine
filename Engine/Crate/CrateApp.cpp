@@ -7,6 +7,9 @@
 #include "../../Common/UploadBuffer.h"
 #include "../../Common/GeometryGenerator.h"
 #include "FrameResource.h"
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -73,7 +76,7 @@ struct Scene
 	XMFLOAT3			lightStrength;
 	UINT				numberOfObjects;
 
-	std::vector<std::unique_ptr<SceneObject>> objectsInScene;
+	SceneObject*		objectsInScene;
 };
 
 class CrateApp : public D3DApp
@@ -101,6 +104,7 @@ private:
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
+	void LoadScene(std::string);
 	void LoadTextures();
     void BuildRootSignature();
 	void BuildDescriptorHeaps();
@@ -147,6 +151,7 @@ private:
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
+	Scene mScene;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -195,6 +200,7 @@ bool CrateApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	LoadScene("../../Assets/Scenes/DemoScene1.txt");
 	LoadTextures();
     BuildRootSignature();
 	BuildDescriptorHeaps();
@@ -339,9 +345,9 @@ void CrateApp::OnKeyboardInput(const GameTimer& gt)
 void CrateApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = 0.0f;
-	mEyePos.z = -3.0f;
-	mEyePos.y = 1.0f;
+	mEyePos.x = mScene.cameraPosition.x;
+	mEyePos.y = mScene.cameraPosition.y;
+	mEyePos.z = mScene.cameraPosition.z;
 
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
@@ -425,11 +431,49 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
-	mMainPassCB.SunLightStrength = { 2.0f, 2.0f, 2.0f, 1.0f };
-	mMainPassCB.SunLightDirection = { 0.5f, -0.5f, 0.5f, 1.0f };
+	mMainPassCB.SunLightStrength = { mScene.lightStrength.x, mScene.lightStrength.y, mScene.lightStrength.z, 1.0f };
+	mMainPassCB.SunLightDirection = { mScene.lightDirection.x, mScene.lightDirection.y, mScene.lightDirection.z, 1.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
+}
+
+void CrateApp::LoadScene(std::string sceneFilePath)
+{
+	std::ifstream inputFile;
+	inputFile.open(sceneFilePath, std::fstream::in);
+
+	std::string name;
+	XMFLOAT3 cameraPosition;
+	XMFLOAT3 lightDirection;
+	XMFLOAT3 lightStrength;
+	UINT numberOfObjects;
+
+	inputFile >> name;
+	inputFile >> cameraPosition.x >> cameraPosition.y >> cameraPosition.z;
+	inputFile >> lightDirection.x >> lightDirection.y >> lightDirection.z;
+	inputFile >> lightStrength.x >> lightStrength.y >> lightStrength.z;
+	inputFile >> numberOfObjects;
+
+	mScene.name = name;
+	mScene.cameraPosition = cameraPosition;
+	mScene.lightDirection = lightDirection;
+	mScene.lightStrength = lightStrength;
+	mScene.numberOfObjects = numberOfObjects;
+
+	mScene.objectsInScene = new SceneObject[numberOfObjects];
+
+	for (int i = 0; i < numberOfObjects; ++i)
+	{
+		inputFile >> mScene.objectsInScene[i].meshName;
+		inputFile >> mScene.objectsInScene[i].diffuseOpacityTextureName;
+		inputFile >> mScene.objectsInScene[i].normalRoughnessTextureName;
+		inputFile >> mScene.objectsInScene[i].position.x >> mScene.objectsInScene[i].position.y >> mScene.objectsInScene[i].position.z;
+		inputFile >> mScene.objectsInScene[i].rotation.x >> mScene.objectsInScene[i].rotation.y >> mScene.objectsInScene[i].rotation.z;
+		inputFile >> mScene.objectsInScene[i].scale.x >> mScene.objectsInScene[i].scale.y >> mScene.objectsInScene[i].scale.z;
+	}
+
+	inputFile.close();
 }
 
 void CrateApp::LoadTextures()
