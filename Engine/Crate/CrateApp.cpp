@@ -771,9 +771,16 @@ void CrateApp::BuildRenderItems()
 
 	mAllRitems.push_back(std::move(gridRitem));
 
+	double totalIndexCount = 0.0;
+
 	// All the render items are opaque.
-	for(auto& e : mAllRitems)
+	for (auto& e : mAllRitems)
+	{
 		mOpaqueRitems.push_back(e.get());
+		totalIndexCount += e->IndexCount;
+	}
+
+	SetTriangleCount(totalIndexCount / 3.0);
 }
 
 void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

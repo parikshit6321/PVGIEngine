@@ -33,9 +33,7 @@ public:
 	HINSTANCE AppInst()const;
 	HWND      MainWnd()const;
 	float     AspectRatio()const;
-
-    bool Get4xMsaaState()const;
-    void Set4xMsaaState(bool value);
+	void	  SetTriangleCount(double);
 
 	int Run();
  
@@ -116,5 +114,6 @@ protected:
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	int mClientWidth = 800;
 	int mClientHeight = 600;
+	float mTriangleCountInMil = 0.0f;
 };
 
