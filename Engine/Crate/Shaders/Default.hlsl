@@ -8,7 +8,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D    gDiffuseOpacityMap : register(t0);
-Texture2D	 gNormalGlossMap : register(t1);
+Texture2D	 gNormalRoughnessMap : register(t1);
 
 SamplerState gsamAnisotropicWrap  : register(s4);
 
@@ -97,8 +97,8 @@ float4 PS(VertexOut pin) : SV_Target
 	if (opacity < 0.1f)
 		discard;
 
-	float4 normalT = gNormalGlossMap.Sample(gsamAnisotropicWrap, pin.TexC);
-	float roughness = (1.0f - normalT.a);
+	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float roughness = normalT.a;
 	// Interpolating normal can unnormalize it, so renormalize it.
 	pin.NormalW = normalize(pin.NormalW);
 
