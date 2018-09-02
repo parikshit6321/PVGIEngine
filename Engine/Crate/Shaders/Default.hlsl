@@ -67,9 +67,9 @@ struct VertexOut
 
 struct PixelOut
 {
-	float4 albedo	: SV_TARGET0;
-	float4 normal	: SV_TARGET1;
-	float4 position	: SV_TARGET2;
+	float4 DiffuseMetallicGBuffer	: SV_TARGET0;
+	float4 NormalRoughnessGBuffer	: SV_TARGET1;
+	float4 PositionDepthGBuffer		: SV_TARGET2;
 };
 
 VertexOut VS(VertexIn vin)
@@ -98,8 +98,24 @@ VertexOut VS(VertexIn vin)
 PixelOut PS(VertexOut pin) : SV_Target
 {
 	PixelOut output;
-	output.albedo = float4(1.0f, 0.0f, 0.0f, 0.0f);
-	output.normal = float4(1.0f, 0.0f, 0.0f, 0.0f);
-	output.position = float4(1.0f, 0.0f, 0.0f, 0.0f);
+
+	float4 albedo = gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float opacity = albedo.a;
+
+	// Discard the current fragment if it's not opaque.
+	if (opacity < 0.1f)
+		discard;
+
+	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float roughness = normalT.a;
+	// Interpolating normal can unnormalize it, so renormalize it.
+	pin.NormalW = normalize(pin.NormalW);
+
+	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
+
+	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic);
+	output.NormalRoughnessGBuffer = float4(N, roughness);
+	output.PositionDepthGBuffer = float4(pin.PosW, pin.PosH.z);
+
 	return output;
 }

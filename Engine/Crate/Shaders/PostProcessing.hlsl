@@ -7,11 +7,11 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
-Texture2D    gDiffuseMetallicMap : register(t0);
-Texture2D	 gNormalRoughnessMap : register(t1);
-Texture2D	 gWorldPositionDepthMap : register(t2);
+Texture2D    DiffuseMetallicGBuffer  : register(t0);
+Texture2D	 NormalRoughnessGBuffer  : register(t1);
+Texture2D	 PositionDepthGBuffer	 : register(t2);
 
-SamplerState gsamAnisotropicWrap  : register(s4);
+SamplerState gsamAnisotropicWrap	 : register(s4);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b1)
@@ -32,16 +32,6 @@ cbuffer cbPass : register(b1)
 	float gDeltaTime;
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
-};
-
-static const float2 gTexCoords[6] =
-{
-	float2(0.0f, 1.0f),
-	float2(0.0f, 0.0f),
-	float2(1.0f, 0.0f),
-	float2(0.0f, 1.0f),
-	float2(1.0f, 0.0f),
-	float2(1.0f, 1.0f)
 };
 
 struct VertexIn
@@ -77,7 +67,56 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 albedo = gDiffuseMetallicMap.Sample(gsamAnisotropicWrap, pin.TexC);
-	return float4(albedo.rgb, 1.0f);
-	//return float4(0.0f, 1.0f, 0.0f, 1.0f);
+	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float metallic = albedo.a;
+	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float roughness = normal.a;
+	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float depth = position.a;
+
+	float3 N = normal.xyz;
+	float3 V = normalize(gEyePosW - position.xyz);
+
+	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
+	float3 H = normalize(V + L);
+
+	float NdotV = max(dot(N, V), 0.0f);
+	float NdotL = max(dot(N, L), 0.0f);
+	float VdotH = max(dot(V, H), 0.0f);
+	float NdotH = max(dot(N, H), 0.0f);
+
+	// BRDF : Disney Diffuse + GGX Specular
+
+	// Calculate Fresnel effect
+	float3 F0 = float3(0.04f, 0.04f, 0.04f);
+	F0 = lerp(F0, albedo.rgb, metallic);
+	float3 F = FresnelSchlick(VdotH, F0);
+
+	// Calculate Normal distribution function
+	float NDF = DistributionGGX(NdotH, roughness);
+
+	// Calculate Geometry function
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+
+	float3 numerator = (F * NDF * G);
+	float denominator = (4.0f * NdotV * NdotL);
+	float3 specular = numerator / max(denominator, 0.001f);
+
+	float3 kS = F;
+	float3 kD = (float3(1.0f, 1.0f, 1.0f) - kS);
+
+	kD *= (1.0f - metallic);
+
+	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
+
+	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
+
+	// ACES Tonemapping
+	directLight.rgb = ACESFitted(directLight.rgb);
+
+	// Gamma Correction
+	float gc = (1.0f / 2.2f);
+	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
+
+	return float4(directLight.rgb, 1.0f);
 }
