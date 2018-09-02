@@ -156,6 +156,8 @@ private:
 
 	Scene mScene;
 	UINT mNumTexturesLoaded = 0;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> mGBuffers[3];
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -599,6 +601,24 @@ void CrateApp::BuildDescriptorHeaps()
 			hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
 
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	rtvhDescriptor.Offset(2, mRtvDescriptorSize);
+
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.Texture2D.PlaneSlice = 0;
+	
+	for (int i = 0; i < 3; ++i)
+	{
+		md3dDevice->CreateRenderTargetView(mGBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
+		
+		if (i != 2)
+			rtvhDescriptor.Offset(1, mRtvDescriptorSize);
+	}
+	
 }
 
 void CrateApp::BuildShadersAndInputLayout()
