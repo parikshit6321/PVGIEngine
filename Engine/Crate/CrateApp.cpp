@@ -811,6 +811,16 @@ void CrateApp::BuildMaterials()
 			mMaterials[mat->Name] = std::move(mat);
 		}
 	}
+
+	auto mat = std::make_unique<Material>();
+	mat->Name = "PostProcessingMaterial";
+	mat->MatCBIndex = currentCBIndex++;
+	mat->DiffuseSrvHeapIndex = currentHeapIndex++;
+	mat->NormalSrvHeapIndex = currentHeapIndex++;
+	mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	mat->Metallic = 0.0f;
+
+	mMaterials[mat->Name] = std::move(mat);
 }
 
 void CrateApp::BuildRenderItems()
@@ -847,7 +857,7 @@ void CrateApp::BuildRenderItems()
 	XMStoreFloat4x4(&mQuadRItem->World, XMMatrixIdentity());
 	XMStoreFloat4x4(&mQuadRItem->TexTransform, XMMatrixIdentity());
 	mQuadRItem->ObjCBIndex = currentCBIndex;
-	mQuadRItem->Mat = mMaterials[mScene.objectsInScene[0].meshName + "Material"].get();
+	mQuadRItem->Mat = mMaterials["PostProcessingMaterial"].get();
 	mQuadRItem->Geo = mGeometries[mScene.name].get();
 	mQuadRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	mQuadRItem->IndexCount = mQuadRItem->Geo->DrawArgs["Quad"].IndexCount;
