@@ -520,7 +520,7 @@ void CrateApp::LoadTextures()
 void CrateApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
     // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -659,6 +659,35 @@ void CrateApp::BuildShapeGeometry()
 			geo->DrawArgs[mScene.objectsInScene[i].meshName] = *mSubMeshes[mScene.objectsInScene[i].meshName];
 		}
 	}
+
+	// Create the post processing quad geometry
+	GeometryGenerator::MeshData tempMesh = geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+
+	totalVertexCount += tempMesh.Vertices.size();
+
+	auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
+	tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
+	tempSubMesh->StartIndexLocation = currentStartIndexCount;
+	tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
+
+	currentStartIndexCount += tempMesh.Indices32.size();
+	currentBaseVertexLocation += tempMesh.Vertices.size();
+
+	mSubMeshes["PostProcessingQuad"] = std::move(tempSubMesh);
+
+	vertices.resize(totalVertexCount);
+
+	for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = tempMesh.Vertices[i].Position;
+		vertices[k].Normal = tempMesh.Vertices[i].Normal;
+		vertices[k].TexC = tempMesh.Vertices[i].TexC;
+		vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
+	}
+
+	indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
+
+	geo->DrawArgs["PostProcessingQuad"] = *mSubMeshes["PostProcessingQuad"];
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
