@@ -41,50 +41,35 @@ cbuffer cbPass : register(b1)
 	float4 gSunLightDirection;
 };
 
-cbuffer cbMaterial : register(b2)
+static const float2 gTexCoords[6] =
 {
-	float4 gDiffuseAlbedo;
-	float3 gFresnelR0;
-	float  gMetallic;
-	float4x4 gMatTransform;
-};
-
-struct VertexIn
-{
-	float3 PosL    : POSITION;
-	float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentU : TANGENT;
+	float2(0.0f, 1.0f),
+	float2(0.0f, 0.0f),
+	float2(1.0f, 0.0f),
+	float2(0.0f, 1.0f),
+	float2(1.0f, 0.0f),
+	float2(1.0f, 1.0f)
 };
 
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION;
-	float3 PosW    : POSITION;
-	float3 NormalW : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentW : TANGENT;
+	float4 PosH : SV_POSITION;
+	float3 PosV : POSITION;
+	float2 TexC : TEXCOORD0;
 };
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(uint vid : SV_VertexID)
 {
-	VertexOut vout = (VertexOut)0.0f;
+	VertexOut vout;
 
-	// Transform to world space.
-	float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-	vout.PosW = posW.xyz;
+	vout.TexC = gTexCoords[vid];
 
-	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-	vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
+	// Quad covering screen in NDC space.
+	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
 
-	vout.TangentW = mul(vin.TangentU, (float3x3)gWorld);
-
-	// Transform to homogeneous clip space.
-	vout.PosH = mul(posW, gViewProj);
-
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-	vout.TexC = mul(texC, gMatTransform).xy;
+	// Transform quad corners to view space near plane.
+	float4 ph = mul(vout.PosH, gInvProj);
+	vout.PosV = ph.xyz / ph.w;
 
 	return vout;
 }
