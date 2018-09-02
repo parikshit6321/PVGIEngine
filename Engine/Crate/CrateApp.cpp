@@ -136,7 +136,8 @@ private:
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
     ComPtr<ID3D12PipelineState> mOpaquePSO = nullptr;
- 
+	ComPtr<ID3D12PipelineState> mPostProcessingPSO = nullptr;
+
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 
@@ -600,7 +601,9 @@ void CrateApp::BuildShadersAndInputLayout()
 {
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_0");
-	
+	mShaders["postProcessingVS"] = d3dUtil::CompileShader(L"Shaders\\PostProcessing.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["postProcessingPS"] = d3dUtil::CompileShader(L"Shaders\\PostProcessing.hlsl", nullptr, "PS", "ps_5_0");
+
     mInputLayout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -743,6 +746,36 @@ void CrateApp::BuildPSOs()
 	opaquePsoDesc.SampleDesc.Quality = 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
     ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mOpaquePSO)));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC postProcessingPsoDesc;
+
+	//
+	// PSO for opaque objects.
+	//
+	ZeroMemory(&postProcessingPsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	postProcessingPsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+	postProcessingPsoDesc.pRootSignature = mRootSignature.Get();
+	postProcessingPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["postProcessingVS"]->GetBufferPointer()),
+		mShaders["postProcessingVS"]->GetBufferSize()
+	};
+	postProcessingPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["postProcessingPS"]->GetBufferPointer()),
+		mShaders["postProcessingPS"]->GetBufferSize()
+	};
+	postProcessingPsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	postProcessingPsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	postProcessingPsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	postProcessingPsoDesc.SampleMask = UINT_MAX;
+	postProcessingPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	postProcessingPsoDesc.NumRenderTargets = 1;
+	postProcessingPsoDesc.RTVFormats[0] = mBackBufferFormat;
+	postProcessingPsoDesc.SampleDesc.Count = 1;
+	postProcessingPsoDesc.SampleDesc.Quality = 0;
+	postProcessingPsoDesc.DSVFormat = mDepthStencilFormat;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&postProcessingPsoDesc, IID_PPV_ARGS(&mPostProcessingPSO)));
 }
 
 void CrateApp::BuildFrameResources()
