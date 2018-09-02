@@ -65,6 +65,13 @@ struct VertexOut
 	float3 TangentW : TANGENT;
 };
 
+struct PixelOut
+{
+	float4 albedo	: SV_TARGET0;
+	float4 normal	: SV_TARGET1;
+	float4 position	: SV_TARGET2;
+};
+
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
@@ -88,63 +95,11 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
-float4 PS(VertexOut pin) : SV_Target
+PixelOut PS(VertexOut pin) : SV_Target
 {
-	float4 albedo = gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC);
-	float opacity = albedo.a;
-
-	// Discard the current fragment if it's not opaque.
-	if (opacity < 0.1f)
-		discard;
-
-	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
-	float roughness = normalT.a;
-	// Interpolating normal can unnormalize it, so renormalize it.
-	pin.NormalW = normalize(pin.NormalW);
-
-	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
-	float3 V = normalize(gEyePosW - pin.PosW);
-
-	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
-	float3 H = normalize(V + L);
-
-	float NdotV = max(dot(N, V), 0.0f);
-	float NdotL = max(dot(N, L), 0.0f);
-	float VdotH = max(dot(V, H), 0.0f);
-	float NdotH = max(dot(N, H), 0.0f);
-
-	// BRDF : Disney Diffuse + GGX Specular
-
-	// Calculate Fresnel effect
-	float3 F0 = float3(0.04f, 0.04f, 0.04f);
-	F0 = lerp(F0, albedo.rgb, gMetallic);
-	float3 F = FresnelSchlick(VdotH, F0);
-
-	// Calculate Normal distribution function
-	float NDF = DistributionGGX(NdotH, roughness);
-
-	// Calculate Geometry function
-	float G = GeometrySmith(NdotV, NdotL, roughness);
-
-	float3 numerator = (F * NDF * G);
-	float denominator = (4.0f * NdotV * NdotL);
-	float3 specular = numerator / max(denominator, 0.001f);
-
-	float3 kS = F;
-	float3 kD = (float3(1.0f, 1.0f, 1.0f) - kS);
-
-	kD *= (1.0f - gMetallic);
-
-	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
-	
-	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
-
-	// ACES Tonemapping
-	directLight.rgb = ACESFitted(directLight.rgb);
-
-	// Gamma Correction
-	float gc = (1.0f / 2.2f);
-	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
-
-	return float4(directLight, 1.0f);
+	PixelOut output;
+	output.albedo = float4(1.0f, 0.0f, 0.0f, 0.0f);
+	output.normal = float4(1.0f, 0.0f, 0.0f, 0.0f);
+	output.position = float4(1.0f, 0.0f, 0.0f, 0.0f);
+	return output;
 }

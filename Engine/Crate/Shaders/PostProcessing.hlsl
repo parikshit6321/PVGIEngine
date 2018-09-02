@@ -71,4 +71,5 @@ float4 PS(VertexOut pin) : SV_Target
 {
 	float4 albedo = gDiffuseMetallicMap.Sample(gsamAnisotropicWrap, pin.TexC);
 	return float4(albedo.rgb, 1.0f);
+	//return float4(0.0f, 1.0f, 0.0f, 1.0f);
 }
