@@ -760,7 +760,7 @@ void CrateApp::BuildShapeGeometry()
 	}
 
 	// Create the post processing quad geometry
-	GeometryGenerator::MeshData tempMesh = geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	GeometryGenerator::MeshData tempMesh = geoGen.CreateQuad(0.0f, 0.0f, 2.0f, 2.0f, 0.0f);
 
 	totalVertexCount += tempMesh.Vertices.size();
 

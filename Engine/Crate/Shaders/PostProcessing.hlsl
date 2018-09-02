@@ -44,6 +44,14 @@ static const float2 gTexCoords[6] =
 	float2(1.0f, 1.0f)
 };
 
+struct VertexIn
+{
+	float3 PosL    : POSITION;
+	float3 NormalL : NORMAL;
+	float2 TexC    : TEXCOORD;
+	float3 TangentU : TANGENT;
+};
+
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
@@ -51,11 +59,11 @@ struct VertexOut
 	float2 TexC : TEXCOORD0;
 };
 
-VertexOut VS(uint vid : SV_VertexID)
+VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
 
-	vout.TexC = gTexCoords[vid];
+	vout.TexC = vin.TexC;
 
 	// Quad covering screen in NDC space.
 	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
