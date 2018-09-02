@@ -570,7 +570,7 @@ void CrateApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = mNumTexturesLoaded;
+	srvHeapDesc.NumDescriptors = mNumTexturesLoaded + 3;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -597,7 +597,17 @@ void CrateApp::BuildDescriptorHeaps()
 
 		++it;
 
-		if (it != mTextures.end())
+		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	}
+
+	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
+
+		if (i != 2)
 			hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
 
