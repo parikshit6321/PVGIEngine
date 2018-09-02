@@ -295,7 +295,9 @@ void CrateApp::Draw(const GameTimer& gt)
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-    DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
+    //DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
+
+	DrawPostProcessingQuad(mCommandList.Get());
 
     // Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -942,12 +944,12 @@ void CrateApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	tex.Offset(mQuadRItem->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
 
-	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + mQuadRItem->ObjCBIndex*objCBByteSize;
-	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + mQuadRItem->Mat->MatCBIndex*matCBByteSize;
+	//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + mQuadRItem->ObjCBIndex*objCBByteSize;
+	//D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + mQuadRItem->Mat->MatCBIndex*matCBByteSize;
 
 	cmdList->SetGraphicsRootDescriptorTable(0, tex);
-	cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-	cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+	//cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+	//cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 	cmdList->DrawIndexedInstanced(mQuadRItem->IndexCount, 1, mQuadRItem->StartIndexLocation, mQuadRItem->BaseVertexLocation, 0);
 	

@@ -13,13 +13,6 @@ Texture2D	 gWorldPositionDepthMap : register(t2);
 
 SamplerState gsamAnisotropicWrap  : register(s4);
 
-// Constant data that varies per frame.
-cbuffer cbPerObject : register(b0)
-{
-	float4x4 gWorld;
-	float4x4 gTexTransform;
-};
-
 // Constant data that varies per material.
 cbuffer cbPass : register(b1)
 {
