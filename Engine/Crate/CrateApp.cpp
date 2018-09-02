@@ -784,7 +784,7 @@ void CrateApp::BuildPSOs()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC postProcessingPsoDesc;
 
 	//
-	// PSO for opaque objects.
+	// PSO for post processing quad.
 	//
 	ZeroMemory(&postProcessingPsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	postProcessingPsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
