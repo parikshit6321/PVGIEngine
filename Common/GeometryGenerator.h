@@ -77,27 +77,9 @@ public:
 		std::vector<uint16> mIndices16;
 	};
 
-	///<summary>
-	/// Creates a box centered at the origin with the given dimensions, where each
-    /// face has m rows and n columns of vertices.
-	///</summary>
-    MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
 
-	///<summary>
-	/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
-	/// at the origin with the specified width and depth.
-	///</summary>
-    MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
-
-	///<summary>
-	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
-	///</summary>
-    MeshData CreateQuad(float x, float y, float w, float h, float depth);
-
+	MeshData CreateQuad(float x, float y, float w, float h, float depth);
 	MeshData LoadModel(std::string modelName);
 
-private:
-	void Subdivide(MeshData& meshData);
-    Vertex MidPoint(const Vertex& v0, const Vertex& v1);
 };
 

@@ -33,8 +33,7 @@ public:
 	HINSTANCE AppInst()const;
 	HWND      MainWnd()const;
 	float     AspectRatio()const;
-	void	  SetTriangleCount(double);
-
+	
 	int Run();
  
     virtual bool Initialize();
