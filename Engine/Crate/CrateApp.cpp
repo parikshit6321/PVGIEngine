@@ -112,6 +112,7 @@ private:
     void BuildMaterials();
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+	void DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
@@ -140,6 +141,9 @@ private:
 
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+
+	// Post processing quad render item
+	std::unique_ptr<RenderItem> mQuadRItem;
 
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mOpaqueRitems;
@@ -676,7 +680,7 @@ void CrateApp::BuildShapeGeometry()
 	currentStartIndexCount += tempMesh.Indices32.size();
 	currentBaseVertexLocation += tempMesh.Vertices.size();
 
-	mSubMeshes["PostProcessingQuad"] = std::move(tempSubMesh);
+	mSubMeshes["Quad"] = std::move(tempSubMesh);
 
 	vertices.resize(totalVertexCount);
 
@@ -690,7 +694,7 @@ void CrateApp::BuildShapeGeometry()
 
 	indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
 
-	geo->DrawArgs["PostProcessingQuad"] = *mSubMeshes["PostProcessingQuad"];
+	geo->DrawArgs["Quad"] = *mSubMeshes["Quad"];
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
@@ -838,6 +842,18 @@ void CrateApp::BuildRenderItems()
 		mOpaqueRitems.push_back(e.get());
 	}
 
+	// Make the post processing quad render item
+	mQuadRItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&mQuadRItem->World, XMMatrixIdentity());
+	XMStoreFloat4x4(&mQuadRItem->TexTransform, XMMatrixIdentity());
+	mQuadRItem->ObjCBIndex = currentCBIndex;
+	mQuadRItem->Mat = mMaterials[mScene.objectsInScene[0].meshName + "Material"].get();
+	mQuadRItem->Geo = mGeometries[mScene.name].get();
+	mQuadRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	mQuadRItem->IndexCount = mQuadRItem->Geo->DrawArgs["Quad"].IndexCount;
+	mQuadRItem->StartIndexLocation = mQuadRItem->Geo->DrawArgs["Quad"].StartIndexLocation;
+	mQuadRItem->BaseVertexLocation = mQuadRItem->Geo->DrawArgs["Quad"].BaseVertexLocation;
+
 }
 
 void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -869,6 +885,32 @@ void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::ve
 
         cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
     }
+}
+
+void CrateApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
+{
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
+	auto matCB = mCurrFrameResource->MaterialCB->Resource();
+
+	cmdList->IASetVertexBuffers(0, 1, &mQuadRItem->Geo->VertexBufferView());
+	cmdList->IASetIndexBuffer(&mQuadRItem->Geo->IndexBufferView());
+	cmdList->IASetPrimitiveTopology(mQuadRItem->PrimitiveType);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	tex.Offset(mQuadRItem->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
+
+	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + mQuadRItem->ObjCBIndex*objCBByteSize;
+	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + mQuadRItem->Mat->MatCBIndex*matCBByteSize;
+
+	cmdList->SetGraphicsRootDescriptorTable(0, tex);
+	cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+	cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+
+	cmdList->DrawIndexedInstanced(mQuadRItem->IndexCount, 1, mQuadRItem->StartIndexLocation, mQuadRItem->BaseVertexLocation, 0);
+	
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> CrateApp::GetStaticSamplers()
