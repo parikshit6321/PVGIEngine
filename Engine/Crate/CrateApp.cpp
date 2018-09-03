@@ -127,6 +127,7 @@ private:
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
@@ -316,6 +317,9 @@ void CrateApp::Draw(const GameTimer& gt)
 		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mGBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
+
+	ID3D12DescriptorHeap* descriptorHeapsPostProcessing[] = { mSrvPostProcessingDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsPostProcessing), descriptorHeapsPostProcessing);
 
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
@@ -626,12 +630,30 @@ void CrateApp::BuildDescriptorHeaps()
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, 
 			&resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mGBuffers[i].GetAddressOf())));
 	}
+	
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	rtvhDescriptor.Offset(2, mRtvDescriptorSize);
+
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.Texture2D.PlaneSlice = 0;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		md3dDevice->CreateRenderTargetView(mGBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
+
+		if (i != 2)
+			rtvhDescriptor.Offset(1, mRtvDescriptorSize);
+	}
 
 	//
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = mNumTexturesLoaded + 3;
+	srvHeapDesc.NumDescriptors = mNumTexturesLoaded;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -661,36 +683,34 @@ void CrateApp::BuildDescriptorHeaps()
 		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
 
-	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	srvDesc.Texture2D.MipLevels = 1;
+	//
+	// Create the Post Processing SRV heap.
+	//
+	D3D12_DESCRIPTOR_HEAP_DESC srvPostProcessingHeapDesc = {};
+	srvPostProcessingHeapDesc.NumDescriptors = 3;
+	srvPostProcessingHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvPostProcessingHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvPostProcessingHeapDesc, IID_PPV_ARGS(&mSrvPostProcessingDescriptorHeap)));
+
+	//
+	// Fill out the heap with actual descriptors.
+	//
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hPostProcessingDescriptor(mSrvPostProcessingDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvPostProcessingDesc = {};
+	srvPostProcessingDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvPostProcessingDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvPostProcessingDesc.Texture2D.MostDetailedMip = 0;
+	srvPostProcessingDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvPostProcessingDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvPostProcessingDesc.Texture2D.MipLevels = 1;
 
 	for (int i = 0; i < 3; ++i)
 	{
-		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
+		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvPostProcessingDesc, hPostProcessingDescriptor);
 
-		if (i != 2)
-			hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+		hPostProcessingDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	rtvhDescriptor.Offset(2, mRtvDescriptorSize);
-
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
-	
-	for (int i = 0; i < 3; ++i)
-	{
-		md3dDevice->CreateRenderTargetView(mGBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
-		
-		if (i != 2)
-			rtvhDescriptor.Offset(1, mRtvDescriptorSize);
-	}
-	
-	
 }
 
 void CrateApp::BuildShadersAndInputLayout()
@@ -909,8 +929,8 @@ void CrateApp::BuildMaterials()
 	auto mat = std::make_unique<Material>();
 	mat->Name = "PostProcessingMaterial";
 	mat->MatCBIndex = currentCBIndex++;
-	mat->DiffuseSrvHeapIndex = currentHeapIndex++;
-	mat->NormalSrvHeapIndex = currentHeapIndex++;
+	mat->DiffuseSrvHeapIndex = 0;
+	mat->NormalSrvHeapIndex = 0;
 	mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	mat->Metallic = 0.0f;
 
