@@ -183,10 +183,7 @@ struct MeshGeometry
 
 struct MaterialConstants
 {
-	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float Metallic = 0.0f;
-
+	DirectX::XMFLOAT4 Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
@@ -204,9 +201,6 @@ struct Material
 	// Index into SRV heap for diffuse texture.
 	int DiffuseSrvHeapIndex = -1;
 
-	// Index into SRV heap for normal texture.
-	int NormalSrvHeapIndex = -1;
-
 	// Dirty flag indicating the material has changed and we need to update the constant buffer.
 	// Because we have a material constant buffer for each FrameResource, we have to apply the
 	// update to each FrameResource.  Thus, when we modify a material we should set 
@@ -214,9 +208,7 @@ struct Material
 	int NumFramesDirty = gNumFrameResources;
 
 	// Material constant buffer data used for shading.
-	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float Metallic = 0.0f;
+	DirectX::XMFLOAT4 Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
 

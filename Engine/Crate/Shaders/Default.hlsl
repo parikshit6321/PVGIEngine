@@ -43,10 +43,8 @@ cbuffer cbPass : register(b1)
 
 cbuffer cbMaterial : register(b2)
 {
-	float4 gDiffuseAlbedo;
-	float3 gFresnelR0;
-	float  gMetallic;
-	float4x4 gMatTransform;
+	float4		gMetallic;
+	float4x4	gMatTransform;
 };
 
 struct VertexIn
@@ -114,7 +112,7 @@ PixelOut PS(VertexOut pin) : SV_Target
 
 	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
 
-	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic);
+	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic.r);
 	output.NormalRoughnessGBuffer = float4(N, roughness);
 	output.PositionDepthGBuffer = float4(pin.PosW, pin.PosH.z);
 

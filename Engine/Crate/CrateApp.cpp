@@ -440,8 +440,6 @@ void CrateApp::UpdateMaterialCBs(const GameTimer& gt)
 			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
 
 			MaterialConstants matConstants;
-			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-			matConstants.FresnelR0 = mat->FresnelR0;
 			matConstants.Metallic = mat->Metallic;
 			XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 
@@ -958,12 +956,12 @@ void CrateApp::BuildMaterials()
 			auto mat = std::make_unique<Material>();
 			mat->Name = mScene.objectsInScene[i].meshName + "Material";
 			mat->MatCBIndex = currentCBIndex++;
-			mat->DiffuseSrvHeapIndex = currentHeapIndex++;
-			mat->NormalSrvHeapIndex = currentHeapIndex++;
-			mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-			mat->Metallic = 0.0f;
+			mat->DiffuseSrvHeapIndex = currentHeapIndex;
+			mat->Metallic = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 
 			mMaterials[mat->Name] = std::move(mat);
+
+			currentHeapIndex += 2;
 		}
 	}
 
@@ -971,9 +969,7 @@ void CrateApp::BuildMaterials()
 	mat->Name = "PostProcessingMaterial";
 	mat->MatCBIndex = currentCBIndex++;
 	mat->DiffuseSrvHeapIndex = 0;
-	mat->NormalSrvHeapIndex = 0;
-	mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	mat->Metallic = 0.0f;
+	mat->Metallic = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	mMaterials[mat->Name] = std::move(mat);
 }
