@@ -7,10 +7,11 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
-Texture2D    gDiffuseOpacityMap : register(t0);
-Texture2D	 gNormalRoughnessMap : register(t1);
+Texture2D    gDiffuseOpacityMap		 : register(t0);
+Texture2D	 gNormalRoughnessMap	 : register(t1);
 
-SamplerState gsamAnisotropicWrap  : register(s4);
+SamplerState gsamLinearWrap			 : register(s0);
+SamplerState gsamAnisotropicWrap	 : register(s1);
 
 // Constant data that varies per frame.
 cbuffer cbPerObject : register(b0)
