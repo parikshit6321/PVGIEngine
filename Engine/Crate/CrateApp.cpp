@@ -125,6 +125,7 @@ private:
     UINT mCbvSrvDescriptorSize = 0;
 
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mRootSignaturePostProcessing = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
@@ -320,6 +321,8 @@ void CrateApp::Draw(const GameTimer& gt)
 
 	ID3D12DescriptorHeap* descriptorHeapsPostProcessing[] = { mSrvPostProcessingDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsPostProcessing), descriptorHeapsPostProcessing);
+
+	mCommandList->SetGraphicsRootSignature(mRootSignaturePostProcessing.Get());
 
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
@@ -563,7 +566,7 @@ void CrateApp::LoadTextures()
 void CrateApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
     // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -598,6 +601,44 @@ void CrateApp::BuildRootSignature()
         serializedRootSig->GetBufferPointer(),
         serializedRootSig->GetBufferSize(),
         IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+
+	CD3DX12_DESCRIPTOR_RANGE texTablePostProcessing;
+	texTablePostProcessing.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameterPostProcessing[4];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameterPostProcessing[0].InitAsDescriptorTable(1, &texTablePostProcessing, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameterPostProcessing[1].InitAsConstantBufferView(0);
+	slotRootParameterPostProcessing[2].InitAsConstantBufferView(1);
+	slotRootParameterPostProcessing[3].InitAsConstantBufferView(2);
+
+	auto staticSamplersPostProcessing = GetStaticSamplers();
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDescPostProcessing(4, slotRootParameterPostProcessing,
+		(UINT)staticSamplersPostProcessing.size(), staticSamplersPostProcessing.data(),
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSigPostProcessing = nullptr;
+	ComPtr<ID3DBlob> errorBlobPostProcessing = nullptr;
+	HRESULT hrPostProcessing = D3D12SerializeRootSignature(&rootSigDescPostProcessing, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSigPostProcessing.GetAddressOf(), errorBlobPostProcessing.GetAddressOf());
+
+	if (errorBlobPostProcessing != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlobPostProcessing->GetBufferPointer());
+	}
+	ThrowIfFailed(hrPostProcessing);
+
+	ThrowIfFailed(md3dDevice->CreateRootSignature(
+		0,
+		serializedRootSigPostProcessing->GetBufferPointer(),
+		serializedRootSigPostProcessing->GetBufferSize(),
+		IID_PPV_ARGS(mRootSignaturePostProcessing.GetAddressOf())));
+
 }
 
 void CrateApp::BuildDescriptorHeaps()
@@ -872,7 +913,7 @@ void CrateApp::BuildPSOs()
 	//
 	ZeroMemory(&postProcessingPsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	postProcessingPsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	postProcessingPsoDesc.pRootSignature = mRootSignature.Get();
+	postProcessingPsoDesc.pRootSignature = mRootSignaturePostProcessing.Get();
 	postProcessingPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["postProcessingVS"]->GetBufferPointer()),
