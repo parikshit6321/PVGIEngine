@@ -74,6 +74,8 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float depth = position.a;
 
+	float3 skyColor = float3(0.80f, 0.941f, 1.0f);
+
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
@@ -118,5 +120,12 @@ float4 PS(VertexOut pin) : SV_Target
 	float gc = (1.0f / 2.2f);
 	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
 
-	return float4(directLight.rgb, 1.0f);
+	float3 resultingColor;
+	
+	if (depth > 0.95f)
+		resultingColor = skyColor;
+	else
+		resultingColor = directLight;
+
+	return float4(resultingColor, 1.0f);
 }
