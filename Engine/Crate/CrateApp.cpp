@@ -324,6 +324,8 @@ void CrateApp::Draw(const GameTimer& gt)
 
 	mCommandList->SetGraphicsRootSignature(mRootSignaturePostProcessing.Get());
 
+	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
@@ -604,18 +606,16 @@ void CrateApp::BuildRootSignature()
 	texTablePostProcessing.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameterPostProcessing[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameterPostProcessing[2];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameterPostProcessing[0].InitAsDescriptorTable(1, &texTablePostProcessing, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameterPostProcessing[1].InitAsConstantBufferView(0);
-	slotRootParameterPostProcessing[2].InitAsConstantBufferView(1);
-	slotRootParameterPostProcessing[3].InitAsConstantBufferView(2);
 
 	auto staticSamplersPostProcessing = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDescPostProcessing(4, slotRootParameterPostProcessing,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDescPostProcessing(2, slotRootParameterPostProcessing,
 		(UINT)staticSamplersPostProcessing.size(), staticSamplersPostProcessing.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -1050,25 +1050,14 @@ void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::ve
 
 void CrateApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 {
-	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-
-	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
-	auto matCB = mCurrFrameResource->MaterialCB->Resource();
-
 	cmdList->IASetVertexBuffers(0, 1, &mQuadRItem->Geo->VertexBufferView());
 	cmdList->IASetIndexBuffer(&mQuadRItem->Geo->IndexBufferView());
 	cmdList->IASetPrimitiveTopology(mQuadRItem->PrimitiveType);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvPostProcessingDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	tex.Offset(mQuadRItem->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
 
-	//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + mQuadRItem->ObjCBIndex*objCBByteSize;
-	//D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + mQuadRItem->Mat->MatCBIndex*matCBByteSize;
-
 	cmdList->SetGraphicsRootDescriptorTable(0, tex);
-	//cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-	//cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 	cmdList->DrawIndexedInstanced(mQuadRItem->IndexCount, 1, mQuadRItem->StartIndexLocation, mQuadRItem->BaseVertexLocation, 0);
 	
