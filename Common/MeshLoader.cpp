@@ -1,13 +1,13 @@
 //***************************************************************************************
-// GeometryGenerator.cpp by Frank Luna (C) 2011 All Rights Reserved.
+// MeshLoader.cpp by Frank Luna (C) 2011 All Rights Reserved.
 //***************************************************************************************
 
-#include "GeometryGenerator.h"
+#include "MeshLoader.h"
 #include <algorithm>
 
 using namespace DirectX;
  
-GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
+MeshLoader::MeshData MeshLoader::CreateQuad(float x, float y, float w, float h, float depth)
 {
     MeshData meshData;
 
@@ -50,7 +50,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
     return meshData;
 }
 
-GeometryGenerator::MeshData GeometryGenerator::LoadModel(std::string modelName)
+MeshLoader::MeshData MeshLoader::LoadModel(std::string modelName)
 {
 	std::ifstream inputFile;
 	inputFile.open("../Assets/Meshes/" + modelName + ".txt", std::fstream::in);

@@ -1,5 +1,5 @@
 //***************************************************************************************
-// GeometryGenerator.h by Frank Luna (C) 2011 All Rights Reserved.
+// MeshLoader.h by Frank Luna (C) 2011 All Rights Reserved.
 //   
 // Defines a static class for procedurally generating the geometry of 
 // common mathematical objects.
@@ -21,7 +21,7 @@
 #include <iomanip>
 #include <fstream>
 
-class GeometryGenerator
+class MeshLoader
 {
 public:
 
@@ -78,8 +78,8 @@ public:
 	};
 
 
-	MeshData CreateQuad(float x, float y, float w, float h, float depth);
-	MeshData LoadModel(std::string modelName);
+	static MeshData CreateQuad(float x, float y, float w, float h, float depth);
+	static MeshData LoadModel(std::string modelName);
 
 };
 

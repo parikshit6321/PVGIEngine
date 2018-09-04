@@ -2,7 +2,7 @@
 // DemoApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-#include "../Common/GeometryGenerator.h"
+#include "../Common/MeshLoader.h"
 #include "RenderObject.h"
 
 using Microsoft::WRL::ComPtr;
@@ -723,9 +723,7 @@ void DemoApp::BuildShadersAndInputLayout()
 
 void DemoApp::BuildShapeGeometry()
 {
-    GeometryGenerator geoGen;
-	
-	size_t totalVertexCount = 0;
+    size_t totalVertexCount = 0;
 	size_t currentStartIndexCount = 0;
 	size_t currentBaseVertexLocation = 0;
 	
@@ -741,7 +739,7 @@ void DemoApp::BuildShapeGeometry()
 	{
 		if (mSubMeshes.find(mScene.objectsInScene[i].meshName) == mSubMeshes.end())
 		{
-			GeometryGenerator::MeshData tempMesh = geoGen.LoadModel(mScene.objectsInScene[i].meshName);
+			MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(mScene.objectsInScene[i].meshName);
 
 			totalVertexCount += tempMesh.Vertices.size();
 
@@ -772,7 +770,7 @@ void DemoApp::BuildShapeGeometry()
 	}
 
 	// Create the post processing quad geometry
-	GeometryGenerator::MeshData tempMesh = geoGen.CreateQuad(0.0f, 0.0f, 2.0f, 2.0f, 0.0f);
+	MeshLoader::MeshData tempMesh = MeshLoader::CreateQuad(0.0f, 0.0f, 2.0f, 2.0f, 0.0f);
 
 	totalVertexCount += tempMesh.Vertices.size();
 
