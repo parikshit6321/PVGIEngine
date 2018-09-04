@@ -91,7 +91,8 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
-	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
+	std::unique_ptr<MeshGeometry> sceneGeometry;
+	
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
@@ -818,7 +819,7 @@ void DemoApp::BuildShapeGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	mGeometries[geo->Name] = std::move(geo);
+	sceneGeometry = std::move(geo);
 }
 
 void DemoApp::BuildPSOs()
@@ -926,7 +927,7 @@ void DemoApp::BuildRenderObjects()
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);
 		rObject->SetMat(mMaterials[mScene.objectsInScene[i].meshName + "Material"].get());
-		rObject->SetGeo(mGeometries[mScene.name].get());
+		rObject->SetGeo(sceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		rObject->SetIndexCount(mScene.objectsInScene[i].meshName);
 		rObject->SetStartIndexLocation(mScene.objectsInScene[i].meshName);
@@ -942,7 +943,7 @@ void DemoApp::BuildRenderObjects()
 
 	// Make the post processing quad render item
 	mQuadrObject = std::make_unique<RenderObject>();
-	mQuadrObject->InitializeAsQuad(mGeometries[mScene.name].get());
+	mQuadrObject->InitializeAsQuad(sceneGeometry.get());
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
