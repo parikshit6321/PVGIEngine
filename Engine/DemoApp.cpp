@@ -1,5 +1,5 @@
 //***************************************************************************************
-// CrateApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
+// DemoApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
 #include "../Common/GeometryGenerator.h"
@@ -37,13 +37,13 @@ struct Scene
 	SceneObject*		objectsInScene;
 };
 
-class CrateApp : public D3DApp
+class DemoApp : public D3DApp
 {
 public:
-    CrateApp(HINSTANCE hInstance);
-    CrateApp(const CrateApp& rhs) = delete;
-    CrateApp& operator=(const CrateApp& rhs) = delete;
-    ~CrateApp();
+    DemoApp(HINSTANCE hInstance);
+    DemoApp(const DemoApp& rhs) = delete;
+    DemoApp& operator=(const DemoApp& rhs) = delete;
+    ~DemoApp();
 
     virtual bool Initialize()override;
 
@@ -130,7 +130,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
     try
     {
-        CrateApp theApp(hInstance);
+        DemoApp theApp(hInstance);
         if(!theApp.Initialize())
             return 0;
 
@@ -143,18 +143,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
     }
 }
 
-CrateApp::CrateApp(HINSTANCE hInstance)
+DemoApp::DemoApp(HINSTANCE hInstance)
     : D3DApp(hInstance)
 {
 }
 
-CrateApp::~CrateApp()
+DemoApp::~DemoApp()
 {
     if(md3dDevice != nullptr)
         FlushCommandQueue();
 }
 
-bool CrateApp::Initialize()
+bool DemoApp::Initialize()
 {
     if(!D3DApp::Initialize())
         return false;
@@ -188,7 +188,7 @@ bool CrateApp::Initialize()
     return true;
 }
  
-void CrateApp::OnResize()
+void DemoApp::OnResize()
 {
     D3DApp::OnResize();
 
@@ -197,7 +197,7 @@ void CrateApp::OnResize()
     XMStoreFloat4x4(&mProj, P);
 }
 
-void CrateApp::Update(const GameTimer& gt)
+void DemoApp::Update(const GameTimer& gt)
 {
     OnKeyboardInput(gt);
 	UpdateCamera(gt);
@@ -221,7 +221,7 @@ void CrateApp::Update(const GameTimer& gt)
 	UpdateMainPassCB(gt);
 }
 
-void CrateApp::Draw(const GameTimer& gt)
+void DemoApp::Draw(const GameTimer& gt)
 {
     auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
@@ -320,17 +320,17 @@ void CrateApp::Draw(const GameTimer& gt)
     mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
-void CrateApp::OnMouseDown(WPARAM btnState, int x, int y)
+void DemoApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
     SetCapture(mhMainWnd);
 }
 
-void CrateApp::OnMouseUp(WPARAM btnState, int x, int y)
+void DemoApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
     ReleaseCapture();
 }
 
-void CrateApp::OnMouseMove(WPARAM btnState, int x, int y)
+void DemoApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
     if((btnState & MK_LBUTTON) != 0)
     {
@@ -343,11 +343,11 @@ void CrateApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 }
  
-void CrateApp::OnKeyboardInput(const GameTimer& gt)
+void DemoApp::OnKeyboardInput(const GameTimer& gt)
 {
 }
  
-void CrateApp::UpdateCamera(const GameTimer& gt)
+void DemoApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
 	mEyePos.x = mScene.cameraPosition.x;
@@ -363,7 +363,7 @@ void CrateApp::UpdateCamera(const GameTimer& gt)
 	XMStoreFloat4x4(&mView, view);
 }
 
-void CrateApp::UpdateObjectCBs(const GameTimer& gt)
+void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for(auto &e : mOpaqueRObjects)
@@ -385,7 +385,7 @@ void CrateApp::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
-void CrateApp::UpdateMaterialCBs(const GameTimer& gt)
+void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
 	for(auto& e : mMaterials)
@@ -406,7 +406,7 @@ void CrateApp::UpdateMaterialCBs(const GameTimer& gt)
 	}
 }
 
-void CrateApp::UpdateMainPassCB(const GameTimer& gt)
+void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = XMLoadFloat4x4(&mView);
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
@@ -436,7 +436,7 @@ void CrateApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void CrateApp::LoadScene(std::string sceneFilePath)
+void DemoApp::LoadScene(std::string sceneFilePath)
 {
 	std::ifstream inputFile;
 	inputFile.open(sceneFilePath, std::fstream::in);
@@ -474,7 +474,7 @@ void CrateApp::LoadScene(std::string sceneFilePath)
 	inputFile.close();
 }
 
-void CrateApp::LoadTextures()
+void DemoApp::LoadTextures()
 {
 	for (int i = 0; i < mScene.numberOfObjects; ++i)
 	{
@@ -516,7 +516,7 @@ void CrateApp::LoadTextures()
 	}
 }
 
-void CrateApp::BuildRootSignature()
+void DemoApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
@@ -592,7 +592,7 @@ void CrateApp::BuildRootSignature()
 
 }
 
-void CrateApp::BuildDescriptorHeaps()
+void DemoApp::BuildDescriptorHeaps()
 {
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -705,7 +705,7 @@ void CrateApp::BuildDescriptorHeaps()
 	}
 }
 
-void CrateApp::BuildShadersAndInputLayout()
+void DemoApp::BuildShadersAndInputLayout()
 {
 	mShaders["gBufferWriteVS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "VS", "vs_5_0");
 	mShaders["gBufferWritePS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "PS", "ps_5_0");
@@ -721,7 +721,7 @@ void CrateApp::BuildShadersAndInputLayout()
     };
 }
 
-void CrateApp::BuildShapeGeometry()
+void DemoApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
 	
@@ -823,7 +823,7 @@ void CrateApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
-void CrateApp::BuildPSOs()
+void DemoApp::BuildPSOs()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -888,7 +888,7 @@ void CrateApp::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&postProcessingPsoDesc, IID_PPV_ARGS(&mPostProcessingPSO)));
 }
 
-void CrateApp::BuildFrameResources()
+void DemoApp::BuildFrameResources()
 {
     for(int i = 0; i < 3; ++i)
     {
@@ -897,7 +897,7 @@ void CrateApp::BuildFrameResources()
     }
 }
 
-void CrateApp::BuildMaterials()
+void DemoApp::BuildMaterials()
 {
 	int currentCBIndex = 0;
 	int currentHeapIndex = 0;
@@ -927,7 +927,7 @@ void CrateApp::BuildMaterials()
 	mMaterials[mat->Name] = std::move(mat);
 }
 
-void CrateApp::BuildRenderObjects()
+void DemoApp::BuildRenderObjects()
 {
 	int currentCBIndex = 0;
 
@@ -964,7 +964,7 @@ void CrateApp::BuildRenderObjects()
 
 }
 
-void CrateApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
+void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 {
     UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
     UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
@@ -978,7 +978,7 @@ void CrateApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
     }
 }
 
-void CrateApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
+void DemoApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 {
 	cmdList->IASetVertexBuffers(0, 1, &mQuadrObject->Geo->VertexBufferView());
 	cmdList->IASetIndexBuffer(&mQuadrObject->Geo->IndexBufferView());
@@ -993,7 +993,7 @@ void CrateApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 	
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> CrateApp::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> DemoApp::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
 		0, // shaderRegister
