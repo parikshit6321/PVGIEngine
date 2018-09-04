@@ -13,6 +13,8 @@ public:
 	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, 
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
 
+	void InitializeAsQuad(MeshGeometry*);
+
 	int GetNumFramesDirty();
 	XMFLOAT4X4* GetWorldMatrixPtr();
 	UINT GetObjCBIndex();

@@ -27,6 +27,18 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 	}
 }
 
+void RenderObject::InitializeAsQuad(MeshGeometry* input)
+{
+	SetWorldMatrix(&XMMatrixIdentity());
+	SetObjCBIndex(0);
+	Geo = input;
+	SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	SetIndexCount("Quad");
+	SetStartIndexLocation("Quad");
+	SetBaseVertexLocation("Quad");
+	SetIsPostProcessingQuad(true);
+}
+
 int RenderObject::GetNumFramesDirty()
 {
 	return NumFramesDirty;

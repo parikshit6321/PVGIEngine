@@ -942,14 +942,7 @@ void DemoApp::BuildRenderObjects()
 
 	// Make the post processing quad render item
 	mQuadrObject = std::make_unique<RenderObject>();
-	mQuadrObject->SetWorldMatrix(&XMMatrixIdentity());
-	mQuadrObject->SetObjCBIndex(currentCBIndex);
-	mQuadrObject->SetGeo(mGeometries[mScene.name].get());
-	mQuadrObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	mQuadrObject->SetIndexCount("Quad");
-	mQuadrObject->SetStartIndexLocation("Quad");
-	mQuadrObject->SetBaseVertexLocation("Quad");
-	mQuadrObject->SetIsPostProcessingQuad(true);
+	mQuadrObject->InitializeAsQuad(mGeometries[mScene.name].get());
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
