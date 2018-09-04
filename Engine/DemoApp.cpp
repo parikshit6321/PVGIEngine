@@ -4,6 +4,7 @@
 
 #include "../Common/MeshLoader.h"
 #include "RenderObject.h"
+#include "SceneManager.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -11,31 +12,6 @@ using namespace DirectX::PackedVector;
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
-
-struct SceneObject
-{
-	SceneObject() = default;
-
-	std::string			meshName;
-	std::string			diffuseOpacityTextureName;
-	std::string			normalRoughnessTextureName;
-	XMFLOAT3			position;
-	XMFLOAT4			rotation;
-	XMFLOAT3			scale;
-};
-
-struct Scene
-{
-	Scene() = default;
-
-	std::string			name;
-	XMFLOAT3			cameraPosition;
-	XMFLOAT3			lightDirection;
-	XMFLOAT3			lightStrength;
-	UINT				numberOfObjects;
-
-	SceneObject*		objectsInScene;
-};
 
 class DemoApp : public D3DApp
 {
@@ -91,10 +67,9 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
-	std::unique_ptr<MeshGeometry> sceneGeometry;
+	std::unique_ptr<MeshGeometry> mSceneGeometry;
 	
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
-	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 
@@ -114,9 +89,6 @@ private:
 	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-	Scene mScene;
-	UINT mNumTexturesLoaded = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mGBuffers[3];
 };
@@ -351,9 +323,9 @@ void DemoApp::OnKeyboardInput(const GameTimer& gt)
 void DemoApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = mScene.cameraPosition.x;
-	mEyePos.y = mScene.cameraPosition.y;
-	mEyePos.z = mScene.cameraPosition.z;
+	mEyePos.x = SceneManager::GetScenePtr()->cameraPosition.x;
+	mEyePos.y = SceneManager::GetScenePtr()->cameraPosition.y;
+	mEyePos.z = SceneManager::GetScenePtr()->cameraPosition.z;
 
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
@@ -430,8 +402,12 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FarZ = 500.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
-	mMainPassCB.SunLightStrength = { mScene.lightStrength.x, mScene.lightStrength.y, mScene.lightStrength.z, 1.0f };
-	mMainPassCB.SunLightDirection = { mScene.lightDirection.x, mScene.lightDirection.y, mScene.lightDirection.z, 1.0f };
+	mMainPassCB.SunLightStrength = { SceneManager::GetScenePtr()->lightStrength.x, 
+									 SceneManager::GetScenePtr()->lightStrength.y, 
+									 SceneManager::GetScenePtr()->lightStrength.z, 1.0f };
+	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
+									  SceneManager::GetScenePtr()->lightDirection.y, 
+									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -439,82 +415,12 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 void DemoApp::LoadScene(std::string sceneFilePath)
 {
-	std::ifstream inputFile;
-	inputFile.open(sceneFilePath, std::fstream::in);
-
-	std::string name;
-	XMFLOAT3 cameraPosition;
-	XMFLOAT3 lightDirection;
-	XMFLOAT3 lightStrength;
-	UINT numberOfObjects;
-
-	inputFile >> name;
-	inputFile >> cameraPosition.x >> cameraPosition.y >> cameraPosition.z;
-	inputFile >> lightDirection.x >> lightDirection.y >> lightDirection.z;
-	inputFile >> lightStrength.x >> lightStrength.y >> lightStrength.z;
-	inputFile >> numberOfObjects;
-
-	mScene.name = name;
-	mScene.cameraPosition = cameraPosition;
-	mScene.lightDirection = lightDirection;
-	mScene.lightStrength = lightStrength;
-	mScene.numberOfObjects = numberOfObjects;
-
-	mScene.objectsInScene = new SceneObject[numberOfObjects];
-
-	for (int i = 0; i < numberOfObjects; ++i)
-	{
-		inputFile >> mScene.objectsInScene[i].meshName;
-		inputFile >> mScene.objectsInScene[i].diffuseOpacityTextureName;
-		inputFile >> mScene.objectsInScene[i].normalRoughnessTextureName;
-		inputFile >> mScene.objectsInScene[i].position.x >> mScene.objectsInScene[i].position.y >> mScene.objectsInScene[i].position.z;
-		inputFile >> mScene.objectsInScene[i].rotation.x >> mScene.objectsInScene[i].rotation.y >> mScene.objectsInScene[i].rotation.z >> mScene.objectsInScene[i].rotation.w;
-		inputFile >> mScene.objectsInScene[i].scale.x >> mScene.objectsInScene[i].scale.y >> mScene.objectsInScene[i].scale.z;
-	}
-
-	inputFile.close();
+	SceneManager::LoadScene(sceneFilePath, md3dDevice, mCommandList);
 }
 
 void DemoApp::LoadTextures()
 {
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
-	{
-		if (mTextures.find(mScene.objectsInScene[i].diffuseOpacityTextureName) == mTextures.end())
-		{
-			std::wstringstream ws;
-			ws << mScene.objectsInScene[i].diffuseOpacityTextureName.c_str();
-			std::wstring wsName = ws.str();
-
-			auto tex = std::make_unique<Texture>();
-			tex->Name = mScene.objectsInScene[i].diffuseOpacityTextureName;
-			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
-			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-				mCommandList.Get(), tex->Filename.c_str(),
-				tex->Resource, tex->UploadHeap));
-
-			mTextures[tex->Name] = std::move(tex);
-
-			++mNumTexturesLoaded;
-		}
-
-		if (mTextures.find(mScene.objectsInScene[i].normalRoughnessTextureName) == mTextures.end())
-		{
-			std::wstringstream ws;
-			ws << mScene.objectsInScene[i].normalRoughnessTextureName.c_str();
-			std::wstring wsName = ws.str();
-
-			auto tex = std::make_unique<Texture>();
-			tex->Name = mScene.objectsInScene[i].normalRoughnessTextureName;
-			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
-			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-				mCommandList.Get(), tex->Filename.c_str(),
-				tex->Resource, tex->UploadHeap));
-
-			mTextures[tex->Name] = std::move(tex);
-
-			++mNumTexturesLoaded;
-		}
-	}
+	
 }
 
 void DemoApp::BuildRootSignature()
@@ -646,7 +552,7 @@ void DemoApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = mNumTexturesLoaded;
+	srvHeapDesc.NumDescriptors = SceneManager::GetScenePtr()->mNumTexturesLoaded;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -662,9 +568,9 @@ void DemoApp::BuildDescriptorHeaps()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	auto it = mTextures.begin();
+	auto it = SceneManager::GetScenePtr()->mTextures.begin();
 
-	while (it != mTextures.end())
+	while (it != SceneManager::GetScenePtr()->mTextures.end())
 	{
 		srvDesc.Format = it->second->Resource->GetDesc().Format;
 		srvDesc.Texture2D.MipLevels = it->second->Resource->GetDesc().MipLevels;
@@ -732,15 +638,15 @@ void DemoApp::BuildShapeGeometry()
 	std::vector<std::uint16_t> indices;
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = mScene.name;
+	geo->Name = SceneManager::GetScenePtr()->name;
 
 	UINT k = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
-		if (mSubMeshes.find(mScene.objectsInScene[i].meshName) == mSubMeshes.end())
+		if (mSubMeshes.find(SceneManager::GetScenePtr()->objectsInScene[i].meshName) == mSubMeshes.end())
 		{
-			MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(mScene.objectsInScene[i].meshName);
+			MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
 
 			totalVertexCount += tempMesh.Vertices.size();
 
@@ -752,7 +658,7 @@ void DemoApp::BuildShapeGeometry()
 			currentStartIndexCount += tempMesh.Indices32.size();
 			currentBaseVertexLocation += tempMesh.Vertices.size();
 
-			mSubMeshes[mScene.objectsInScene[i].meshName] = std::move(tempSubMesh);
+			mSubMeshes[SceneManager::GetScenePtr()->objectsInScene[i].meshName] = std::move(tempSubMesh);
 
 			vertices.resize(totalVertexCount);
 
@@ -766,7 +672,7 @@ void DemoApp::BuildShapeGeometry()
 
 			indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
 
-			geo->DrawArgs[mScene.objectsInScene[i].meshName] = *mSubMeshes[mScene.objectsInScene[i].meshName];
+			geo->DrawArgs[SceneManager::GetScenePtr()->objectsInScene[i].meshName] = *mSubMeshes[SceneManager::GetScenePtr()->objectsInScene[i].meshName];
 		}
 	}
 
@@ -819,7 +725,7 @@ void DemoApp::BuildShapeGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	sceneGeometry = std::move(geo);
+	mSceneGeometry = std::move(geo);
 }
 
 void DemoApp::BuildPSOs()
@@ -901,12 +807,12 @@ void DemoApp::BuildMaterials()
 	int currentCBIndex = 0;
 	int currentHeapIndex = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
-		if (mMaterials.find(mScene.objectsInScene[i].meshName + "Material") == mMaterials.end())
+		if (mMaterials.find(SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material") == mMaterials.end())
 		{
 			auto mat = std::make_unique<Material>();
-			mat->Name = mScene.objectsInScene[i].meshName + "Material";
+			mat->Name = SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material";
 			mat->MatCBIndex = currentCBIndex++;
 			mat->DiffuseSrvHeapIndex = currentHeapIndex;
 			mat->Metallic = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -922,19 +828,19 @@ void DemoApp::BuildRenderObjects()
 {
 	int currentCBIndex = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);
-		rObject->SetMat(mMaterials[mScene.objectsInScene[i].meshName + "Material"].get());
-		rObject->SetGeo(sceneGeometry.get());
+		rObject->SetMat(mMaterials[SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material"].get());
+		rObject->SetGeo(mSceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		rObject->SetIndexCount(mScene.objectsInScene[i].meshName);
-		rObject->SetStartIndexLocation(mScene.objectsInScene[i].meshName);
-		rObject->SetBaseVertexLocation(mScene.objectsInScene[i].meshName);
-		rObject->SetWorldMatrix(&(XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
-			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
-			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z)));
+		rObject->SetIndexCount(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
+		rObject->SetStartIndexLocation(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
+		rObject->SetBaseVertexLocation(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
+		rObject->SetWorldMatrix(&(XMMatrixScaling(SceneManager::GetScenePtr()->objectsInScene[i].scale.x, SceneManager::GetScenePtr()->objectsInScene[i].scale.y, SceneManager::GetScenePtr()->objectsInScene[i].scale.z)
+			* XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->objectsInScene[i].rotation))
+			* XMMatrixTranslation(SceneManager::GetScenePtr()->objectsInScene[i].position.x, SceneManager::GetScenePtr()->objectsInScene[i].position.y, SceneManager::GetScenePtr()->objectsInScene[i].position.z)));
 
 		mOpaqueRObjects.push_back(std::move(rObject));
 
@@ -943,7 +849,7 @@ void DemoApp::BuildRenderObjects()
 
 	// Make the post processing quad render item
 	mQuadrObject = std::make_unique<RenderObject>();
-	mQuadrObject->InitializeAsQuad(sceneGeometry.get());
+	mQuadrObject->InitializeAsQuad(mSceneGeometry.get());
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
