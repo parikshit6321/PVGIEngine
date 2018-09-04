@@ -58,6 +58,8 @@ private:
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mRootSignaturePostProcessing = nullptr;
 
+	ComPtr<ID3D12DescriptorHeap> mGBufferRtvHeap = nullptr;
+
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
@@ -200,8 +202,8 @@ void DemoApp::Draw(const GameTimer& gt)
 	for (int i = 0; i < 3; ++i)
 	{
 		mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
-			(2 + i),
+			mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+			i,
 			mRtvDescriptorSize), Colors::Black, 0, nullptr);
 	}
 	
@@ -209,8 +211,8 @@ void DemoApp::Draw(const GameTimer& gt)
 
     // Specify the buffers we are going to render to.
     mCommandList->OMSetRenderTargets(3, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
-		2,
+		mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
 		mRtvDescriptorSize), true, &DepthStencilView());
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
@@ -504,10 +506,16 @@ void DemoApp::BuildDescriptorHeaps()
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, 
 			&resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mGBuffers[i].GetAddressOf())));
 	}
-	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
 
-	rtvhDescriptor.Offset(2, mRtvDescriptorSize);
+	D3D12_DESCRIPTOR_HEAP_DESC rtvGBufferHeapDesc;
+	rtvGBufferHeapDesc.NumDescriptors = 3;
+	rtvGBufferHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvGBufferHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	rtvGBufferHeapDesc.NodeMask = 0;
+	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
+		&rtvGBufferHeapDesc, IID_PPV_ARGS(mGBufferRtvHeap.GetAddressOf())));
+	
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart());
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
