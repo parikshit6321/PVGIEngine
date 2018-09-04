@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../Common/d3dUtil.h"
+#include "FrameResource.h"
+#include "../Common/MeshLoader.h"
 
 struct SceneObject
 {
@@ -27,6 +29,9 @@ struct Scene
 	SceneObject*				objectsInScene;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
+
+	std::unique_ptr<MeshGeometry> mSceneGeometry;
 
 	UINT mNumTexturesLoaded = 0;
 };
@@ -45,7 +50,7 @@ private:
 
 	static void ImportScene(std::string);
 	static void LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device>, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>);
-	static void BuildSceneGeometry();
+	static void BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device>, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>);
 	static void BuildMaterials();
 	static void BuildRenderObjects();
 

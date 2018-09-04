@@ -2,7 +2,6 @@
 // DemoApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-#include "../Common/MeshLoader.h"
 #include "RenderObject.h"
 #include "SceneManager.h"
 
@@ -39,11 +38,9 @@ private:
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	void LoadScene(std::string);
-	void LoadTextures();
-    void BuildRootSignature();
+	void BuildRootSignature();
 	void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
-    void BuildShapeGeometry();
     void BuildPSOs();
     void BuildFrameResources();
     void BuildMaterials();
@@ -67,10 +64,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
-	std::unique_ptr<MeshGeometry> mSceneGeometry;
-	
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
-	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
@@ -140,11 +134,9 @@ bool DemoApp::Initialize()
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	LoadScene("../Assets/Scenes/DemoScene2.txt");
-	LoadTextures();
-    BuildRootSignature();
+	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
-    BuildShapeGeometry();
 	BuildMaterials();
     BuildRenderObjects();
     BuildFrameResources();
@@ -418,11 +410,6 @@ void DemoApp::LoadScene(std::string sceneFilePath)
 	SceneManager::LoadScene(sceneFilePath, md3dDevice, mCommandList);
 }
 
-void DemoApp::LoadTextures()
-{
-	
-}
-
 void DemoApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
@@ -628,106 +615,6 @@ void DemoApp::BuildShadersAndInputLayout()
     };
 }
 
-void DemoApp::BuildShapeGeometry()
-{
-    size_t totalVertexCount = 0;
-	size_t currentStartIndexCount = 0;
-	size_t currentBaseVertexLocation = 0;
-	
-	std::vector<Vertex> vertices;
-	std::vector<std::uint16_t> indices;
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = SceneManager::GetScenePtr()->name;
-
-	UINT k = 0;
-
-	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
-	{
-		if (mSubMeshes.find(SceneManager::GetScenePtr()->objectsInScene[i].meshName) == mSubMeshes.end())
-		{
-			MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
-
-			totalVertexCount += tempMesh.Vertices.size();
-
-			auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
-			tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
-			tempSubMesh->StartIndexLocation = currentStartIndexCount;
-			tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
-
-			currentStartIndexCount += tempMesh.Indices32.size();
-			currentBaseVertexLocation += tempMesh.Vertices.size();
-
-			mSubMeshes[SceneManager::GetScenePtr()->objectsInScene[i].meshName] = std::move(tempSubMesh);
-
-			vertices.resize(totalVertexCount);
-
-			for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
-			{
-				vertices[k].Pos = tempMesh.Vertices[i].Position;
-				vertices[k].Normal = tempMesh.Vertices[i].Normal;
-				vertices[k].TexC = tempMesh.Vertices[i].TexC;
-				vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
-			}
-
-			indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
-
-			geo->DrawArgs[SceneManager::GetScenePtr()->objectsInScene[i].meshName] = *mSubMeshes[SceneManager::GetScenePtr()->objectsInScene[i].meshName];
-		}
-	}
-
-	// Create the post processing quad geometry
-	MeshLoader::MeshData tempMesh = MeshLoader::CreateQuad(0.0f, 0.0f, 2.0f, 2.0f, 0.0f);
-
-	totalVertexCount += tempMesh.Vertices.size();
-
-	auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
-	tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
-	tempSubMesh->StartIndexLocation = currentStartIndexCount;
-	tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
-
-	currentStartIndexCount += tempMesh.Indices32.size();
-	currentBaseVertexLocation += tempMesh.Vertices.size();
-
-	mSubMeshes["Quad"] = std::move(tempSubMesh);
-
-	vertices.resize(totalVertexCount);
-
-	for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = tempMesh.Vertices[i].Position;
-		vertices[k].Normal = tempMesh.Vertices[i].Normal;
-		vertices[k].TexC = tempMesh.Vertices[i].TexC;
-		vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
-	}
-
-	indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
-
-	geo->DrawArgs["Quad"] = *mSubMeshes["Quad"];
-
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-    const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	mSceneGeometry = std::move(geo);
-}
-
 void DemoApp::BuildPSOs()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
@@ -833,7 +720,7 @@ void DemoApp::BuildRenderObjects()
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);
 		rObject->SetMat(mMaterials[SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material"].get());
-		rObject->SetGeo(mSceneGeometry.get());
+		rObject->SetGeo(SceneManager::GetScenePtr()->mSceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		rObject->SetIndexCount(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
 		rObject->SetStartIndexLocation(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
@@ -849,7 +736,7 @@ void DemoApp::BuildRenderObjects()
 
 	// Make the post processing quad render item
 	mQuadrObject = std::make_unique<RenderObject>();
-	mQuadrObject->InitializeAsQuad(mSceneGeometry.get());
+	mQuadrObject->InitializeAsQuad(SceneManager::GetScenePtr()->mSceneGeometry.get());
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
