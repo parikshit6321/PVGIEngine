@@ -53,7 +53,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
 GeometryGenerator::MeshData GeometryGenerator::LoadModel(std::string modelName)
 {
 	std::ifstream inputFile;
-	inputFile.open("../../Assets/Meshes/" + modelName + ".txt", std::fstream::in);
+	inputFile.open("../Assets/Meshes/" + modelName + ".txt", std::fstream::in);
 
 	std::string name;
 	size_t numberOfVertices;

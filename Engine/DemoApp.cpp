@@ -2,10 +2,10 @@
 // CrateApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-#include "../../Common/d3dApp.h"
-#include "../../Common/MathHelper.h"
-#include "../../Common/UploadBuffer.h"
-#include "../../Common/GeometryGenerator.h"
+#include "../Common/d3dApp.h"
+#include "../Common/MathHelper.h"
+#include "../Common/UploadBuffer.h"
+#include "../Common/GeometryGenerator.h"
 #include "FrameResource.h"
 
 using Microsoft::WRL::ComPtr;
@@ -208,7 +208,7 @@ bool CrateApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	LoadScene("../../Assets/Scenes/DemoScene2.txt");
+	LoadScene("../Assets/Scenes/DemoScene2.txt");
 	LoadTextures();
     BuildRootSignature();
 	BuildDescriptorHeaps();
@@ -533,7 +533,7 @@ void CrateApp::LoadTextures()
 
 			auto tex = std::make_unique<Texture>();
 			tex->Name = mScene.objectsInScene[i].diffuseOpacityTextureName;
-			tex->Filename = L"../../Assets/Textures/" + wsName + L".dds";
+			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
 			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 				mCommandList.Get(), tex->Filename.c_str(),
 				tex->Resource, tex->UploadHeap));
@@ -551,7 +551,7 @@ void CrateApp::LoadTextures()
 
 			auto tex = std::make_unique<Texture>();
 			tex->Name = mScene.objectsInScene[i].normalRoughnessTextureName;
-			tex->Filename = L"../../Assets/Textures/" + wsName + L".dds";
+			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
 			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 				mCommandList.Get(), tex->Filename.c_str(),
 				tex->Resource, tex->UploadHeap));
