@@ -9,7 +9,8 @@ class RenderObject
 {
 public:
 	RenderObject() = default;
-	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT);
+	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, 
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
 	~RenderObject() = default;
 
 	// World matrix of the shape that describes the object's local space

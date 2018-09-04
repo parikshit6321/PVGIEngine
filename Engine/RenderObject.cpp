@@ -1,11 +1,8 @@
 #include "RenderObject.h"
 
 void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* objectCB, ID3D12Resource* matCB, 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap, UINT cbvSrvDescriptorSize)
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap, UINT cbvSrvDescriptorSize, UINT objCBByteSize, UINT matCBByteSize)
 {
-	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-
 	cmdList->IASetVertexBuffers(0, 1, &(Geo->VertexBufferView()));
 	cmdList->IASetIndexBuffer(&(Geo->IndexBufferView()));
 	cmdList->IASetPrimitiveTopology(PrimitiveType);
