@@ -2,7 +2,6 @@
 // DemoApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-#include "RenderObject.h"
 #include "SceneManager.h"
 
 using Microsoft::WRL::ComPtr;
@@ -43,7 +42,6 @@ private:
     void BuildShadersAndInputLayout();
     void BuildPSOs();
     void BuildFrameResources();
-    void BuildRenderObjects();
     void DrawRenderObjects(ID3D12GraphicsCommandList* cmdList);
 	void DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList);
 
@@ -69,12 +67,6 @@ private:
 
     ComPtr<ID3D12PipelineState> mOpaquePSO = nullptr;
 	ComPtr<ID3D12PipelineState> mPostProcessingPSO = nullptr;
-
-	// Post processing quad render item
-	std::unique_ptr<RenderObject> mQuadrObject;
-
-	// Render items divided by PSO.
-	std::vector<std::unique_ptr<RenderObject>> mOpaqueRObjects;
 
     PassConstants mMainPassCB;
 
@@ -135,7 +127,6 @@ bool DemoApp::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
-    BuildRenderObjects();
     BuildFrameResources();
     BuildPSOs();
 
@@ -328,7 +319,7 @@ void DemoApp::UpdateCamera(const GameTimer& gt)
 void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
-	for(auto &e : mOpaqueRObjects)
+	for(auto &e : SceneManager::GetScenePtr()->mOpaqueRObjects)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
@@ -682,36 +673,8 @@ void DemoApp::BuildFrameResources()
     for(int i = 0; i < 3; ++i)
     {
         mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-            1, (UINT)mOpaqueRObjects.size(), (UINT)SceneManager::GetScenePtr()->mMaterials.size()));
+            1, (UINT)SceneManager::GetScenePtr()->mOpaqueRObjects.size(), (UINT)SceneManager::GetScenePtr()->mMaterials.size()));
     }
-}
-
-void DemoApp::BuildRenderObjects()
-{
-	int currentCBIndex = 0;
-
-	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
-	{
-		auto rObject = std::make_unique<RenderObject>();
-		rObject->SetObjCBIndex(currentCBIndex);
-		rObject->SetMat(SceneManager::GetScenePtr()->mMaterials[SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material"].get());
-		rObject->SetGeo(SceneManager::GetScenePtr()->mSceneGeometry.get());
-		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		rObject->SetIndexCount(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
-		rObject->SetStartIndexLocation(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
-		rObject->SetBaseVertexLocation(SceneManager::GetScenePtr()->objectsInScene[i].meshName);
-		rObject->SetWorldMatrix(&(XMMatrixScaling(SceneManager::GetScenePtr()->objectsInScene[i].scale.x, SceneManager::GetScenePtr()->objectsInScene[i].scale.y, SceneManager::GetScenePtr()->objectsInScene[i].scale.z)
-			* XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->objectsInScene[i].rotation))
-			* XMMatrixTranslation(SceneManager::GetScenePtr()->objectsInScene[i].position.x, SceneManager::GetScenePtr()->objectsInScene[i].position.y, SceneManager::GetScenePtr()->objectsInScene[i].position.z)));
-
-		mOpaqueRObjects.push_back(std::move(rObject));
-
-		currentCBIndex++;
-	}
-
-	// Make the post processing quad render item
-	mQuadrObject = std::make_unique<RenderObject>();
-	mQuadrObject->InitializeAsQuad(SceneManager::GetScenePtr()->mSceneGeometry.get());
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
@@ -722,15 +685,15 @@ void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialCB->Resource();
 
-    for(size_t i = 0; i < mOpaqueRObjects.size(); ++i)
+    for(size_t i = 0; i < SceneManager::GetScenePtr()->mOpaqueRObjects.size(); ++i)
     {
-		mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
+		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
     }
 }
 
 void DemoApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 {
-	mQuadrObject->Draw(cmdList, nullptr, nullptr, mSrvPostProcessingDescriptorHeap, 0, 0, 0);
+	SceneManager::GetScenePtr()->mQuadrObject->Draw(cmdList, nullptr, nullptr, mSrvPostProcessingDescriptorHeap, 0, 0, 0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> DemoApp::GetStaticSamplers()

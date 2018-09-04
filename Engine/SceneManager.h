@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../Common/d3dUtil.h"
-#include "FrameResource.h"
+#include "RenderObject.h"
 #include "../Common/MeshLoader.h"
 
 struct SceneObject
@@ -32,6 +31,9 @@ struct Scene
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
 
+	std::vector<std::unique_ptr<RenderObject>> mOpaqueRObjects;
+	std::unique_ptr<RenderObject> mQuadrObject;
+	
 	std::unique_ptr<MeshGeometry> mSceneGeometry;
 
 	UINT mNumTexturesLoaded = 0;

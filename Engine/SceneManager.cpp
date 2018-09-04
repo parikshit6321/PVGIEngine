@@ -9,6 +9,7 @@ void SceneManager::LoadScene(std::string sceneFilePath, Microsoft::WRL::ComPtr<I
 	LoadTextures(md3dDevice, mCommandList);
 	BuildSceneGeometry(md3dDevice, mCommandList);
 	BuildMaterials();
+	BuildRenderObjects();
 }
 
 Scene* SceneManager::GetScenePtr()
@@ -223,4 +224,28 @@ void SceneManager::BuildMaterials()
 
 void SceneManager::BuildRenderObjects()
 {
+	int currentCBIndex = 0;
+
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	{
+		auto rObject = std::make_unique<RenderObject>();
+		rObject->SetObjCBIndex(currentCBIndex);
+		rObject->SetMat(mScene.mMaterials[mScene.objectsInScene[i].meshName + "Material"].get());
+		rObject->SetGeo(mScene.mSceneGeometry.get());
+		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		rObject->SetIndexCount(mScene.objectsInScene[i].meshName);
+		rObject->SetStartIndexLocation(mScene.objectsInScene[i].meshName);
+		rObject->SetBaseVertexLocation(mScene.objectsInScene[i].meshName);
+		rObject->SetWorldMatrix(&(XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
+			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
+			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z)));
+
+		mScene.mOpaqueRObjects.push_back(std::move(rObject));
+
+		currentCBIndex++;
+	}
+
+	// Make the post processing quad render item
+	mScene.mQuadrObject = std::make_unique<RenderObject>();
+	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get());
 }
