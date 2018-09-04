@@ -3,7 +3,6 @@
 //***************************************************************************************
 
 #include "../Common/d3dApp.h"
-#include "../Common/MathHelper.h"
 #include "../Common/UploadBuffer.h"
 #include "../Common/GeometryGenerator.h"
 #include "FrameResource.h"
@@ -27,8 +26,6 @@ struct RenderItem
     // relative to the world space, which defines the position, orientation,
     // and scale of the object in the world.
     XMFLOAT4X4 World = MathHelper::Identity4x4();
-
-	XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 
 	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
 	// Because we have an object cbuffer for each FrameResource, we have to apply the
@@ -415,12 +412,10 @@ void CrateApp::UpdateObjectCBs(const GameTimer& gt)
 		if(e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
-			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-
+			
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-
+			
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
 			// Next FrameResource need to be updated too.
@@ -439,12 +434,9 @@ void CrateApp::UpdateMaterialCBs(const GameTimer& gt)
 		Material* mat = e.second.get();
 		if(mat->NumFramesDirty > 0)
 		{
-			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
-
 			MaterialConstants matConstants;
 			matConstants.Metallic = mat->Metallic;
-			XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
-
+			
 			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
 
 			// Next FrameResource need to be updated too.
@@ -1006,7 +998,6 @@ void CrateApp::BuildRenderItems()
 	// Make the post processing quad render item
 	mQuadRItem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&mQuadRItem->World, XMMatrixIdentity());
-	XMStoreFloat4x4(&mQuadRItem->TexTransform, XMMatrixIdentity());
 	mQuadRItem->ObjCBIndex = currentCBIndex;
 	mQuadRItem->Mat = mMaterials["PostProcessingMaterial"].get();
 	mQuadRItem->Geo = mGeometries[mScene.name].get();

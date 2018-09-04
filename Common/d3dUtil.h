@@ -27,8 +27,6 @@
 #include <cassert>
 #include "d3dx12.h"
 #include "DDSTextureLoader.h"
-#include "MathHelper.h"
-
 
 extern const int gNumFrameResources;
 
@@ -184,8 +182,6 @@ struct MeshGeometry
 struct MaterialConstants
 {
 	DirectX::XMFLOAT4 Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	// Used in texture mapping.
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
 
 // Simple struct to represent a material for our demos.  A production 3D engine
@@ -209,7 +205,6 @@ struct Material
 
 	// Material constant buffer data used for shading.
 	DirectX::XMFLOAT4 Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
 
 struct Texture

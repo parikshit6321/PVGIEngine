@@ -17,7 +17,6 @@ SamplerState gsamAnisotropicWrap	 : register(s1);
 cbuffer cbPerObject : register(b0)
 {
 	float4x4 gWorld;
-	float4x4 gTexTransform;
 };
 
 // Constant data that varies per material.
@@ -44,7 +43,6 @@ cbuffer cbPass : register(b1)
 cbuffer cbMaterial : register(b2)
 {
 	float4		gMetallic;
-	float4x4	gMatTransform;
 };
 
 struct VertexIn
@@ -87,9 +85,8 @@ VertexOut VS(VertexIn vin)
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-	vout.TexC = mul(texC, gMatTransform).xy;
+	// Output texture coordinates for interpolation across triangle.
+	vout.TexC = vin.TexC;
 
 	return vout;
 }
