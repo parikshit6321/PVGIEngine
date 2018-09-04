@@ -43,7 +43,6 @@ private:
     void BuildShadersAndInputLayout();
     void BuildPSOs();
     void BuildFrameResources();
-    void BuildMaterials();
     void BuildRenderObjects();
     void DrawRenderObjects(ID3D12GraphicsCommandList* cmdList);
 	void DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList);
@@ -64,7 +63,6 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
-	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
@@ -137,7 +135,6 @@ bool DemoApp::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
-	BuildMaterials();
     BuildRenderObjects();
     BuildFrameResources();
     BuildPSOs();
@@ -353,7 +350,7 @@ void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
-	for(auto& e : mMaterials)
+	for(auto& e : SceneManager::GetScenePtr()->mMaterials)
 	{
 		// Only update the cbuffer data if the constants have changed.  If the cbuffer
 		// data changes, it needs to be updated for each FrameResource.
@@ -685,30 +682,8 @@ void DemoApp::BuildFrameResources()
     for(int i = 0; i < 3; ++i)
     {
         mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-            1, (UINT)mOpaqueRObjects.size(), (UINT)mMaterials.size()));
+            1, (UINT)mOpaqueRObjects.size(), (UINT)SceneManager::GetScenePtr()->mMaterials.size()));
     }
-}
-
-void DemoApp::BuildMaterials()
-{
-	int currentCBIndex = 0;
-	int currentHeapIndex = 0;
-
-	for (int i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
-	{
-		if (mMaterials.find(SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material") == mMaterials.end())
-		{
-			auto mat = std::make_unique<Material>();
-			mat->Name = SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material";
-			mat->MatCBIndex = currentCBIndex++;
-			mat->DiffuseSrvHeapIndex = currentHeapIndex;
-			mat->Metallic = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-
-			mMaterials[mat->Name] = std::move(mat);
-
-			currentHeapIndex += 2;
-		}
-	}
 }
 
 void DemoApp::BuildRenderObjects()
@@ -719,7 +694,7 @@ void DemoApp::BuildRenderObjects()
 	{
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);
-		rObject->SetMat(mMaterials[SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material"].get());
+		rObject->SetMat(SceneManager::GetScenePtr()->mMaterials[SceneManager::GetScenePtr()->objectsInScene[i].meshName + "Material"].get());
 		rObject->SetGeo(SceneManager::GetScenePtr()->mSceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		rObject->SetIndexCount(SceneManager::GetScenePtr()->objectsInScene[i].meshName);

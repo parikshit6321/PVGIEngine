@@ -8,6 +8,7 @@ void SceneManager::LoadScene(std::string sceneFilePath, Microsoft::WRL::ComPtr<I
 	ImportScene(sceneFilePath);
 	LoadTextures(md3dDevice, mCommandList);
 	BuildSceneGeometry(md3dDevice, mCommandList);
+	BuildMaterials();
 }
 
 Scene* SceneManager::GetScenePtr()
@@ -200,6 +201,24 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 void SceneManager::BuildMaterials()
 {
+	int currentCBIndex = 0;
+	int currentHeapIndex = 0;
+
+	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	{
+		if (mScene.mMaterials.find(mScene.objectsInScene[i].meshName + "Material") == mScene.mMaterials.end())
+		{
+			auto mat = std::make_unique<Material>();
+			mat->Name = mScene.objectsInScene[i].meshName + "Material";
+			mat->MatCBIndex = currentCBIndex++;
+			mat->DiffuseSrvHeapIndex = currentHeapIndex;
+			mat->Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+
+			mScene.mMaterials[mat->Name] = std::move(mat);
+
+			currentHeapIndex += 2;
+		}
+	}
 }
 
 void SceneManager::BuildRenderObjects()

@@ -29,6 +29,7 @@ struct Scene
 	SceneObject*				objectsInScene;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
 
 	std::unique_ptr<MeshGeometry> mSceneGeometry;
