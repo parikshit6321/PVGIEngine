@@ -754,10 +754,10 @@ void CrateApp::BuildDescriptorHeaps()
 
 void CrateApp::BuildShadersAndInputLayout()
 {
-	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
-	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_0");
-	mShaders["postProcessingVS"] = d3dUtil::CompileShader(L"Shaders\\PostProcessing.hlsl", nullptr, "VS", "vs_5_0");
-	mShaders["postProcessingPS"] = d3dUtil::CompileShader(L"Shaders\\PostProcessing.hlsl", nullptr, "PS", "ps_5_0");
+	mShaders["gBufferWriteVS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["gBufferWritePS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "PS", "ps_5_0");
+	mShaders["deferredShadingVS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["deferredShadingPS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "PS", "ps_5_0");
 
     mInputLayout =
     {
@@ -882,13 +882,13 @@ void CrateApp::BuildPSOs()
 	opaquePsoDesc.pRootSignature = mRootSignature.Get();
 	opaquePsoDesc.VS = 
 	{ 
-		reinterpret_cast<BYTE*>(mShaders["standardVS"]->GetBufferPointer()), 
-		mShaders["standardVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["gBufferWriteVS"]->GetBufferPointer()), 
+		mShaders["gBufferWriteVS"]->GetBufferSize()
 	};
 	opaquePsoDesc.PS = 
 	{ 
-		reinterpret_cast<BYTE*>(mShaders["opaquePS"]->GetBufferPointer()),
-		mShaders["opaquePS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["gBufferWritePS"]->GetBufferPointer()),
+		mShaders["gBufferWritePS"]->GetBufferSize()
 	};
 	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -914,13 +914,13 @@ void CrateApp::BuildPSOs()
 	postProcessingPsoDesc.pRootSignature = mRootSignaturePostProcessing.Get();
 	postProcessingPsoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["postProcessingVS"]->GetBufferPointer()),
-		mShaders["postProcessingVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["deferredShadingVS"]->GetBufferPointer()),
+		mShaders["deferredShadingVS"]->GetBufferSize()
 	};
 	postProcessingPsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["postProcessingPS"]->GetBufferPointer()),
-		mShaders["postProcessingPS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["deferredShadingPS"]->GetBufferPointer()),
+		mShaders["deferredShadingPS"]->GetBufferSize()
 	};
 	postProcessingPsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	postProcessingPsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
