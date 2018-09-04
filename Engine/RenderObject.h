@@ -9,9 +9,27 @@ class RenderObject
 {
 public:
 	RenderObject() = default;
+	
 	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, 
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
+
+	int GetNumFramesDirty();
+	XMFLOAT4X4* GetWorldMatrixPtr();
+	UINT GetObjCBIndex();
+
+	void SetObjCBIndex(UINT);
+	void SetMat(Material*);
+	void SetGeo(MeshGeometry*);
+	void SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY);
+	void SetIndexCount(std::string);
+	void SetStartIndexLocation(std::string);
+	void SetBaseVertexLocation(std::string);
+	void SetWorldMatrix(XMMATRIX*);
+
+	void DecrementNumFramesDirty();
+
 	~RenderObject() = default;
+
 
 	// World matrix of the shape that describes the object's local space
 	// relative to the world space, which defines the position, orientation,

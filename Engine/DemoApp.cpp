@@ -370,17 +370,17 @@ void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
-		if(e->NumFramesDirty > 0)
+		if(e->GetNumFramesDirty() > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX world = XMLoadFloat4x4(e->GetWorldMatrixPtr());
 			
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			
-			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
+			currObjectCB->CopyData(e->GetObjCBIndex(), objConstants);
 
 			// Next FrameResource need to be updated too.
-			e->NumFramesDirty--;
+			e->DecrementNumFramesDirty();
 		}
 	}
 }
@@ -934,33 +934,32 @@ void DemoApp::BuildRenderObjects()
 	for (int i = 0; i < mScene.numberOfObjects; ++i)
 	{
 		auto rObject = std::make_unique<RenderObject>();
-		rObject->ObjCBIndex = currentCBIndex++;
-		rObject->Mat = mMaterials[mScene.objectsInScene[i].meshName + "Material"].get();
-		rObject->Geo = mGeometries[mScene.name].get();
-		rObject->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rObject->IndexCount = rObject->Geo->DrawArgs[mScene.objectsInScene[i].meshName].IndexCount;
-		rObject->StartIndexLocation = rObject->Geo->DrawArgs[mScene.objectsInScene[i].meshName].StartIndexLocation;
-		rObject->BaseVertexLocation = rObject->Geo->DrawArgs[mScene.objectsInScene[i].meshName].BaseVertexLocation;
-		
-		XMStoreFloat4x4(&(rObject->World), 
-			XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
+		rObject->SetObjCBIndex(currentCBIndex);
+		rObject->SetMat(mMaterials[mScene.objectsInScene[i].meshName + "Material"].get());
+		rObject->SetGeo(mGeometries[mScene.name].get());
+		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		rObject->SetIndexCount(mScene.objectsInScene[i].meshName);
+		rObject->SetStartIndexLocation(mScene.objectsInScene[i].meshName);
+		rObject->SetBaseVertexLocation(mScene.objectsInScene[i].meshName);
+		rObject->SetWorldMatrix(&(XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
 			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
-			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z));
+			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z)));
 
-		//mOpaqueRObjects.push_back(std::move(rObject));
 		mOpaqueRObjects.push_back(std::move(rObject));
+
+		currentCBIndex++;
 	}
 
 	// Make the post processing quad render item
 	mQuadrObject = std::make_unique<RenderObject>();
-	XMStoreFloat4x4(&mQuadrObject->World, XMMatrixIdentity());
-	mQuadrObject->ObjCBIndex = currentCBIndex;
-	mQuadrObject->Mat = mMaterials["PostProcessingMaterial"].get();
-	mQuadrObject->Geo = mGeometries[mScene.name].get();
-	mQuadrObject->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	mQuadrObject->IndexCount = mQuadrObject->Geo->DrawArgs["Quad"].IndexCount;
-	mQuadrObject->StartIndexLocation = mQuadrObject->Geo->DrawArgs["Quad"].StartIndexLocation;
-	mQuadrObject->BaseVertexLocation = mQuadrObject->Geo->DrawArgs["Quad"].BaseVertexLocation;
+	mQuadrObject->SetWorldMatrix(&XMMatrixIdentity());
+	mQuadrObject->SetObjCBIndex(currentCBIndex);
+	mQuadrObject->SetMat(mMaterials["PostProcessingMaterial"].get());
+	mQuadrObject->SetGeo(mGeometries[mScene.name].get());
+	mQuadrObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	mQuadrObject->SetIndexCount("Quad");
+	mQuadrObject->SetStartIndexLocation("Quad");
+	mQuadrObject->SetBaseVertexLocation("Quad");
 
 }
 

@@ -19,3 +19,63 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 
 	cmdList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
 }
+
+int RenderObject::GetNumFramesDirty()
+{
+	return NumFramesDirty;
+}
+
+XMFLOAT4X4 * RenderObject::GetWorldMatrixPtr()
+{
+	return &World;
+}
+
+UINT RenderObject::GetObjCBIndex()
+{
+	return ObjCBIndex;
+}
+
+void RenderObject::SetObjCBIndex(UINT input)
+{
+	ObjCBIndex = input;
+}
+
+void RenderObject::SetMat(Material * input)
+{
+	Mat = input;
+}
+
+void RenderObject::SetGeo(MeshGeometry * input)
+{
+	Geo = input;
+}
+
+void RenderObject::SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY input)
+{
+	PrimitiveType = input;
+}
+
+void RenderObject::SetIndexCount(std::string input)
+{
+	IndexCount = Geo->DrawArgs[input].IndexCount;
+}
+
+void RenderObject::SetStartIndexLocation(std::string input)
+{
+	StartIndexLocation = Geo->DrawArgs[input].StartIndexLocation;
+}
+
+void RenderObject::SetBaseVertexLocation(std::string input)
+{
+	BaseVertexLocation = Geo->DrawArgs[input].BaseVertexLocation;
+}
+
+void RenderObject::SetWorldMatrix(XMMATRIX* input)
+{
+	XMStoreFloat4x4(&World, *input);
+}
+
+void RenderObject::DecrementNumFramesDirty()
+{
+	--NumFramesDirty;
+}
