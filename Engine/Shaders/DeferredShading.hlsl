@@ -123,7 +123,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 resultingColor;
 	
-	if (depth > 0.95f)
+	if (depth == 1.0f)
 		resultingColor = skyColor;
 	else
 		resultingColor = directLight;
