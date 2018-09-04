@@ -25,11 +25,15 @@ public:
 	void SetStartIndexLocation(std::string);
 	void SetBaseVertexLocation(std::string);
 	void SetWorldMatrix(XMMATRIX*);
+	void SetIsPostProcessingQuad(bool);
 
 	void DecrementNumFramesDirty();
 
 	~RenderObject() = default;
 
+private:
+
+	void DrawQuad(ID3D12GraphicsCommandList*, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>);
 
 	// World matrix of the shape that describes the object's local space
 	// relative to the world space, which defines the position, orientation,
@@ -55,4 +59,6 @@ public:
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
+
+	bool isPostProcessingQuad = false;
 };

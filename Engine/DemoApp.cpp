@@ -915,14 +915,6 @@ void DemoApp::BuildMaterials()
 			currentHeapIndex += 2;
 		}
 	}
-
-	auto mat = std::make_unique<Material>();
-	mat->Name = "PostProcessingMaterial";
-	mat->MatCBIndex = currentCBIndex++;
-	mat->DiffuseSrvHeapIndex = 0;
-	mat->Metallic = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-
-	mMaterials[mat->Name] = std::move(mat);
 }
 
 void DemoApp::BuildRenderObjects()
@@ -952,13 +944,12 @@ void DemoApp::BuildRenderObjects()
 	mQuadrObject = std::make_unique<RenderObject>();
 	mQuadrObject->SetWorldMatrix(&XMMatrixIdentity());
 	mQuadrObject->SetObjCBIndex(currentCBIndex);
-	mQuadrObject->SetMat(mMaterials["PostProcessingMaterial"].get());
 	mQuadrObject->SetGeo(mGeometries[mScene.name].get());
 	mQuadrObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	mQuadrObject->SetIndexCount("Quad");
 	mQuadrObject->SetStartIndexLocation("Quad");
 	mQuadrObject->SetBaseVertexLocation("Quad");
-
+	mQuadrObject->SetIsPostProcessingQuad(true);
 }
 
 void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
@@ -977,17 +968,7 @@ void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 
 void DemoApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 {
-	cmdList->IASetVertexBuffers(0, 1, &mQuadrObject->Geo->VertexBufferView());
-	cmdList->IASetIndexBuffer(&mQuadrObject->Geo->IndexBufferView());
-	cmdList->IASetPrimitiveTopology(mQuadrObject->PrimitiveType);
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvPostProcessingDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	tex.Offset(mQuadrObject->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
-
-	cmdList->SetGraphicsRootDescriptorTable(0, tex);
-
-	cmdList->DrawIndexedInstanced(mQuadrObject->IndexCount, 1, mQuadrObject->StartIndexLocation, mQuadrObject->BaseVertexLocation, 0);
-	
+	mQuadrObject->Draw(cmdList, nullptr, nullptr, mSrvPostProcessingDescriptorHeap, 0, 0, 0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> DemoApp::GetStaticSamplers()
