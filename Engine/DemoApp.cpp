@@ -36,15 +36,9 @@ private:
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
-	void BuildRootSignature();
-	void BuildDescriptorHeaps();
-    void BuildShadersAndInputLayout();
-    void BuildPSOs();
-    void BuildFrameResources();
+	void BuildFrameResources();
     void DrawRenderObjects(ID3D12GraphicsCommandList* cmdList);
 	void DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList);
-
-	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
 
 private:
 
@@ -53,16 +47,6 @@ private:
     int mCurrFrameResourceIndex = 0;
 
     UINT mCbvSrvDescriptorSize = 0;
-
-	ComPtr<ID3D12RootSignature> mRootSignaturePostProcessing = nullptr;
-
-	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
-
-	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
-
-    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-
-	ComPtr<ID3D12PipelineState> mPostProcessingPSO = nullptr;
 
     PassConstants mMainPassCB;
 
@@ -118,13 +102,8 @@ bool DemoApp::Initialize()
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
-	Renderer::gBufferRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat, nullptr);
-	Renderer::deferredShadingRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat, Renderer::gBufferRenderPass.mOutputBuffers);
+	Renderer::Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat);
 	BuildFrameResources();
-	BuildRootSignature();
-	BuildDescriptorHeaps();
-    BuildShadersAndInputLayout();
-    BuildPSOs();
 	
     // Execute the initialization commands.
     ThrowIfFailed(mCommandList->Close());
@@ -226,17 +205,17 @@ void DemoApp::Draw(const GameTimer& gt)
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
-	ID3D12DescriptorHeap* descriptorHeapsPostProcessing[] = { mSrvPostProcessingDescriptorHeap.Get() };
+	ID3D12DescriptorHeap* descriptorHeapsPostProcessing[] = { Renderer::deferredShadingRenderPass.mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsPostProcessing), descriptorHeapsPostProcessing);
 
-	mCommandList->SetGraphicsRootSignature(mRootSignaturePostProcessing.Get());
+	mCommandList->SetGraphicsRootSignature(Renderer::deferredShadingRenderPass.mRootSignature.Get());
 
 	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	mCommandList->SetPipelineState(mPostProcessingPSO.Get());
+	mCommandList->SetPipelineState(Renderer::deferredShadingRenderPass.mPSO.Get());
 
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -389,124 +368,6 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void DemoApp::BuildRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE texTablePostProcessing;
-	texTablePostProcessing.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameterPostProcessing[2];
-
-	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameterPostProcessing[0].InitAsDescriptorTable(1, &texTablePostProcessing, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameterPostProcessing[1].InitAsConstantBufferView(0);
-
-	auto staticSamplersPostProcessing = GetStaticSamplers();
-
-	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDescPostProcessing(2, slotRootParameterPostProcessing,
-		(UINT)staticSamplersPostProcessing.size(), staticSamplersPostProcessing.data(),
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	ComPtr<ID3DBlob> serializedRootSigPostProcessing = nullptr;
-	ComPtr<ID3DBlob> errorBlobPostProcessing = nullptr;
-	HRESULT hrPostProcessing = D3D12SerializeRootSignature(&rootSigDescPostProcessing, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSigPostProcessing.GetAddressOf(), errorBlobPostProcessing.GetAddressOf());
-
-	if (errorBlobPostProcessing != nullptr)
-	{
-		::OutputDebugStringA((char*)errorBlobPostProcessing->GetBufferPointer());
-	}
-	ThrowIfFailed(hrPostProcessing);
-
-	ThrowIfFailed(md3dDevice->CreateRootSignature(
-		0,
-		serializedRootSigPostProcessing->GetBufferPointer(),
-		serializedRootSigPostProcessing->GetBufferSize(),
-		IID_PPV_ARGS(mRootSignaturePostProcessing.GetAddressOf())));
-
-}
-
-void DemoApp::BuildDescriptorHeaps()
-{
-	//
-	// Create the Post Processing SRV heap.
-	//
-	D3D12_DESCRIPTOR_HEAP_DESC srvPostProcessingHeapDesc = {};
-	srvPostProcessingHeapDesc.NumDescriptors = 3;
-	srvPostProcessingHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvPostProcessingHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvPostProcessingHeapDesc, IID_PPV_ARGS(&mSrvPostProcessingDescriptorHeap)));
-
-	//
-	// Fill out the heap with actual descriptors.
-	//
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hPostProcessingDescriptor(mSrvPostProcessingDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvPostProcessingDesc = {};
-	srvPostProcessingDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvPostProcessingDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvPostProcessingDesc.Texture2D.MostDetailedMip = 0;
-	srvPostProcessingDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvPostProcessingDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	srvPostProcessingDesc.Texture2D.MipLevels = 1;
-
-	for (int i = 0; i < 3; ++i)
-	{
-		md3dDevice->CreateShaderResourceView(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(), &srvPostProcessingDesc, hPostProcessingDescriptor);
-
-		hPostProcessingDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	}
-}
-
-void DemoApp::BuildShadersAndInputLayout()
-{
-	mShaders["deferredShadingVS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["deferredShadingPS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "PS", "ps_5_1");
-
-    mInputLayout =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-    };
-}
-
-void DemoApp::BuildPSOs()
-{
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC postProcessingPsoDesc;
-
-	//
-	// PSO for post processing quad.
-	//
-	ZeroMemory(&postProcessingPsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	postProcessingPsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	postProcessingPsoDesc.pRootSignature = mRootSignaturePostProcessing.Get();
-	postProcessingPsoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["deferredShadingVS"]->GetBufferPointer()),
-		mShaders["deferredShadingVS"]->GetBufferSize()
-	};
-	postProcessingPsoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["deferredShadingPS"]->GetBufferPointer()),
-		mShaders["deferredShadingPS"]->GetBufferSize()
-	};
-	postProcessingPsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	postProcessingPsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	postProcessingPsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	postProcessingPsoDesc.SampleMask = UINT_MAX;
-	postProcessingPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	postProcessingPsoDesc.NumRenderTargets = 1;
-	postProcessingPsoDesc.RTVFormats[0] = mBackBufferFormat;
-	postProcessingPsoDesc.SampleDesc.Count = 1;
-	postProcessingPsoDesc.SampleDesc.Quality = 0;
-	postProcessingPsoDesc.DSVFormat = mDepthStencilFormat;
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&postProcessingPsoDesc, IID_PPV_ARGS(&mPostProcessingPSO)));
-}
-
 void DemoApp::BuildFrameResources()
 {
     for(int i = 0; i < 3; ++i)
@@ -532,26 +393,5 @@ void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 
 void DemoApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
 {
-	SceneManager::GetScenePtr()->mQuadrObject->Draw(cmdList, nullptr, nullptr, mSrvPostProcessingDescriptorHeap, 0, 0, 0);
-}
-
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> DemoApp::GetStaticSamplers()
-{
-	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
-		0, // shaderRegister
-		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
-
-	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
-		1, // shaderRegister
-		D3D12_FILTER_ANISOTROPIC, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
-		0.0f,                             // mipLODBias
-		8);                               // maxAnisotropy
-
-	return { linearWrap, anisotropicWrap };
+	SceneManager::GetScenePtr()->mQuadrObject->Draw(cmdList, nullptr, nullptr, Renderer::deferredShadingRenderPass.mSrvDescriptorHeap, 0, 0, 0);
 }
