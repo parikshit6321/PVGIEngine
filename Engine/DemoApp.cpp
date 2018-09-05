@@ -118,11 +118,11 @@ bool DemoApp::Initialize()
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
-	Renderer::gBufferRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mDepthStencilFormat);
+	Renderer::gBufferRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat, nullptr);
+	BuildFrameResources();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
-    BuildFrameResources();
     BuildPSOs();
 	
     // Execute the initialization commands.

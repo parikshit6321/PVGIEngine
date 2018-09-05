@@ -2,11 +2,11 @@
 
 #include "RenderPass.h"
 
-class GBufferRenderPass : public RenderPass
+class DeferredShadingRenderPass : public RenderPass
 {
 public:
-	GBufferRenderPass() = default;
-	~GBufferRenderPass() = default;
+	DeferredShadingRenderPass() = default;
+	~DeferredShadingRenderPass() = default;
 
 protected:
 	virtual void BuildRootSignature() override;

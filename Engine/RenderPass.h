@@ -8,7 +8,7 @@ class RenderPass
 {
 public:
 	RenderPass() = default;
-	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT);
+	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT, ComPtr<ID3D12Resource>*);
 	~RenderPass() = default;
 
 	ComPtr<ID3D12PipelineState> mPSO = nullptr;
@@ -17,6 +17,9 @@ public:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
 	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+
+	ComPtr<ID3D12Resource>* mInputBuffers;
+	ComPtr<ID3D12Resource> mOutputBuffers[3];
 
 protected:
 
@@ -34,6 +37,7 @@ protected:
 
 	ComPtr<ID3D12Device> md3dDevice;
 
+	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	int mClientWidth = 1280;

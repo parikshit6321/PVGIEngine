@@ -25,6 +25,7 @@
     <ClCompile Include="..\Common\GameTimer.cpp" />
     <ClCompile Include="..\Common\MeshLoader.cpp" />
     <ClCompile Include="..\Common\MathHelper.cpp" />
+    <ClCompile Include="DeferredShadingRenderPass.cpp" />
     <ClCompile Include="DemoApp.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="GBufferRenderPass.cpp" />
@@ -42,6 +43,7 @@
     <ClInclude Include="..\Common\MeshLoader.h" />
     <ClInclude Include="..\Common\MathHelper.h" />
     <ClInclude Include="..\Common\UploadBuffer.h" />
+    <ClInclude Include="DeferredShadingRenderPass.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GBufferRenderPass.h" />
     <ClInclude Include="Renderer.h" />
