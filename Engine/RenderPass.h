@@ -25,7 +25,7 @@ protected:
 
 	virtual void BuildRootSignature() = 0;
 	virtual void BuildDescriptorHeaps() = 0;
-	virtual void BuildShadersAndInputLayout() = 0;
+	virtual void BuildShaders() = 0;
 	virtual void BuildPSOs() = 0;
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
