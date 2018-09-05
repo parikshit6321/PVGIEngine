@@ -36,7 +36,6 @@ private:
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
-	void LoadScene(std::string);
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
@@ -125,7 +124,7 @@ bool DemoApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	LoadScene("../Assets/Scenes/DemoScene1.txt");
+	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
 	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
@@ -393,11 +392,6 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
-}
-
-void DemoApp::LoadScene(std::string sceneFilePath)
-{
-	SceneManager::LoadScene(sceneFilePath, md3dDevice, mCommandList);
 }
 
 void DemoApp::BuildRootSignature()
