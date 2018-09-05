@@ -119,6 +119,7 @@ bool DemoApp::Initialize()
 
 	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
 	Renderer::gBufferRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat, nullptr);
+	Renderer::deferredShadingRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat, Renderer::gBufferRenderPass.mOutputBuffers);
 	BuildFrameResources();
 	BuildRootSignature();
 	BuildDescriptorHeaps();

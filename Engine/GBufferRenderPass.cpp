@@ -42,6 +42,8 @@ void GBufferRenderPass::BuildRootSignature()
 
 void GBufferRenderPass::BuildDescriptorHeaps()
 {
+	mOutputBuffers = new ComPtr<ID3D12Resource>[3];
+
 	// Construct the RTV Heap first
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
 

@@ -19,7 +19,7 @@ public:
 	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	ComPtr<ID3D12Resource>* mInputBuffers;
-	ComPtr<ID3D12Resource> mOutputBuffers[3];
+	ComPtr<ID3D12Resource>* mOutputBuffers;
 
 protected:
 
