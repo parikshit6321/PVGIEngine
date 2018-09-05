@@ -11,6 +11,13 @@ public:
 	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT);
 	~RenderPass() = default;
 
+	ComPtr<ID3D12PipelineState> mPSO = nullptr;
+
+	ComPtr<ID3D12DescriptorHeap> mRtvDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
+
+	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+
 protected:
 
 	virtual void BuildRootSignature() = 0;
@@ -20,17 +27,10 @@ protected:
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
 
-	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-	
-	ComPtr<ID3D12DescriptorHeap> mRtvDescriptorHeap = nullptr;
-	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
-	
 	ComPtr<ID3DBlob> mVertexShader;
 	ComPtr<ID3DBlob> mPixelShader;
 	
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-
-	ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
 	ComPtr<ID3D12Device> md3dDevice;
 

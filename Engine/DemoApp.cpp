@@ -2,7 +2,7 @@
 // DemoApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-#include "SceneManager.h"
+#include "Renderer.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -54,19 +54,14 @@ private:
 
     UINT mCbvSrvDescriptorSize = 0;
 
-    ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mRootSignaturePostProcessing = nullptr;
 
-	ComPtr<ID3D12DescriptorHeap> mGBufferRtvHeap = nullptr;
-
-	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvPostProcessingDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
-    ComPtr<ID3D12PipelineState> mOpaquePSO = nullptr;
 	ComPtr<ID3D12PipelineState> mPostProcessingPSO = nullptr;
 
     PassConstants mMainPassCB;
@@ -74,8 +69,6 @@ private:
 	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> mGBuffers[3];
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -125,12 +118,13 @@ bool DemoApp::Initialize()
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
+	Renderer::gBufferRenderPass.Initialize(md3dDevice, mClientWidth, mClientHeight, mDepthStencilFormat);
 	BuildRootSignature();
 	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
     BuildFrameResources();
     BuildPSOs();
-
+	
     // Execute the initialization commands.
     ThrowIfFailed(mCommandList->Close());
     ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -185,7 +179,7 @@ void DemoApp::Draw(const GameTimer& gt)
 
     // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
     // Reusing the command list reuses memory.
-    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mOpaquePSO.Get()));
+    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::gBufferRenderPass.mPSO.Get()));
 
     mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -193,7 +187,7 @@ void DemoApp::Draw(const GameTimer& gt)
     // Indicate a state transition on the resource usage.
 	for (int i = 0; i < 3; ++i)
 	{
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mGBuffers[i].Get(),
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	}
 	
@@ -201,7 +195,7 @@ void DemoApp::Draw(const GameTimer& gt)
 	for (int i = 0; i < 3; ++i)
 	{
 		mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+			Renderer::gBufferRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 			i,
 			mRtvDescriptorSize), Colors::Black, 0, nullptr);
 	}
@@ -210,14 +204,14 @@ void DemoApp::Draw(const GameTimer& gt)
 
     // Specify the buffers we are going to render to.
     mCommandList->OMSetRenderTargets(3, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+		Renderer::gBufferRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
 		mRtvDescriptorSize), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { Renderer::gBufferRenderPass.mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	mCommandList->SetGraphicsRootSignature(Renderer::gBufferRenderPass.mRootSignature.Get());
 
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
@@ -227,7 +221,7 @@ void DemoApp::Draw(const GameTimer& gt)
 	// Indicate a state transition on the resource usage.
 	for (int i = 0; i < 3; ++i)
 	{
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mGBuffers[i].Get(),
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
@@ -396,43 +390,6 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 void DemoApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
-
-    // Root parameter can be a table, root descriptor or root constants.
-    CD3DX12_ROOT_PARAMETER slotRootParameter[4];
-
-	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-    slotRootParameter[1].InitAsConstantBufferView(0);
-    slotRootParameter[2].InitAsConstantBufferView(1);
-    slotRootParameter[3].InitAsConstantBufferView(2);
-
-	auto staticSamplers = GetStaticSamplers();
-
-    // A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
-		(UINT)staticSamplers.size(), staticSamplers.data(),
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-    // create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-    ComPtr<ID3DBlob> serializedRootSig = nullptr;
-    ComPtr<ID3DBlob> errorBlob = nullptr;
-    HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-        serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-    if(errorBlob != nullptr)
-    {
-        ::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-    }
-    ThrowIfFailed(hr);
-
-    ThrowIfFailed(md3dDevice->CreateRootSignature(
-		0,
-        serializedRootSig->GetBufferPointer(),
-        serializedRootSig->GetBufferSize(),
-        IID_PPV_ARGS(mRootSignature.GetAddressOf())));
-
 	CD3DX12_DESCRIPTOR_RANGE texTablePostProcessing;
 	texTablePostProcessing.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
@@ -472,93 +429,6 @@ void DemoApp::BuildRootSignature()
 
 void DemoApp::BuildDescriptorHeaps()
 {
-	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
-
-	D3D12_RESOURCE_DESC resourceDesc;
-	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	resourceDesc.Alignment = 0;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.SampleDesc.Quality = 0;
-	resourceDesc.MipLevels = 1;
-
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Width = mClientWidth;
-	resourceDesc.Height = mClientHeight;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-	D3D12_CLEAR_VALUE clearVal;
-	clearVal.Color[0] = 0.0f;
-	clearVal.Color[1] = 0.0f;
-	clearVal.Color[2] = 0.0f;
-	clearVal.Color[3] = 1.0f;
-
-	for (int i = 0; i < 3; i++) {
-		resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-		clearVal.Format = resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, 
-			&resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mGBuffers[i].GetAddressOf())));
-	}
-
-	D3D12_DESCRIPTOR_HEAP_DESC rtvGBufferHeapDesc;
-	rtvGBufferHeapDesc.NumDescriptors = 3;
-	rtvGBufferHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvGBufferHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvGBufferHeapDesc.NodeMask = 0;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-		&rtvGBufferHeapDesc, IID_PPV_ARGS(mGBufferRtvHeap.GetAddressOf())));
-	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mGBufferRtvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
-
-	for (int i = 0; i < 3; ++i)
-	{
-		md3dDevice->CreateRenderTargetView(mGBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
-
-		if (i != 2)
-			rtvhDescriptor.Offset(1, mRtvDescriptorSize);
-	}
-
-	//
-	// Create the SRV heap.
-	//
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = SceneManager::GetScenePtr()->mNumTexturesLoaded;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
-
-	//
-	// Fill out the heap with actual descriptors.
-	//
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-
-	auto it = SceneManager::GetScenePtr()->mTextures.begin();
-
-	while (it != SceneManager::GetScenePtr()->mTextures.end())
-	{
-		srvDesc.Format = it->second->Resource->GetDesc().Format;
-		srvDesc.Texture2D.MipLevels = it->second->Resource->GetDesc().MipLevels;
-
-		md3dDevice->CreateShaderResourceView(it->second->Resource.Get(), &srvDesc, hDescriptor);
-
-		++it;
-
-		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	}
-
 	//
 	// Create the Post Processing SRV heap.
 	//
@@ -583,7 +453,7 @@ void DemoApp::BuildDescriptorHeaps()
 
 	for (int i = 0; i < 3; ++i)
 	{
-		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvPostProcessingDesc, hPostProcessingDescriptor);
+		md3dDevice->CreateShaderResourceView(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(), &srvPostProcessingDesc, hPostProcessingDescriptor);
 
 		hPostProcessingDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
@@ -591,8 +461,6 @@ void DemoApp::BuildDescriptorHeaps()
 
 void DemoApp::BuildShadersAndInputLayout()
 {
-	mShaders["gBufferWriteVS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["gBufferWritePS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["deferredShadingVS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["deferredShadingPS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "PS", "ps_5_1");
 
@@ -607,38 +475,6 @@ void DemoApp::BuildShadersAndInputLayout()
 
 void DemoApp::BuildPSOs()
 {
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
-
-	//
-	// PSO for opaque objects.
-	//
-    ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	opaquePsoDesc.pRootSignature = mRootSignature.Get();
-	opaquePsoDesc.VS = 
-	{ 
-		reinterpret_cast<BYTE*>(mShaders["gBufferWriteVS"]->GetBufferPointer()), 
-		mShaders["gBufferWriteVS"]->GetBufferSize()
-	};
-	opaquePsoDesc.PS = 
-	{ 
-		reinterpret_cast<BYTE*>(mShaders["gBufferWritePS"]->GetBufferPointer()),
-		mShaders["gBufferWritePS"]->GetBufferSize()
-	};
-	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.SampleMask = UINT_MAX;
-	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	opaquePsoDesc.NumRenderTargets = 3;
-	opaquePsoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	opaquePsoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	opaquePsoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	opaquePsoDesc.SampleDesc.Count = 1;
-	opaquePsoDesc.SampleDesc.Quality = 0;
-	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mOpaquePSO)));
-
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC postProcessingPsoDesc;
 
 	//
@@ -689,7 +525,7 @@ void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 
     for(size_t i = 0; i < SceneManager::GetScenePtr()->mOpaqueRObjects.size(); ++i)
     {
-		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
+		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, Renderer::gBufferRenderPass.mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
     }
 }
 

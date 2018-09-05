@@ -69,7 +69,7 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 		resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		clearVal.Format = resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
-			&resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mOutputBuffers[i].GetAddressOf())));
+			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[i].GetAddressOf())));
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
@@ -163,8 +163,8 @@ void GBufferRenderPass::BuildPSOs()
 	};
 	psoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()),
-		mVertexShader->GetBufferSize()
+		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()),
+		mPixelShader->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
