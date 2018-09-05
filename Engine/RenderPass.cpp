@@ -1,10 +1,11 @@
 #include "RenderPass.h"
 
-void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight)
+void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight, DXGI_FORMAT inputFormat)
 {
 	md3dDevice = inputDevice;
 	mClientWidth = inputWidth;
 	mClientHeight = inputHeight;
+	mDepthStencilFormat = inputFormat;
 
 	BuildRootSignature();
 	BuildDescriptorHeaps();

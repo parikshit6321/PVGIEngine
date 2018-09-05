@@ -8,7 +8,7 @@ class RenderPass
 {
 public:
 	RenderPass() = default;
-	void Initialize(ComPtr<ID3D12Device>, int, int);
+	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT);
 	~RenderPass() = default;
 
 protected:
@@ -25,13 +25,16 @@ protected:
 	ComPtr<ID3D12DescriptorHeap> mRtvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	
-	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
-
+	ComPtr<ID3DBlob> mVertexShader;
+	ComPtr<ID3DBlob> mPixelShader;
+	
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
 	ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
 	ComPtr<ID3D12Device> md3dDevice;
+
+	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	int mClientWidth = 1280;
 	int mClientHeight = 720;

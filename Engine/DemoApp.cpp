@@ -591,10 +591,10 @@ void DemoApp::BuildDescriptorHeaps()
 
 void DemoApp::BuildShadersAndInputLayout()
 {
-	mShaders["gBufferWriteVS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "VS", "vs_5_0");
-	mShaders["gBufferWritePS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "PS", "ps_5_0");
-	mShaders["deferredShadingVS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "VS", "vs_5_0");
-	mShaders["deferredShadingPS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "PS", "ps_5_0");
+	mShaders["gBufferWriteVS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["gBufferWritePS"] = d3dUtil::CompileShader(L"Shaders\\GBufferWrite.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["deferredShadingVS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["deferredShadingPS"] = d3dUtil::CompileShader(L"Shaders\\DeferredShading.hlsl", nullptr, "PS", "ps_5_1");
 
     mInputLayout =
     {
