@@ -54,7 +54,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{99BAD649-F897-4374-B69D-EEB3F9CAE027}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Crate</RootNamespace>
+    <RootNamespace>PVGIEngine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
     <ProjectName>PVGIEngine</ProjectName>
   </PropertyGroup>
