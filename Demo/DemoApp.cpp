@@ -97,7 +97,7 @@ bool DemoApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
+	SceneManager::LoadScene("../Assets/Scenes/DemoScene4.txt", md3dDevice, mCommandList);
 	Renderer::Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat);
 	BuildFrameResources();
 	
@@ -152,6 +152,10 @@ void DemoApp::Draw(const GameTimer& gt)
     // Reuse the memory associated with command recording.
     // We can only reset when the associated command lists have finished execution on the GPU.
     ThrowIfFailed(cmdListAlloc->Reset());
+
+	//
+	// GBuffer Pass
+	//
 
     // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
     // Reusing the command list reuses memory.
@@ -290,21 +294,21 @@ void DemoApp::UpdateCamera(const GameTimer& gt)
 void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
-	for(auto &e : SceneManager::GetScenePtr()->mOpaqueRObjects)
+	for(UINT i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
-		if(e->GetNumFramesDirty() > 0)
+		if(SceneManager::GetScenePtr()->mOpaqueRObjects[i]->GetNumFramesDirty() > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(e->GetWorldMatrixPtr());
+			XMMATRIX world = XMLoadFloat4x4(SceneManager::GetScenePtr()->mOpaqueRObjects[i]->GetWorldMatrixPtr());
 			
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			
-			currObjectCB->CopyData(e->GetObjCBIndex(), objConstants);
+			currObjectCB->CopyData(SceneManager::GetScenePtr()->mOpaqueRObjects[i]->GetObjCBIndex(), objConstants);
 
 			// Next FrameResource need to be updated too.
-			e->DecrementNumFramesDirty();
+			SceneManager::GetScenePtr()->mOpaqueRObjects[i]->DecrementNumFramesDirty();
 		}
 	}
 }
@@ -312,20 +316,18 @@ void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
-	for(auto& e : SceneManager::GetScenePtr()->mMaterials)
+	for(UINT i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
 		// Only update the cbuffer data if the constants have changed.  If the cbuffer
 		// data changes, it needs to be updated for each FrameResource.
-		Material* mat = e.second.get();
-		if(mat->NumFramesDirty > 0)
+		if(SceneManager::GetScenePtr()->mMaterials[i]->NumFramesDirty > 0)
 		{
 			MaterialConstants matConstants;
-			matConstants.Metallic = mat->Metallic;
-			
-			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
+			matConstants.Metallic = SceneManager::GetScenePtr()->mMaterials[i]->Metallic;
+			currMaterialCB->CopyData(SceneManager::GetScenePtr()->mMaterials[i]->MatCBIndex, matConstants);
 
 			// Next FrameResource need to be updated too.
-			mat->NumFramesDirty--;
+			SceneManager::GetScenePtr()->mMaterials[i]->NumFramesDirty--;
 		}
 	}
 }
@@ -369,7 +371,7 @@ void DemoApp::BuildFrameResources()
     for(int i = 0; i < 3; ++i)
     {
         mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-            1, (UINT)SceneManager::GetScenePtr()->mOpaqueRObjects.size(), (UINT)SceneManager::GetScenePtr()->mMaterials.size()));
+            1, (UINT)SceneManager::GetScenePtr()->numberOfObjects, (UINT)SceneManager::GetScenePtr()->numberOfObjects));
     }
 }
 
@@ -381,7 +383,7 @@ void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialCB->Resource();
 
-    for(size_t i = 0; i < SceneManager::GetScenePtr()->mOpaqueRObjects.size(); ++i)
+    for(size_t i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
     {
 		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, Renderer::gBufferRenderPass.mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
     }

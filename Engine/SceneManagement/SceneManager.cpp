@@ -6,6 +6,7 @@ void SceneManager::LoadScene(std::string sceneFilePath, Microsoft::WRL::ComPtr<I
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList)
 {
 	ImportScene(sceneFilePath);
+	ResizeBuffers();
 	LoadTextures(md3dDevice, mCommandList);
 	BuildSceneGeometry(md3dDevice, mCommandList);
 	BuildMaterials();
@@ -55,47 +56,50 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 	inputFile.close();
 }
 
+void SceneManager::ResizeBuffers()
+{
+	mScene.mSceneGeometry = std::make_unique<MeshGeometry>();
+	mScene.mSceneGeometry->Name = mScene.name;
+	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfObjects + 1];
+	mScene.mTextures = new std::unique_ptr<Texture>[2 * mScene.numberOfObjects];
+	mScene.mMaterials = new std::unique_ptr<Material>[mScene.numberOfObjects];
+	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfObjects + 1];
+	mScene.mOpaqueRObjects = new std::unique_ptr<RenderObject>[mScene.numberOfObjects];
+}
+
 void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice, 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList)
 {
-	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
+	for (UINT i = 0; i < (2 * mScene.numberOfObjects); i += 2)
 	{
-		if (mScene.mTextures.find(mScene.objectsInScene[i].diffuseOpacityTextureName) == mScene.mTextures.end())
-		{
-			std::wstringstream ws;
-			ws << mScene.objectsInScene[i].diffuseOpacityTextureName.c_str();
-			std::wstring wsName = ws.str();
+		// Load the diffuse opacity texture first
+		std::wstringstream wsDiffuseOpacity;
+		wsDiffuseOpacity << mScene.objectsInScene[i/2].diffuseOpacityTextureName.c_str();
+		std::wstring wsNameDiffuseOpacity = wsDiffuseOpacity.str();
 
-			auto tex = std::make_unique<Texture>();
-			tex->Name = mScene.objectsInScene[i].diffuseOpacityTextureName;
-			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
-			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-				mCommandList.Get(), tex->Filename.c_str(),
-				tex->Resource, tex->UploadHeap));
+		auto texDiffuseOpacity = std::make_unique<Texture>();
+		texDiffuseOpacity->Name = mScene.objectsInScene[i/2].diffuseOpacityTextureName;
+		texDiffuseOpacity->Filename = L"../Assets/Textures/" + wsNameDiffuseOpacity + L".dds";
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+			mCommandList.Get(), texDiffuseOpacity->Filename.c_str(),
+			texDiffuseOpacity->Resource, texDiffuseOpacity->UploadHeap));
 
-			mScene.mTextures[tex->Name] = std::move(tex);
+		mScene.mTextures[i] = std::move(texDiffuseOpacity);
 
-			++mScene.mNumTexturesLoaded;
-		}
+		// Load the normal roughness texture next
+		std::wstringstream wsNormalRoughness;
+		wsNormalRoughness << mScene.objectsInScene[i/2].normalRoughnessTextureName.c_str();
+		std::wstring wsNameNormalRoughness = wsNormalRoughness.str();
 
-		if (mScene.mTextures.find(mScene.objectsInScene[i].normalRoughnessTextureName) == mScene.mTextures.end())
-		{
-			std::wstringstream ws;
-			ws << mScene.objectsInScene[i].normalRoughnessTextureName.c_str();
-			std::wstring wsName = ws.str();
+		auto texNormalRoughness = std::make_unique<Texture>();
+		texNormalRoughness->Name = mScene.objectsInScene[i/2].normalRoughnessTextureName;
+		texNormalRoughness->Filename = L"../Assets/Textures/" + wsNameNormalRoughness + L".dds";
 
-			auto tex = std::make_unique<Texture>();
-			tex->Name = mScene.objectsInScene[i].normalRoughnessTextureName;
-			tex->Filename = L"../Assets/Textures/" + wsName + L".dds";
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+			mCommandList.Get(), texNormalRoughness->Filename.c_str(),
+			texNormalRoughness->Resource, texNormalRoughness->UploadHeap));
 
-			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-				mCommandList.Get(), tex->Filename.c_str(),
-				tex->Resource, tex->UploadHeap));
-
-			mScene.mTextures[tex->Name] = std::move(tex);
-
-			++mScene.mNumTexturesLoaded;
-		}
+		mScene.mTextures[i+1] = std::move(texNormalRoughness);
 	}
 }
 
@@ -109,43 +113,37 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 	std::vector<Vertex> vertices;
 	std::vector<std::uint16_t> indices;
 
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = mScene.name;
-
 	UINT k = 0;
 
 	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
-		if (mScene.mSubMeshes.find(mScene.objectsInScene[i].meshName) == mScene.mSubMeshes.end())
+		MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(mScene.objectsInScene[i].meshName);
+
+		totalVertexCount += tempMesh.Vertices.size();
+
+		auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
+		tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
+		tempSubMesh->StartIndexLocation = currentStartIndexCount;
+		tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
+
+		currentStartIndexCount += tempMesh.Indices32.size();
+		currentBaseVertexLocation += tempMesh.Vertices.size();
+
+		mScene.mSubMeshes[i] = std::move(tempSubMesh);
+
+		vertices.resize(totalVertexCount);
+
+		for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
 		{
-			MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(mScene.objectsInScene[i].meshName);
-
-			totalVertexCount += tempMesh.Vertices.size();
-
-			auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
-			tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
-			tempSubMesh->StartIndexLocation = currentStartIndexCount;
-			tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
-
-			currentStartIndexCount += tempMesh.Indices32.size();
-			currentBaseVertexLocation += tempMesh.Vertices.size();
-
-			mScene.mSubMeshes[mScene.objectsInScene[i].meshName] = std::move(tempSubMesh);
-
-			vertices.resize(totalVertexCount);
-
-			for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
-			{
-				vertices[k].Pos = tempMesh.Vertices[i].Position;
-				vertices[k].Normal = tempMesh.Vertices[i].Normal;
-				vertices[k].TexC = tempMesh.Vertices[i].TexC;
-				vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
-			}
-
-			indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
-
-			geo->DrawArgs[mScene.objectsInScene[i].meshName] = *mScene.mSubMeshes[mScene.objectsInScene[i].meshName];
+			vertices[k].Pos = tempMesh.Vertices[i].Position;
+			vertices[k].Normal = tempMesh.Vertices[i].Normal;
+			vertices[k].TexC = tempMesh.Vertices[i].TexC;
+			vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
 		}
+
+		indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
+
+		mScene.mSceneGeometry->DrawArgs[i] = *mScene.mSubMeshes[i];
 	}
 
 	// Create the post processing quad geometry
@@ -161,7 +159,7 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 	currentStartIndexCount += tempMesh.Indices32.size();
 	currentBaseVertexLocation += tempMesh.Vertices.size();
 
-	mScene.mSubMeshes["Quad"] = std::move(tempSubMesh);
+	mScene.mSubMeshes[mScene.numberOfObjects] = std::move(tempSubMesh);
 
 	vertices.resize(totalVertexCount);
 
@@ -175,29 +173,27 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 	indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
 
-	geo->DrawArgs["Quad"] = *mScene.mSubMeshes["Quad"];
+	mScene.mSceneGeometry->DrawArgs[mScene.numberOfObjects] = *mScene.mSubMeshes[mScene.numberOfObjects];
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &mScene.mSceneGeometry->VertexBufferCPU));
+	CopyMemory(mScene.mSceneGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &mScene.mSceneGeometry->IndexBufferCPU));
+	CopyMemory(mScene.mSceneGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+	mScene.mSceneGeometry->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, mScene.mSceneGeometry->VertexBufferUploader);
 
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+	mScene.mSceneGeometry->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, mScene.mSceneGeometry->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	mScene.mSceneGeometry = std::move(geo);
+	mScene.mSceneGeometry->VertexByteStride = sizeof(Vertex);
+	mScene.mSceneGeometry->VertexBufferByteSize = vbByteSize;
+	mScene.mSceneGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	mScene.mSceneGeometry->IndexBufferByteSize = ibByteSize;
 }
 
 void SceneManager::BuildMaterials()
@@ -207,18 +203,14 @@ void SceneManager::BuildMaterials()
 
 	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
-		if (mScene.mMaterials.find(mScene.objectsInScene[i].meshName + "Material") == mScene.mMaterials.end())
-		{
-			auto mat = std::make_unique<Material>();
-			mat->Name = mScene.objectsInScene[i].meshName + "Material";
-			mat->MatCBIndex = currentCBIndex++;
-			mat->DiffuseSrvHeapIndex = currentHeapIndex;
-			mat->Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		auto mat = std::make_unique<Material>();
+		mat->MatCBIndex = currentCBIndex++;
+		mat->DiffuseSrvHeapIndex = currentHeapIndex;
+		mat->Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 
-			mScene.mMaterials[mat->Name] = std::move(mat);
+		mScene.mMaterials[i] = std::move(mat);
 
-			currentHeapIndex += 2;
-		}
+		currentHeapIndex += 2;
 	}
 }
 
@@ -230,22 +222,22 @@ void SceneManager::BuildRenderObjects()
 	{
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);
-		rObject->SetMat(mScene.mMaterials[mScene.objectsInScene[i].meshName + "Material"].get());
+		rObject->SetMat(mScene.mMaterials[i].get());
 		rObject->SetGeo(mScene.mSceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		rObject->SetIndexCount(mScene.objectsInScene[i].meshName);
-		rObject->SetStartIndexLocation(mScene.objectsInScene[i].meshName);
-		rObject->SetBaseVertexLocation(mScene.objectsInScene[i].meshName);
+		rObject->SetIndexCount(mScene.mSceneGeometry.get()->DrawArgs[i].IndexCount);
+		rObject->SetStartIndexLocation(mScene.mSceneGeometry.get()->DrawArgs[i].StartIndexLocation);
+		rObject->SetBaseVertexLocation(mScene.mSceneGeometry.get()->DrawArgs[i].BaseVertexLocation);
 		rObject->SetWorldMatrix(&(XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
 			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
 			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z)));
 
-		mScene.mOpaqueRObjects.push_back(std::move(rObject));
+		mScene.mOpaqueRObjects[i] = std::move(rObject);
 
 		currentCBIndex++;
 	}
 
 	// Make the post processing quad render item
 	mScene.mQuadrObject = std::make_unique<RenderObject>();
-	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get());
+	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get(), mScene.numberOfObjects);
 }

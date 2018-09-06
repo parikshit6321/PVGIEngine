@@ -27,16 +27,14 @@ struct Scene
 
 	SceneObject*				objectsInScene;
 
-	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
-	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
-	std::unordered_map<std::string, std::unique_ptr<SubmeshGeometry>> mSubMeshes;
-
-	std::vector<std::unique_ptr<RenderObject>> mOpaqueRObjects;
+	std::unique_ptr<Texture>* mTextures;
+	std::unique_ptr<Material>* mMaterials;
+	std::unique_ptr<SubmeshGeometry>* mSubMeshes;
+	std::unique_ptr<RenderObject>* mOpaqueRObjects;
+	
 	std::unique_ptr<RenderObject> mQuadrObject;
 	
 	std::unique_ptr<MeshGeometry> mSceneGeometry;
-
-	UINT mNumTexturesLoaded = 0;
 };
 
 class SceneManager
@@ -52,6 +50,7 @@ public:
 private:
 
 	static void ImportScene(std::string);
+	static void ResizeBuffers();
 	static void LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device>, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>);
 	static void BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device>, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>);
 	static void BuildMaterials();

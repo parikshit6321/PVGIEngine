@@ -13,7 +13,7 @@ public:
 	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, 
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
 
-	void InitializeAsQuad(MeshGeometry*);
+	void InitializeAsQuad(MeshGeometry*, UINT);
 
 	int GetNumFramesDirty();
 	XMFLOAT4X4* GetWorldMatrixPtr();
@@ -23,9 +23,9 @@ public:
 	void SetMat(Material*);
 	void SetGeo(MeshGeometry*);
 	void SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY);
-	void SetIndexCount(std::string);
-	void SetStartIndexLocation(std::string);
-	void SetBaseVertexLocation(std::string);
+	void SetIndexCount(UINT);
+	void SetStartIndexLocation(UINT);
+	void SetBaseVertexLocation(int);
 	void SetWorldMatrix(XMMATRIX*);
 	void SetIsPostProcessingQuad(bool);
 

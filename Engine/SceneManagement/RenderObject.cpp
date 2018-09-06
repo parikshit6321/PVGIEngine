@@ -27,15 +27,15 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 	}
 }
 
-void RenderObject::InitializeAsQuad(MeshGeometry* input)
+void RenderObject::InitializeAsQuad(MeshGeometry* input, UINT quadIndex)
 {
 	SetWorldMatrix(&XMMatrixIdentity());
 	SetObjCBIndex(0);
 	Geo = input;
 	SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	SetIndexCount("Quad");
-	SetStartIndexLocation("Quad");
-	SetBaseVertexLocation("Quad");
+	SetIndexCount(Geo->DrawArgs[quadIndex].IndexCount);
+	SetStartIndexLocation(Geo->DrawArgs[quadIndex].StartIndexLocation);
+	SetBaseVertexLocation(Geo->DrawArgs[quadIndex].BaseVertexLocation);
 	SetIsPostProcessingQuad(true);
 }
 
@@ -74,19 +74,19 @@ void RenderObject::SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY input)
 	PrimitiveType = input;
 }
 
-void RenderObject::SetIndexCount(std::string input)
+void RenderObject::SetIndexCount(UINT input)
 {
-	IndexCount = Geo->DrawArgs[input].IndexCount;
+	IndexCount = input;
 }
 
-void RenderObject::SetStartIndexLocation(std::string input)
+void RenderObject::SetStartIndexLocation(UINT input)
 {
-	StartIndexLocation = Geo->DrawArgs[input].StartIndexLocation;
+	StartIndexLocation = input;
 }
 
-void RenderObject::SetBaseVertexLocation(std::string input)
+void RenderObject::SetBaseVertexLocation(int input)
 {
-	BaseVertexLocation = Geo->DrawArgs[input].BaseVertexLocation;
+	BaseVertexLocation = input;
 }
 
 void RenderObject::SetWorldMatrix(XMMATRIX* input)
