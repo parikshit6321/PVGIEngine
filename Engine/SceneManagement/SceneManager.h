@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RenderObject.h"
-#include "../Common/MeshLoader.h"
+#include "MeshLoader.h"
 
 struct SceneObject
 {

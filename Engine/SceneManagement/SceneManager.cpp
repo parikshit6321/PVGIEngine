@@ -42,7 +42,7 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 
 	mScene.objectsInScene = new SceneObject[numberOfObjects];
 
-	for (int i = 0; i < numberOfObjects; ++i)
+	for (UINT i = 0; i < numberOfObjects; ++i)
 	{
 		inputFile >> mScene.objectsInScene[i].meshName;
 		inputFile >> mScene.objectsInScene[i].diffuseOpacityTextureName;
@@ -58,7 +58,7 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice, 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList)
 {
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
 		if (mScene.mTextures.find(mScene.objectsInScene[i].diffuseOpacityTextureName) == mScene.mTextures.end())
 		{
@@ -114,7 +114,7 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 	UINT k = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
 		if (mScene.mSubMeshes.find(mScene.objectsInScene[i].meshName) == mScene.mSubMeshes.end())
 		{
@@ -205,7 +205,7 @@ void SceneManager::BuildMaterials()
 	int currentCBIndex = 0;
 	int currentHeapIndex = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
 		if (mScene.mMaterials.find(mScene.objectsInScene[i].meshName + "Material") == mScene.mMaterials.end())
 		{
@@ -226,7 +226,7 @@ void SceneManager::BuildRenderObjects()
 {
 	int currentCBIndex = 0;
 
-	for (int i = 0; i < mScene.numberOfObjects; ++i)
+	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
 		auto rObject = std::make_unique<RenderObject>();
 		rObject->SetObjCBIndex(currentCBIndex);

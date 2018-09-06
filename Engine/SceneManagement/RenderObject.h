@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Common/d3dApp.h"
-#include "FrameResource.h"
+#include "../Utilities/d3dApp.h"
+#include "../Utilities/FrameResource.h"
 
 using namespace DirectX;
 

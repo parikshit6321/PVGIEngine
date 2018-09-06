@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SceneManager.h"
+#include "../SceneManagement/SceneManager.h"
 
 using Microsoft::WRL::ComPtr;
 

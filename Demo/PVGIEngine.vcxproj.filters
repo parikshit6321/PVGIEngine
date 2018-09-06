@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{b9c460ea-70e6-418b-9efe-d82e1523a59b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Demo">
+      <UniqueIdentifier>{2bb21d26-eeda-497b-8727-009378d472d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Renderer">
+      <UniqueIdentifier>{97bd56e1-e319-4873-b66b-0fdcc2574059}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\SceneManagement">
+      <UniqueIdentifier>{ea94ade1-c319-41ac-b6a0-1ba2da254369}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Utilities">
+      <UniqueIdentifier>{3b722459-06a6-4484-93a5-436bca8c047a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DemoApp.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\d3dApp.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\d3dUtil.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\FrameResource.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\GameTimer.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\Renderer.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\RenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\MathHelper.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\SceneManagement\DDSTextureLoader.cpp">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\SceneManagement\RenderObject.cpp">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\SceneManagement\SceneManager.cpp">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Engine\Utilities\d3dApp.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\d3dUtil.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\d3dx12.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\FrameResource.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\GameTimer.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\Renderer.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\RenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\MathHelper.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\UploadBuffer.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\SceneManager.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\RenderObject.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\MeshLoader.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\DDSTextureLoader.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

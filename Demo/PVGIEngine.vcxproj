@@ -19,37 +19,37 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Common\d3dApp.cpp" />
-    <ClCompile Include="..\Common\d3dUtil.cpp" />
-    <ClCompile Include="..\Common\DDSTextureLoader.cpp" />
-    <ClCompile Include="..\Common\GameTimer.cpp" />
-    <ClCompile Include="..\Common\MeshLoader.cpp" />
-    <ClCompile Include="..\Common\MathHelper.cpp" />
-    <ClCompile Include="DeferredShadingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
+    <ClCompile Include="..\Engine\Renderer\RenderPass.cpp" />
+    <ClCompile Include="..\Engine\SceneManagement\DDSTextureLoader.cpp" />
+    <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp" />
+    <ClCompile Include="..\Engine\SceneManagement\RenderObject.cpp" />
+    <ClCompile Include="..\Engine\SceneManagement\SceneManager.cpp" />
+    <ClCompile Include="..\Engine\Utilities\d3dApp.cpp" />
+    <ClCompile Include="..\Engine\Utilities\d3dUtil.cpp" />
+    <ClCompile Include="..\Engine\Utilities\FrameResource.cpp" />
+    <ClCompile Include="..\Engine\Utilities\GameTimer.cpp" />
+    <ClCompile Include="..\Engine\Utilities\MathHelper.cpp" />
     <ClCompile Include="DemoApp.cpp" />
-    <ClCompile Include="FrameResource.cpp" />
-    <ClCompile Include="GBufferRenderPass.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="RenderObject.cpp" />
-    <ClCompile Include="RenderPass.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Common\d3dApp.h" />
-    <ClInclude Include="..\Common\d3dUtil.h" />
-    <ClInclude Include="..\Common\d3dx12.h" />
-    <ClInclude Include="..\Common\DDSTextureLoader.h" />
-    <ClInclude Include="..\Common\GameTimer.h" />
-    <ClInclude Include="..\Common\MeshLoader.h" />
-    <ClInclude Include="..\Common\MathHelper.h" />
-    <ClInclude Include="..\Common\UploadBuffer.h" />
-    <ClInclude Include="DeferredShadingRenderPass.h" />
-    <ClInclude Include="FrameResource.h" />
-    <ClInclude Include="GBufferRenderPass.h" />
-    <ClInclude Include="Renderer.h" />
-    <ClInclude Include="RenderObject.h" />
-    <ClInclude Include="RenderPass.h" />
-    <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\Renderer.h" />
+    <ClInclude Include="..\Engine\Renderer\RenderPass.h" />
+    <ClInclude Include="..\Engine\SceneManagement\DDSTextureLoader.h" />
+    <ClInclude Include="..\Engine\SceneManagement\MeshLoader.h" />
+    <ClInclude Include="..\Engine\SceneManagement\RenderObject.h" />
+    <ClInclude Include="..\Engine\SceneManagement\SceneManager.h" />
+    <ClInclude Include="..\Engine\Utilities\d3dApp.h" />
+    <ClInclude Include="..\Engine\Utilities\d3dUtil.h" />
+    <ClInclude Include="..\Engine\Utilities\d3dx12.h" />
+    <ClInclude Include="..\Engine\Utilities\FrameResource.h" />
+    <ClInclude Include="..\Engine\Utilities\GameTimer.h" />
+    <ClInclude Include="..\Engine\Utilities\MathHelper.h" />
+    <ClInclude Include="..\Engine\Utilities\UploadBuffer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{99BAD649-F897-4374-B69D-EEB3F9CAE027}</ProjectGuid>

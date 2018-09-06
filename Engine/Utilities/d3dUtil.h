@@ -1,9 +1,3 @@
-//***************************************************************************************
-// d3dUtil.h by Frank Luna (C) 2015 All Rights Reserved.
-//
-// General helper code.
-//***************************************************************************************
-
 #pragma once
 
 #include <windows.h>
@@ -25,7 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
-#include "DDSTextureLoader.h"
+#include "../SceneManagement/DDSTextureLoader.h"
 
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
 {

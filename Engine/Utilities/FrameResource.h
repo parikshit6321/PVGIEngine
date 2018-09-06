@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Common/MathHelper.h"
-#include "../Common/UploadBuffer.h"
+#include "../Utilities/MathHelper.h"
+#include "../Utilities/UploadBuffer.h"
 
 struct ObjectConstants
 {
