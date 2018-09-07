@@ -67,7 +67,6 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	float4 inputColor = MainTex.Sample(gsamAnisotropicWrap, pin.TexC);
-	// ACES Tonemapping
-	float3 resultingColor = ACESFitted(inputColor.rgb);
+	float3 resultingColor = Uncharted2Tonemap(inputColor.rgb, 10.0f);
 	return float4(resultingColor, 1.0f);
 }
