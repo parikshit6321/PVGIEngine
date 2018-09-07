@@ -33,9 +33,7 @@ private:
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	void BuildFrameResources();
-    void DrawRenderObjects(ID3D12GraphicsCommandList* cmdList);
-	void DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList);
-
+    
 private:
 
     std::vector<std::unique_ptr<FrameResource>> mFrameResources;
@@ -97,7 +95,7 @@ bool DemoApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	SceneManager::LoadScene("../Assets/Scenes/DemoScene4.txt", md3dDevice, mCommandList);
+	SceneManager::LoadScene("../Assets/Scenes/DemoScene1.txt", md3dDevice, mCommandList);
 	Renderer::Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat);
 	BuildFrameResources();
 	
@@ -149,25 +147,12 @@ void DemoApp::Draw(const GameTimer& gt)
 {
     auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 	auto passCB = mCurrFrameResource->PassCB->Resource();
+	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
+	auto matCB = mCurrFrameResource->MaterialCB->Resource();
 
     // Reuse the memory associated with command recording.
     // We can only reset when the associated command lists have finished execution on the GPU.
     ThrowIfFailed(cmdListAlloc->Reset());
-
-	// Render Pass Steps :
-	// 1. Set the PSO
-	// 2. Set output buffers from Generic Read state to Render Target state
-	// 3. Clear the render target views
-	// 4. Set the render targets
-	// 5. Set the SRV heap
-	// 6. Set the root signature
-	// 7. Set the constant buffer view for PassCB
-	// 8. Draw scene/quad
-	// 9. Set output buffers from Render Target state to Generic Read state
-
-	//
-	// GBuffer Pass
-	//
 
     // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
     // Reusing the command list reuses memory.
@@ -177,138 +162,14 @@ void DemoApp::Draw(const GameTimer& gt)
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-    // Indicate a state transition on the resource usage.
-	for (int i = 0; i < 3; ++i)
-	{
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(),
-			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	}
 	
-    // Clear the back buffer and depth buffer.
-	for (int i = 0; i < 3; ++i)
-	{
-		mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			Renderer::gBufferRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-			i,
-			mRtvDescriptorSize), Colors::Black, 0, nullptr);
-	}
-	
-    // Specify the buffers we are going to render to.
-    mCommandList->OMSetRenderTargets(3, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		Renderer::gBufferRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		mRtvDescriptorSize), true, &DepthStencilView());
+	Renderer::gBufferRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
-	ID3D12DescriptorHeap* descriptorHeapsGBuffer[] = { Renderer::gBufferRenderPass.mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsGBuffer), descriptorHeapsGBuffer);
+	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
-	mCommandList->SetGraphicsRootSignature(Renderer::gBufferRenderPass.mRootSignature.Get());
+	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
-	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-
-    DrawRenderObjects(mCommandList.Get());
-
-	// Indicate a state transition on the resource usage.
-	for (int i = 0; i < 3; ++i)
-	{
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::gBufferRenderPass.mOutputBuffers[i].Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
-	}
-
-	//
-	// Deferred Shading Pass
-	//
-
-	mCommandList->SetPipelineState(Renderer::deferredShadingRenderPass.mPSO.Get());
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::deferredShadingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		mRtvDescriptorSize), Colors::Black, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		mRtvDescriptorSize), true, &DepthStencilView());
-
-	ID3D12DescriptorHeap* descriptorHeapsDeferredShading[] = { Renderer::deferredShadingRenderPass.mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsDeferredShading), descriptorHeapsDeferredShading);
-
-	mCommandList->SetGraphicsRootSignature(Renderer::deferredShadingRenderPass.mRootSignature.Get());
-
-	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-
-	DrawPostProcessingQuad(mCommandList.Get());
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::deferredShadingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
-
-	//
-	// Tone mapping 
-	//
-
-	mCommandList->SetPipelineState(Renderer::toneMappingRenderPass.mPSO.Get());
-	
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::toneMappingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		Renderer::toneMappingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		mRtvDescriptorSize), Colors::Black, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		Renderer::toneMappingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		mRtvDescriptorSize), true, &DepthStencilView());
-
-	/*mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::Black, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
-	*/
-	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { Renderer::toneMappingRenderPass.mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
-
-	mCommandList->SetGraphicsRootSignature(Renderer::toneMappingRenderPass.mRootSignature.Get());
-
-	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-
-	DrawPostProcessingQuad(mCommandList.Get());
-
-    // Indicate a state transition on the resource usage.
-	//mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-	//	D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::toneMappingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
-
-	//
-	// Copy to back buffer
-	//
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::toneMappingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_SOURCE));
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST));
-
-	mCommandList->CopyResource(CurrentBackBuffer(), Renderer::toneMappingRenderPass.mOutputBuffers[0].Get());
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT));
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::toneMappingRenderPass.mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_GENERIC_READ));
+	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());
 
     // Done recording commands.
     ThrowIfFailed(mCommandList->Close());
@@ -455,23 +316,4 @@ void DemoApp::BuildFrameResources()
         mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
             1, (UINT)SceneManager::GetScenePtr()->numberOfObjects, (UINT)SceneManager::GetScenePtr()->numberOfObjects));
     }
-}
-
-void DemoApp::DrawRenderObjects(ID3D12GraphicsCommandList* cmdList)
-{
-    UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-    UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
- 
-	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
-	auto matCB = mCurrFrameResource->MaterialCB->Resource();
-
-    for(size_t i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
-    {
-		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(cmdList, objectCB, matCB, Renderer::gBufferRenderPass.mSrvDescriptorHeap, mCbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
-    }
-}
-
-void DemoApp::DrawPostProcessingQuad(ID3D12GraphicsCommandList* cmdList)
-{
-	SceneManager::GetScenePtr()->mQuadrObject->Draw(cmdList, nullptr, nullptr, Renderer::deferredShadingRenderPass.mSrvDescriptorHeap, 0, 0, 0);
 }

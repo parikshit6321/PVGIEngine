@@ -1,5 +1,44 @@
 #include "DeferredShadingRenderPass.h"
 
+void DeferredShadingRenderPass::Execute(ID3D12GraphicsCommandList *commandList, D3D12_CPU_DESCRIPTOR_HANDLE *depthStencilViewPtr,
+	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+{
+	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	commandList->SetPipelineState(mPSO.Get());
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
+		rtvDescriptorSize), Colors::Black, 0, nullptr);
+
+	// Specify the buffers we are going to render to.
+	commandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
+		rtvDescriptorSize), true, depthStencilViewPtr);
+
+	ID3D12DescriptorHeap* descriptorHeapsDeferredShading[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeapsDeferredShading), descriptorHeapsDeferredShading);
+
+	commandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
+	Draw(commandList, objectCB, matCB);
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+}
+
+void DeferredShadingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+{
+	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0);
+}
+
 void DeferredShadingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;

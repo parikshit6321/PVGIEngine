@@ -4,11 +4,25 @@
 
 using Microsoft::WRL::ComPtr;
 
+// Render Pass Steps :
+
+// 1. Set the PSO
+// 2. Set output buffers from Generic Read state to Render Target state
+// 3. Clear the render target views
+// 4. Set the render targets
+// 5. Set the SRV heap
+// 6. Set the root signature
+// 7. Set the constant buffer view for PassCB
+// 8. Draw scene/quad
+// 9. Set output buffers from Render Target state to Generic Read state
+
 class RenderPass
 {
 public:
 	RenderPass() = default;
 	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT, ComPtr<ID3D12Resource>*);
+	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, 
+		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) = 0;
 	~RenderPass() = default;
 
 	ComPtr<ID3D12PipelineState> mPSO = nullptr;
@@ -27,6 +41,7 @@ protected:
 	virtual void BuildDescriptorHeaps() = 0;
 	virtual void BuildShaders() = 0;
 	virtual void BuildPSOs() = 0;
+	virtual void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*) = 0;
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
 

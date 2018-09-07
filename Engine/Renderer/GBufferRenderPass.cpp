@@ -1,5 +1,63 @@
 #include "GBufferRenderPass.h"
 
+void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE* depthStencilViewPtr,
+	ID3D12Resource* passCB, ID3D12Resource* objectCB, ID3D12Resource* matCB)
+{
+	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	commandList->SetPipelineState(mPSO.Get());
+
+	// Indicate a state transition on the resource usage.
+	for (int i = 0; i < 3; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	}
+
+	// Clear the back buffer and depth buffer.
+	for (int i = 0; i < 3; ++i)
+	{
+		commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+			i,
+			rtvDescriptorSize), Colors::Black, 0, nullptr);
+	}
+
+	// Specify the buffers we are going to render to.
+	commandList->OMSetRenderTargets(3, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
+		rtvDescriptorSize), true, depthStencilViewPtr);
+
+	ID3D12DescriptorHeap* descriptorHeapsGBuffer[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeapsGBuffer), descriptorHeapsGBuffer);
+
+	commandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+
+	Draw(commandList, objectCB, matCB);
+
+	// Indicate a state transition on the resource usage.
+	for (int i = 0; i < 3; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+	}
+}
+
+void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
+{
+	auto cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	for (size_t i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
+	{
+		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(commandList, objectCB, matCB, mSrvDescriptorHeap, cbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
+	}
+}
+
 void GBufferRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
