@@ -147,7 +147,7 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 	}
 
 	// Create the post processing quad geometry
-	MeshLoader::MeshData tempMesh = MeshLoader::CreateQuad(0.0f, 0.0f, 2.0f, 2.0f, 0.0f);
+	MeshLoader::MeshData tempMesh = MeshLoader::CreateQuad();
 
 	totalVertexCount += tempMesh.Vertices.size();
 

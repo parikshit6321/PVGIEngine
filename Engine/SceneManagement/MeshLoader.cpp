@@ -2,7 +2,7 @@
 
 using namespace DirectX;
  
-MeshLoader::MeshData MeshLoader::CreateQuad(float x, float y, float w, float h, float depth)
+MeshLoader::MeshData MeshLoader::CreateQuad()
 {
     MeshData meshData;
 
@@ -11,25 +11,25 @@ MeshLoader::MeshData MeshLoader::CreateQuad(float x, float y, float w, float h, 
 
 	// Position coordinates specified in NDC space.
 	meshData.Vertices[0] = Vertex(
-        x, y - h, depth,
+        0.0f, -2.0f, 0.0f,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f);
 
 	meshData.Vertices[1] = Vertex(
-		x, y, depth,
+		0.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f);
 
 	meshData.Vertices[2] = Vertex(
-		x+w, y, depth,
+		2.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		1.0f, 0.0f);
 
 	meshData.Vertices[3] = Vertex(
-		x+w, y-h, depth,
+		2.0f, -2.0f, 0.0f,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		1.0f, 1.0f);

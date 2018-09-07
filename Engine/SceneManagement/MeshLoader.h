@@ -64,7 +64,8 @@ public:
 	};
 
 
-	static MeshData CreateQuad(float x, float y, float w, float h, float depth);
+	static MeshData CreateQuad();
+	static MeshData CreateSkyBox();
 	static MeshData LoadModel(std::string modelName);
 
 };
