@@ -5,7 +5,7 @@
 //***************************************************************************************
 
 // Include structures and functions for lighting.
-#include "LightingUtil.hlsl"
+#include "NormalMappingUtil.hlsl"
 
 Texture2D    gDiffuseOpacityMap		 : register(t0);
 Texture2D	 gNormalRoughnessMap	 : register(t1);

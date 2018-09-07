@@ -5,7 +5,7 @@
 //***************************************************************************************
 
 // Include structures and functions for lighting.
-#include "LightingUtil.hlsl"
+#include "ToneMappingUtil.hlsl"
 
 Texture2D    MainTex  : register(t0);
 

@@ -148,6 +148,7 @@ void DemoApp::Update(const GameTimer& gt)
 void DemoApp::Draw(const GameTimer& gt)
 {
     auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
+	auto passCB = mCurrFrameResource->PassCB->Resource();
 
     // Reuse the memory associated with command recording.
     // We can only reset when the associated command lists have finished execution on the GPU.
@@ -188,12 +189,11 @@ void DemoApp::Draw(const GameTimer& gt)
 		0,
 		mRtvDescriptorSize), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { Renderer::gBufferRenderPass.mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	ID3D12DescriptorHeap* descriptorHeapsGBuffer[] = { Renderer::gBufferRenderPass.mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsGBuffer), descriptorHeapsGBuffer);
 
 	mCommandList->SetGraphicsRootSignature(Renderer::gBufferRenderPass.mRootSignature.Get());
 
-	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
     DrawRenderObjects(mCommandList.Get());
@@ -209,15 +209,14 @@ void DemoApp::Draw(const GameTimer& gt)
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
-	ID3D12DescriptorHeap* descriptorHeapsPostProcessing[] = { Renderer::deferredShadingRenderPass.mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsPostProcessing), descriptorHeapsPostProcessing);
+	ID3D12DescriptorHeap* descriptorHeapsDeferredShading[] = { Renderer::deferredShadingRenderPass.mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsDeferredShading), descriptorHeapsDeferredShading);
 
 	mCommandList->SetGraphicsRootSignature(Renderer::deferredShadingRenderPass.mRootSignature.Get());
 
 	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	// Specify the buffers we are going to render to.
-	//mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 	mCommandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
@@ -225,12 +224,9 @@ void DemoApp::Draw(const GameTimer& gt)
 
 	mCommandList->SetPipelineState(Renderer::deferredShadingRenderPass.mPSO.Get());
 
-	//mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		//D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::deferredShadingRenderPass.mOutputBuffers[0].Get(),
 		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	//mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
 	mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
