@@ -7,10 +7,6 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 	{
 		DrawQuad(cmdList, srvDescriptorHeap);
 	}
-	else if (isSkyBox)
-	{
-		DrawSkyBox(cmdList, srvDescriptorHeap);
-	}
 	else
 	{
 		cmdList->IASetVertexBuffers(0, 1, &(Geo->VertexBufferView()));
@@ -43,17 +39,6 @@ void RenderObject::InitializeAsQuad(MeshGeometry* input, UINT quadIndex)
 	SetIsPostProcessingQuad(true);
 }
 
-void RenderObject::InitializeAsSkyBox(MeshGeometry* input, UINT skyBoxIndex)
-{
-	SetWorldMatrix(&XMMatrixIdentity());
-	SetObjCBIndex(0);
-	Geo = input;
-	SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	SetIndexCount(Geo->DrawArgs[skyBoxIndex].IndexCount);
-	SetStartIndexLocation(Geo->DrawArgs[skyBoxIndex].StartIndexLocation);
-	SetBaseVertexLocation(Geo->DrawArgs[skyBoxIndex].BaseVertexLocation);
-	SetIsSkyBox(true);
-}
 
 int RenderObject::GetNumFramesDirty()
 {
@@ -115,11 +100,6 @@ void RenderObject::SetIsPostProcessingQuad(bool input)
 	isPostProcessingQuad = input;
 }
 
-void RenderObject::SetIsSkyBox(bool input)
-{
-	isSkyBox = input;
-}
-
 void RenderObject::DecrementNumFramesDirty()
 {
 	--NumFramesDirty;
@@ -135,18 +115,5 @@ void RenderObject::DrawQuad(ID3D12GraphicsCommandList * cmdList, Microsoft::WRL:
 	
 	cmdList->SetGraphicsRootDescriptorTable(0, tex);
 	
-	cmdList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
-}
-
-void RenderObject::DrawSkyBox(ID3D12GraphicsCommandList * cmdList, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap)
-{
-	cmdList->IASetVertexBuffers(0, 1, &(Geo->VertexBufferView()));
-	cmdList->IASetIndexBuffer(&(Geo->IndexBufferView()));
-	cmdList->IASetPrimitiveTopology(PrimitiveType);
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	
-	cmdList->SetGraphicsRootDescriptorTable(0, tex);
-
 	cmdList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
 }

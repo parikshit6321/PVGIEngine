@@ -34,7 +34,6 @@ struct Scene
 	std::unique_ptr<RenderObject>* mOpaqueRObjects;
 	
 	std::unique_ptr<RenderObject> mQuadrObject;
-	std::unique_ptr<RenderObject> mSkyBoxrObject;
 	
 	std::unique_ptr<MeshGeometry> mSceneGeometry;
 };
