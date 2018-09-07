@@ -167,6 +167,8 @@ void DemoApp::Draw(const GameTimer& gt)
 
 	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
 	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());
