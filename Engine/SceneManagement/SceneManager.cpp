@@ -60,16 +60,17 @@ void SceneManager::ResizeBuffers()
 {
 	mScene.mSceneGeometry = std::make_unique<MeshGeometry>();
 	mScene.mSceneGeometry->Name = mScene.name;
-	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfObjects + 1];
-	mScene.mTextures = new std::unique_ptr<Texture>[2 * mScene.numberOfObjects];
+	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfObjects + 2];
+	mScene.mTextures = new std::unique_ptr<Texture>[(2 * mScene.numberOfObjects) + 1];
 	mScene.mMaterials = new std::unique_ptr<Material>[mScene.numberOfObjects];
-	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfObjects + 1];
+	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfObjects + 2];
 	mScene.mOpaqueRObjects = new std::unique_ptr<RenderObject>[mScene.numberOfObjects];
 }
 
 void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice, 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList)
 {
+	// Load the scene material textures
 	for (UINT i = 0; i < (2 * mScene.numberOfObjects); i += 2)
 	{
 		// Load the diffuse opacity texture first
@@ -101,6 +102,17 @@ void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
 
 		mScene.mTextures[i+1] = std::move(texNormalRoughness);
 	}
+
+	// Load the skybox texture
+	auto texSkyBox = std::make_unique<Texture>();
+	texSkyBox->Name = "SkyBox";
+	texSkyBox->Filename = L"../Assets/Textures/SkyBox.dds";
+
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), texSkyBox->Filename.c_str(),
+		texSkyBox->Resource, texSkyBox->UploadHeap));
+
+	mScene.mTextures[2 * mScene.numberOfObjects] = std::move(texSkyBox);
 }
 
 void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
@@ -175,6 +187,35 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 	mScene.mSceneGeometry->DrawArgs[mScene.numberOfObjects] = *mScene.mSubMeshes[mScene.numberOfObjects];
 
+	// Create the sky box geometry
+	MeshLoader::MeshData tempMeshSkyBox = MeshLoader::CreateSkyBox();
+
+	totalVertexCount += tempMeshSkyBox.Vertices.size();
+
+	auto tempSubMeshSkyBox = std::make_unique<SubmeshGeometry>();;
+	tempSubMeshSkyBox->IndexCount = (UINT)tempMeshSkyBox.Indices32.size();
+	tempSubMeshSkyBox->StartIndexLocation = currentStartIndexCount;
+	tempSubMeshSkyBox->BaseVertexLocation = currentBaseVertexLocation;
+
+	currentStartIndexCount += tempMeshSkyBox.Indices32.size();
+	currentBaseVertexLocation += tempMeshSkyBox.Vertices.size();
+
+	mScene.mSubMeshes[mScene.numberOfObjects + 1] = std::move(tempSubMeshSkyBox);
+
+	vertices.resize(totalVertexCount);
+
+	for (size_t i = 0; i < tempMeshSkyBox.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = tempMeshSkyBox.Vertices[i].Position;
+		vertices[k].Normal = tempMeshSkyBox.Vertices[i].Normal;
+		vertices[k].TexC = tempMeshSkyBox.Vertices[i].TexC;
+		vertices[k].Tangent = tempMeshSkyBox.Vertices[i].TangentU;
+	}
+
+	indices.insert(indices.end(), std::begin(tempMeshSkyBox.GetIndices16()), std::end(tempMeshSkyBox.GetIndices16()));
+
+	mScene.mSceneGeometry->DrawArgs[mScene.numberOfObjects + 1] = *mScene.mSubMeshes[mScene.numberOfObjects + 1];
+
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
@@ -237,7 +278,11 @@ void SceneManager::BuildRenderObjects()
 		currentCBIndex++;
 	}
 
-	// Make the post processing quad render item
+	// Make the post processing quad render object
 	mScene.mQuadrObject = std::make_unique<RenderObject>();
 	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get(), mScene.numberOfObjects);
+
+	// Make the sky box render object
+	mScene.mSkyBoxrObject = std::make_unique<RenderObject>();
+	mScene.mSkyBoxrObject->InitializeAsSkyBox(mScene.mSceneGeometry.get(), mScene.numberOfObjects + 1);
 }

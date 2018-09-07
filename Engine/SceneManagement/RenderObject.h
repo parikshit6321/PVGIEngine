@@ -14,6 +14,7 @@ public:
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
 
 	void InitializeAsQuad(MeshGeometry*, UINT);
+	void InitializeAsSkyBox(MeshGeometry*, UINT);
 
 	int GetNumFramesDirty();
 	XMFLOAT4X4* GetWorldMatrixPtr();
@@ -28,6 +29,7 @@ public:
 	void SetBaseVertexLocation(int);
 	void SetWorldMatrix(XMMATRIX*);
 	void SetIsPostProcessingQuad(bool);
+	void SetIsSkyBox(bool);
 
 	void DecrementNumFramesDirty();
 
@@ -36,6 +38,7 @@ public:
 private:
 
 	void DrawQuad(ID3D12GraphicsCommandList*, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>);
+	void DrawSkyBox(ID3D12GraphicsCommandList*, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>);
 
 	// World matrix of the shape that describes the object's local space
 	// relative to the world space, which defines the position, orientation,
@@ -63,4 +66,5 @@ private:
 	int BaseVertexLocation = 0;
 
 	bool isPostProcessingQuad = false;
+	bool isSkyBox = false;
 };
