@@ -7,8 +7,11 @@
 // Include structures and functions for lighting.
 #include "ToneMappingUtil.hlsl"
 
-Texture2D    MainTex  : register(t0);
-TextureCube  SkyBoxTex : register(t1);
+Texture2D    DiffuseMetallicGBuffer  : register(t0);
+Texture2D	 NormalRoughnessGBuffer  : register(t1);
+Texture2D	 PositionDepthGBuffer	 : register(t2);
+Texture2D    MainTex				 : register(t3);
+TextureCube  SkyBoxTex				 : register(t4);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
@@ -67,6 +70,18 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 inputColor = MainTex.Sample(gsamAnisotropicWrap, pin.TexC);
-	return inputColor;
+	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
+	float depth = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).a;
+	float3 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
+
+	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
+
+	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, pin.PosV);
+
+	if (depth == 1.0f)
+		resultingColor = skyBoxColor.rgb;
+	else
+		resultingColor = inputColor.rgb;
+
+	return float4(resultingColor, 1.0f);
 }

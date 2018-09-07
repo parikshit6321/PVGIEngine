@@ -9,13 +9,13 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer)
 {
 	gBufferRenderPass.Initialize(inputDevice, inputWidth, inputHeight, 
-		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr);
+		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr);
 	deferredShadingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, gBufferRenderPass.mOutputBuffers);
+		inputFormatBackBuffer, inputFormatDepthBuffer, gBufferRenderPass.mOutputBuffers, nullptr);
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers);
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers);
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers);
+		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers, nullptr);
 }
 
 void Renderer::CopyToBackBuffer(ID3D12GraphicsCommandList* commandList, ID3D12Resource * backBuffer)

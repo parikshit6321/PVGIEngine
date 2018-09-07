@@ -73,8 +73,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normal.a;
 	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
-	float depth = position.a;
-
+	
 	float3 skyColor = float3(0.80f, 0.941f, 1.0f);
 
 	float3 N = normal.xyz;
@@ -114,12 +113,5 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
 
-	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
-	
-	if (depth == 1.0f)
-		resultingColor = skyColor;
-	else
-		resultingColor = directLight;
-
-	return float4(resultingColor, 1.0f);
+	return float4(directLight, 1.0f);
 }

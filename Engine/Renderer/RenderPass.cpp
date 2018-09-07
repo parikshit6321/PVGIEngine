@@ -1,7 +1,8 @@
 #include "RenderPass.h"
 
 void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight, 
-	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer, ComPtr <ID3D12Resource>* inputBuffers)
+	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer, ComPtr <ID3D12Resource>* inputBuffers,
+	ComPtr<ID3D12Resource>* gBuffers)
 {
 	md3dDevice = inputDevice;
 	mClientWidth = inputWidth;
@@ -9,6 +10,7 @@ void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, in
 	mBackBufferFormat = inputFormatBackBuffer;
 	mDepthStencilFormat = inputFormatDepthBuffer;
 	mInputBuffers = inputBuffers;
+	mGBuffers = gBuffers;
 
 
 	mInputLayout =

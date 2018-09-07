@@ -36,13 +36,13 @@ void SkyBoxRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CP
 
 void SkyBoxRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
-	SceneManager::GetScenePtr()->mSkyBoxrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0);
+	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0);
 }
 
 void SkyBoxRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
@@ -130,7 +130,7 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 2;
+	srvHeapDesc.NumDescriptors = 5;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -149,6 +149,13 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 	srvDesc.Texture2D.MipLevels = 1;
 
 	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	for (int i = 0; i < 3; ++i)
+	{
+		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
+
+		hDescriptor.Offset(1, cbvSrvDescriptorSize);
+	}
 
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 
