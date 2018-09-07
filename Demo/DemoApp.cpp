@@ -306,6 +306,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
 									  SceneManager::GetScenePtr()->lightDirection.y, 
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
+	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation)));
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

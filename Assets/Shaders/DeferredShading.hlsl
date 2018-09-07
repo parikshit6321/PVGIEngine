@@ -33,6 +33,7 @@ cbuffer cbPass : register(b0)
 	float gDeltaTime;
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
+	float4x4 gSkyBoxMatrix;
 };
 
 struct VertexIn

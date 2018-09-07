@@ -21,6 +21,7 @@ struct Scene
 
 	std::string					name;
 	DirectX::XMFLOAT3			cameraPosition;
+	DirectX::XMFLOAT4			cameraRotation;
 	DirectX::XMFLOAT3			lightDirection;
 	DirectX::XMFLOAT3			lightStrength;
 	UINT						numberOfObjects;

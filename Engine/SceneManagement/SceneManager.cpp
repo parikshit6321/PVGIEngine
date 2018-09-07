@@ -25,18 +25,25 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 
 	std::string name;
 	DirectX::XMFLOAT3 cameraPosition;
+	DirectX::XMFLOAT4 cameraRotation;
 	DirectX::XMFLOAT3 lightDirection;
 	DirectX::XMFLOAT3 lightStrength;
 	UINT numberOfObjects;
 
 	inputFile >> name;
 	inputFile >> cameraPosition.x >> cameraPosition.y >> cameraPosition.z;
+	inputFile >> cameraRotation.x >> cameraRotation.y >> cameraRotation.z >> cameraRotation.w;
 	inputFile >> lightDirection.x >> lightDirection.y >> lightDirection.z;
 	inputFile >> lightStrength.x >> lightStrength.y >> lightStrength.z;
 	inputFile >> numberOfObjects;
 
+	cameraRotation.x *= -1.0f;
+	cameraRotation.y *= -1.0f;
+	cameraRotation.z *= -1.0f;
+
 	mScene.name = name;
 	mScene.cameraPosition = cameraPosition;
+	mScene.cameraRotation = cameraRotation;
 	mScene.lightDirection = lightDirection;
 	mScene.lightStrength = lightStrength;
 	mScene.numberOfObjects = numberOfObjects;

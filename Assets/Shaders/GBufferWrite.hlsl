@@ -38,6 +38,7 @@ cbuffer cbPass : register(b1)
 	float gDeltaTime;
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
+	float4x4 gSkyBoxMatrix;
 };
 
 cbuffer cbMaterial : register(b2)

@@ -35,6 +35,7 @@ cbuffer cbPass : register(b0)
 	float gDeltaTime;
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
+	float4x4 gSkyBoxMatrix;
 };
 
 struct VertexIn
@@ -76,7 +77,9 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
 
-	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, pin.PosV);
+	float3 sampleDirection = mul(float4(pin.PosV, 1.0f), gSkyBoxMatrix).xyz;
+
+	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, sampleDirection);
 
 	if (depth == 1.0f)
 		resultingColor = skyBoxColor.rgb;
