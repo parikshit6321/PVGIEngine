@@ -1,9 +1,9 @@
-#include "DeferredShadingRenderPass.h"
+#include "ToneMappingRenderPass.h"
 
-void DeferredShadingRenderPass::BuildRootSignature()
+void ToneMappingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
@@ -38,60 +38,13 @@ void DeferredShadingRenderPass::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void DeferredShadingRenderPass::BuildDescriptorHeaps()
+void ToneMappingRenderPass::BuildDescriptorHeaps()
 {
-	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
-
-	// Construct the RTV Heap first
-	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
-
-	D3D12_RESOURCE_DESC resourceDesc;
-	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	resourceDesc.Alignment = 0;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.SampleDesc.Quality = 0;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Width = mClientWidth;
-	resourceDesc.Height = mClientHeight;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-	D3D12_CLEAR_VALUE clearVal;
-	clearVal.Color[0] = 0.0f;
-	clearVal.Color[1] = 0.0f;
-	clearVal.Color[2] = 0.0f;
-	clearVal.Color[3] = 1.0f;
-	clearVal.Format = resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-
-	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
-			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
-	
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 1;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-		&rtvHeapDesc, IID_PPV_ARGS(mRtvDescriptorHeap.GetAddressOf())));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
-
-	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
-
 	//
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 1;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -111,22 +64,17 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 
 	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (int i = 0; i < 3; ++i)
-	{
-		md3dDevice->CreateShaderResourceView(mInputBuffers[i].Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 
-		hDescriptor.Offset(1, cbvSrvDescriptorSize);
-	}
 }
 
-void DeferredShadingRenderPass::BuildShaders()
+void ToneMappingRenderPass::BuildShaders()
 {
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/DeferredShading.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/DeferredShading.hlsl", nullptr, "PS", "ps_5_1");
-
+	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/ToneMapping.hlsl", nullptr, "VS", "vs_5_1");
+	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/ToneMapping.hlsl", nullptr, "PS", "ps_5_1");
 }
 
-void DeferredShadingRenderPass::BuildPSOs()
+void ToneMappingRenderPass::BuildPSOs()
 {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	depthStencilDesc.DepthEnable = false;

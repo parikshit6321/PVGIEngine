@@ -198,6 +198,10 @@ void DemoApp::Draw(const GameTimer& gt)
 
     DrawRenderObjects(mCommandList.Get());
 
+	//
+	// Deferred Shading Pass
+	//
+
 	// Indicate a state transition on the resource usage.
 	for (int i = 0; i < 3; ++i)
 	{
@@ -213,15 +217,51 @@ void DemoApp::Draw(const GameTimer& gt)
 	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	//mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	mCommandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
+		mRtvDescriptorSize), true, &DepthStencilView());
 
 	mCommandList->SetPipelineState(Renderer::deferredShadingRenderPass.mPSO.Get());
 
+	//mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		//D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::deferredShadingRenderPass.mOutputBuffers[0].Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	//mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		Renderer::deferredShadingRenderPass.mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		0,
+		mRtvDescriptorSize), Colors::Black, 0, nullptr);
+
+	DrawPostProcessingQuad(mCommandList.Get());
+
+	//
+	// Tone mapping 
+	//
+
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Renderer::deferredShadingRenderPass.mOutputBuffers[0].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+	
+	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { Renderer::toneMappingRenderPass.mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
+
+	mCommandList->SetGraphicsRootSignature(Renderer::toneMappingRenderPass.mRootSignature.Get());
+
+	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
+	// Specify the buffers we are going to render to.
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	
+	mCommandList->SetPipelineState(Renderer::toneMappingRenderPass.mPSO.Get());
+
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
-
+	
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::Black, 0, nullptr);
+	
 	DrawPostProcessingQuad(mCommandList.Get());
 
     // Indicate a state transition on the resource usage.

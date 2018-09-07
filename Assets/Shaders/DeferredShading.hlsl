@@ -114,14 +114,11 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
 
-	// ACES Tonemapping
-	directLight.rgb = ACESFitted(directLight.rgb);
-
 	// Gamma Correction
 	float gc = (1.0f / 2.2f);
 	directLight.rgb = pow(directLight.rgb, float3(gc, gc, gc));
 
-	float3 resultingColor;
+	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
 	
 	if (depth == 1.0f)
 		resultingColor = skyColor;

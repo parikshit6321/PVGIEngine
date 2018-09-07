@@ -60,6 +60,9 @@
     <ClCompile Include="..\Engine\SceneManagement\SceneManager.cpp">
       <Filter>Engine\SceneManagement</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -106,6 +109,9 @@
     </ClInclude>
     <ClInclude Include="..\Engine\SceneManagement\DDSTextureLoader.h">
       <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
