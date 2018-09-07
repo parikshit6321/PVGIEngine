@@ -64,7 +64,7 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[1] = 0.0f;
 	clearVal.Color[2] = 0.0f;
 	clearVal.Color[3] = 1.0f;
-	clearVal.Format = resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
