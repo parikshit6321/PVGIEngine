@@ -63,6 +63,9 @@
     <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -111,6 +114,9 @@
       <Filter>Engine\SceneManagement</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

@@ -23,6 +23,7 @@
     <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
     <ClCompile Include="..\Engine\Renderer\RenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\DDSTextureLoader.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp" />
@@ -40,6 +41,7 @@
     <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\Renderer.h" />
     <ClInclude Include="..\Engine\Renderer\RenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h" />
     <ClInclude Include="..\Engine\SceneManagement\DDSTextureLoader.h" />
     <ClInclude Include="..\Engine\SceneManagement\MeshLoader.h" />

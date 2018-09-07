@@ -2,6 +2,7 @@
 
 #include "GBufferRenderPass.h"
 #include "DeferredShadingRenderPass.h"
+#include "SkyBoxRenderPass.h"
 #include "ToneMappingRenderPass.h"
 
 class Renderer
@@ -15,6 +16,7 @@ public:
 
 	static GBufferRenderPass gBufferRenderPass;
 	static DeferredShadingRenderPass deferredShadingRenderPass;
+	static SkyBoxRenderPass skyBoxRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
 };
 

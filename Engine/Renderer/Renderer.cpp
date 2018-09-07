@@ -2,6 +2,7 @@
 
 GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
+SkyBoxRenderPass Renderer::skyBoxRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
 
 void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight,
@@ -11,6 +12,8 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr);
 	deferredShadingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, gBufferRenderPass.mOutputBuffers);
+	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers);
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers);
 }
