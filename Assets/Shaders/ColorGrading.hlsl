@@ -63,7 +63,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float height = 16.0f;
 	float dimension = 16.0f;
 	
-	float4 inputColor = MainTex.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
 
 	float blueCell = inputColor.b * (dimension - 1.0f);
 
@@ -79,8 +79,8 @@ float4 PS(VertexOut pin) : SV_Target
 	float2 positionInLUTLower = float2(blueCellLower / dimension + rComponentOffset, gComponentOffset);
 	float2 positionInLUTUpper = float2(blueCellUpper / dimension + rComponentOffset, gComponentOffset);
 
-	float4 gradedColorLower = UserLUT.Sample(gsamAnisotropicWrap, positionInLUTLower);
-	float4 gradedColorUpper = UserLUT.Sample(gsamAnisotropicWrap, positionInLUTUpper);
+	float4 gradedColorLower = UserLUT.Sample(gsamLinearWrap, positionInLUTLower);
+	float4 gradedColorUpper = UserLUT.Sample(gsamLinearWrap, positionInLUTUpper);
 
 	float4 gradedColor = lerp(gradedColorLower, gradedColorUpper, frac(blueCell));
 
