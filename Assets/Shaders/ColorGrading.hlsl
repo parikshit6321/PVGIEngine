@@ -1,5 +1,3 @@
-#include "ColorGradingUtil.hlsl"
-
 Texture2D    MainTex  : register(t0);
 Texture2D	 UserLUT  : register(t1);
 
@@ -16,7 +14,7 @@ cbuffer cbPass : register(b0)
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
 	float3 gEyePosW;
-	float cbPerObjectPad1;
+	float userLUTContribution;
 	float2 gRenderTargetSize;
 	float2 gInvRenderTargetSize;
 	float gNearZ;
@@ -26,7 +24,6 @@ cbuffer cbPass : register(b0)
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
 	float4x4 gSkyBoxMatrix;
-	float4 userLUTParams;
 };
 
 struct VertexIn
@@ -62,12 +59,32 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
+	float width = 256.0f;
+	float height = 16.0f;
+	float dimension = 16.0f;
 	
-	float3 colorGraded = ApplyLut2d(UserLUT, gsamLinearWrap, LinearToGammaSpace(inputColor.rgb), userLUTParams.xyz);
-	colorGraded = GammaToLinearSpace(colorGraded);
+	float4 inputColor = MainTex.Sample(gsamAnisotropicWrap, pin.TexC);
 
-	float3 result = lerp(inputColor.rgb, colorGraded, userLUTParams.w);
-	
-	return float4(result, 1.0f);
+	float blueCell = inputColor.b * (dimension - 1.0f);
+
+	float blueCellLower = floor(blueCell);
+	float blueCellUpper = ceil(blueCell);
+
+	float halfPixelInX = 0.5f / width;
+	float halfPixelInY = 0.5f / height;
+
+	float rComponentOffset = halfPixelInX + inputColor.r / dimension * ((dimension - 1.0f) / dimension);
+	float gComponentOffset = halfPixelInY + inputColor.g * ((dimension - 1.0f) / dimension);
+
+	float2 positionInLUTLower = float2(blueCellLower / dimension + rComponentOffset, gComponentOffset);
+	float2 positionInLUTUpper = float2(blueCellUpper / dimension + rComponentOffset, gComponentOffset);
+
+	float4 gradedColorLower = UserLUT.Sample(gsamAnisotropicWrap, positionInLUTLower);
+	float4 gradedColorUpper = UserLUT.Sample(gsamAnisotropicWrap, positionInLUTUpper);
+
+	float4 gradedColor = lerp(gradedColorLower, gradedColorUpper, frac(blueCell));
+
+	float4 result = lerp(inputColor, gradedColor, userLUTContribution);
+
+	return result;
 }

@@ -17,7 +17,7 @@ struct PassConstants
     DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 InvViewProj = MathHelper::Identity4x4();
     DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
-    float cbPerObjectPad1 = 0.0f;
+    float userLUTContribution = 0.3f;
     DirectX::XMFLOAT2 RenderTargetSize = { 0.0f, 0.0f };
     DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
     float NearZ = 0.0f;
@@ -29,8 +29,6 @@ struct PassConstants
 	DirectX::XMFLOAT4 SunLightDirection = { 0.5f, -0.5f, 0.5f, 1.0f };
 
 	DirectX::XMFLOAT4X4 skyBoxMatrix = MathHelper::Identity4x4();
-
-	DirectX::XMFLOAT4 userLUTParams = { (1.0f / 256.0f), (1.0f / 16.0f), 15.0f, 0.5f };
 };
 
 struct Vertex
