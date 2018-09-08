@@ -296,7 +296,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 	mMainPassCB.EyePosW = mEyePos;
-	mMainPassCB.userLUTContribution = 0.0f;
+	mMainPassCB.userLUTContribution = 1.0f;
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 0.1f;
