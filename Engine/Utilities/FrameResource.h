@@ -29,6 +29,8 @@ struct PassConstants
 	DirectX::XMFLOAT4 SunLightDirection = { 0.5f, -0.5f, 0.5f, 1.0f };
 
 	DirectX::XMFLOAT4X4 skyBoxMatrix = MathHelper::Identity4x4();
+
+	DirectX::XMFLOAT4 userLUTParams = { (1.0f / 256.0f), (1.0f / 16.0f), 15.0f, 0.5f };
 };
 
 struct Vertex

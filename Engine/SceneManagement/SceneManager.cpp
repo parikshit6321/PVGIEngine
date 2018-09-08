@@ -67,9 +67,12 @@ void SceneManager::ResizeBuffers()
 {
 	mScene.mSceneGeometry = std::make_unique<MeshGeometry>();
 	mScene.mSceneGeometry->Name = mScene.name;
+	// 1 extra for quad
 	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfObjects + 1];
-	mScene.mTextures = new std::unique_ptr<Texture>[(2 * mScene.numberOfObjects) + 1];
+	// 2 extra for skybox cubemap and lut texture
+	mScene.mTextures = new std::unique_ptr<Texture>[(2 * mScene.numberOfObjects) + 2];
 	mScene.mMaterials = new std::unique_ptr<Material>[mScene.numberOfObjects];
+	// 1 extra for quad
 	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfObjects + 1];
 	mScene.mOpaqueRObjects = new std::unique_ptr<RenderObject>[mScene.numberOfObjects];
 }
@@ -120,6 +123,17 @@ void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
 		texSkyBox->Resource, texSkyBox->UploadHeap));
 
 	mScene.mTextures[2 * mScene.numberOfObjects] = std::move(texSkyBox);
+
+	// Load the lut texture
+	auto texLUT = std::make_unique<Texture>();
+	texLUT->Name = "LUT";
+	texLUT->Filename = L"../Assets/Textures/LUT.dds";
+
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), texLUT->Filename.c_str(),
+		texLUT->Resource, texLUT->UploadHeap));
+
+	mScene.mTextures[(2 * mScene.numberOfObjects) + 1] = std::move(texLUT);
 }
 
 void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,

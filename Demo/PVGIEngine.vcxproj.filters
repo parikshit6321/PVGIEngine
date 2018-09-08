@@ -66,6 +66,9 @@
     <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\ColorGradingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -117,6 +120,9 @@
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\ColorGradingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

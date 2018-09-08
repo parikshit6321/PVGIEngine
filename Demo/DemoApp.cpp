@@ -171,6 +171,8 @@ void DemoApp::Draw(const GameTimer& gt)
 
 	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	Renderer::colorGradingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
 	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());
 
     // Done recording commands.
@@ -307,6 +309,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 									  SceneManager::GetScenePtr()->lightDirection.y, 
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
 	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation)));
+	mMainPassCB.userLUTParams = { (1.0f / 256.0f), (1.0f / 16.0f), 15.0f, 1.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

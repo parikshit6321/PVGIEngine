@@ -4,6 +4,7 @@
 #include "DeferredShadingRenderPass.h"
 #include "SkyBoxRenderPass.h"
 #include "ToneMappingRenderPass.h"
+#include "ColorGradingRenderPass.h"
 
 class Renderer
 {
@@ -18,5 +19,6 @@ public:
 	static DeferredShadingRenderPass deferredShadingRenderPass;
 	static SkyBoxRenderPass skyBoxRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
+	static ColorGradingRenderPass colorGradingRenderPass;
 };
 

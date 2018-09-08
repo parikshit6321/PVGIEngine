@@ -1,9 +1,3 @@
-//***************************************************************************************
-// Default.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//
-// Default shader, currently supports lighting.
-//***************************************************************************************
-
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
@@ -34,6 +28,7 @@ cbuffer cbPass : register(b0)
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
 	float4x4 gSkyBoxMatrix;
+	float4 userLUTParams;
 };
 
 struct VertexIn

@@ -1,11 +1,7 @@
-// Include structures and functions for lighting.
-#include "ToneMappingUtil.hlsl"
+#include "ColorGradingUtil.hlsl"
 
-Texture2D    DiffuseMetallicGBuffer  : register(t0);
-Texture2D	 NormalRoughnessGBuffer  : register(t1);
-Texture2D	 PositionDepthGBuffer	 : register(t2);
-Texture2D    MainTex				 : register(t3);
-TextureCube  SkyBoxTex				 : register(t4);
+Texture2D    MainTex  : register(t0);
+Texture2D	 UserLUT  : register(t1);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
@@ -67,19 +63,11 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
-	float depth = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).a;
-	float3 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
+	
+	float3 colorGraded = ApplyLut2d(UserLUT, gsamLinearWrap, LinearToGammaSpace(inputColor.rgb), userLUTParams.xyz);
+	colorGraded = GammaToLinearSpace(colorGraded);
 
-	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
-
-	float3 sampleDirection = mul(float4(pin.PosV, 1.0f), gSkyBoxMatrix).xyz;
-
-	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, sampleDirection);
-
-	if (depth == 1.0f)
-		resultingColor = skyBoxColor.rgb;
-	else
-		resultingColor = inputColor.rgb;
-
-	return float4(resultingColor, 1.0f);
+	float3 result = lerp(inputColor.rgb, colorGraded, userLUTParams.w);
+	
+	return float4(result, 1.0f);
 }
