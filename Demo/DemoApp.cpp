@@ -311,6 +311,17 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
 	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation)));
 	
+	XMVECTOR position = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+	XMVECTOR target = XMVectorSet(mEyePos.x + SceneManager::GetScenePtr()->lightDirection.x,
+		mEyePos.y + SceneManager::GetScenePtr()->lightDirection.y,
+		mEyePos.z + SceneManager::GetScenePtr()->lightDirection.z,
+		1.0f);
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMMATRIX lightViewMatrix = XMMatrixLookAtLH(position, target, up);
+	XMMATRIX lightProjMatrix = XMMatrixOrthographicLH(30.0f, 30.0f, 0.1f, 500.0f);
+	XMMATRIX shadowMatrix = lightViewMatrix * lightProjMatrix;
+	XMStoreFloat4x4(&mMainPassCB.shadowMatrix, XMMatrixTranspose(shadowMatrix));
+
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
 }

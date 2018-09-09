@@ -30,7 +30,7 @@ cbuffer cbPass : register(b0)
 	float4 gSunLightStrength;
 	float4 gSunLightDirection;
 	float4x4 gSkyBoxMatrix;
-	float4 userLUTParams;
+	float4x4 gShadowMatrix;
 };
 
 struct VertexIn
