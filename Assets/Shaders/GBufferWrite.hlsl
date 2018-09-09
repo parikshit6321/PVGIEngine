@@ -105,9 +105,11 @@ PixelOut PS(VertexOut pin) : SV_Target
 
 	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
 
+	float depth = 1.0f - (((pin.PosH.z / pin.PosH.w) * 0.5f) + 0.5f);
+	
 	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic.r);
 	output.NormalRoughnessGBuffer = float4(N, roughness);
-	output.PositionDepthGBuffer = float4(pin.PosW, pin.PosH.z);
+	output.PositionDepthGBuffer = float4(pin.PosW, depth);
 
 	return output;
 }
