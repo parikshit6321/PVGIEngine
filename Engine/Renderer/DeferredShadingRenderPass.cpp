@@ -42,7 +42,7 @@ void DeferredShadingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID
 void DeferredShadingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
@@ -130,7 +130,7 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 4;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -152,10 +152,14 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 
 	for (int i = 0; i < 3; ++i)
 	{
-		md3dDevice->CreateShaderResourceView(mInputBuffers[i].Get(), &srvDesc, hDescriptor);
+		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
 
 		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 	}
+
+	srvDesc.Format = mBackBufferFormat;
+
+	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 }
 
 void DeferredShadingRenderPass::BuildShaders()
