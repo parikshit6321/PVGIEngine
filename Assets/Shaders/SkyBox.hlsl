@@ -4,9 +4,8 @@
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
 Texture2D	 PositionDepthGBuffer	 : register(t2);
-Texture2D	 ShadowGBuffer			 : register(t3);
-Texture2D    MainTex				 : register(t4);
-TextureCube  SkyBoxTex				 : register(t5);
+Texture2D    MainTex				 : register(t3);
+TextureCube  SkyBoxTex				 : register(t4);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
