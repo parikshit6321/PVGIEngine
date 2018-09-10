@@ -63,6 +63,7 @@ struct PixelOut
 	float4 DiffuseMetallicGBuffer	: SV_TARGET0;
 	float4 NormalRoughnessGBuffer	: SV_TARGET1;
 	float4 PositionDepthGBuffer		: SV_TARGET2;
+	float4 ShadowGBuffer			: SV_TARGET3;
 };
 
 VertexOut VS(VertexIn vin)
@@ -110,6 +111,7 @@ PixelOut PS(VertexOut pin) : SV_Target
 	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic.r);
 	output.NormalRoughnessGBuffer = float4(N, roughness);
 	output.PositionDepthGBuffer = float4(pin.PosW, depth);
+	output.ShadowGBuffer = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	return output;
 }

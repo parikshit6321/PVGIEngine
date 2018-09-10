@@ -8,14 +8,14 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	commandList->SetPipelineState(mPSO.Get());
 
 	// Indicate a state transition on the resource usage.
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	}
 
 	// Clear the back buffer and depth buffer.
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -39,7 +39,7 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	Draw(commandList, objectCB, matCB);
 
 	// Indicate a state transition on the resource usage.
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
@@ -100,7 +100,7 @@ void GBufferRenderPass::BuildRootSignature()
 
 void GBufferRenderPass::BuildDescriptorHeaps()
 {
-	mOutputBuffers = new ComPtr<ID3D12Resource>[3];
+	mOutputBuffers = new ComPtr<ID3D12Resource>[4];
 
 	// Construct the RTV Heap first
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
@@ -126,13 +126,13 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[3] = 1.0f;
 	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 4; i++) {
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[i].GetAddressOf())));
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 3;
+	rtvHeapDesc.NumDescriptors = 4;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
@@ -149,11 +149,11 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		md3dDevice->CreateRenderTargetView(mOutputBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
 
-		if (i != 2)
+		if (i != 3)
 			rtvhDescriptor.Offset(1, rtvDescriptorSize);
 	}
 
@@ -218,10 +218,11 @@ void GBufferRenderPass::BuildPSOs()
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 3;
+	psoDesc.NumRenderTargets = 4;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	psoDesc.RTVFormats[3] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = mDepthStencilFormat;
