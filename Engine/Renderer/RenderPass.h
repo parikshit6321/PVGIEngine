@@ -44,7 +44,7 @@ protected:
 	virtual void BuildPSOs() = 0;
 	virtual void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*) = 0;
 
-	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 3> GetStaticSamplers();
 
 	ComPtr<ID3DBlob> mVertexShader;
 	ComPtr<ID3DBlob> mPixelShader;
