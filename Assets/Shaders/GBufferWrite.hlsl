@@ -53,7 +53,8 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH    : SV_POSITION;
-	float3 PosW    : POSITION;
+	float3 PosW    : POSITION0;
+	float4 ShadowPosH : POSITION1;
 	float3 NormalW : NORMAL;
 	float2 TexC    : TEXCOORD;
 	float3 TangentW : TANGENT;
@@ -84,6 +85,8 @@ VertexOut VS(VertexIn vin)
 
 	// Output texture coordinates for interpolation across triangle.
 	vout.TexC = vin.TexC;
+	
+	vout.ShadowPosH = mul(posW, gShadowTransform);
 
 	return vout;
 }
@@ -96,9 +99,8 @@ PixelOut PS(VertexOut pin) : SV_Target
 	float opacity = albedo.a;
 
 	// Discard the current fragment if it's not opaque.
-	if (opacity < 0.1f)
-		discard;
-
+	clip(opacity - 0.1f);
+		
 	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normalT.a;
 	// Interpolating normal can unnormalize it, so renormalize it.
@@ -106,7 +108,8 @@ PixelOut PS(VertexOut pin) : SV_Target
 
 	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
 
-	float depth = 1.0f - (((pin.PosH.z / pin.PosH.w) * 0.5f) + 0.5f);
+	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
+	float depth = pin.ShadowPosH.z;
 	
 	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic.r);
 	output.NormalRoughnessGBuffer = float4(N, roughness);
