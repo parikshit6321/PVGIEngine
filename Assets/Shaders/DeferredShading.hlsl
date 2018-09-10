@@ -4,7 +4,8 @@
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
 Texture2D	 PositionDepthGBuffer	 : register(t2);
-Texture2D	 ShadowMap				 : register(t3);
+Texture2D	 ShadowPosHGBuffer		 : register(t3);
+Texture2D	 ShadowMap				 : register(t4);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
@@ -72,6 +73,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normal.a;
 	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float depth = position.a;
 	
 	float3 skyColor = float3(0.80f, 0.941f, 1.0f);
 
@@ -111,6 +113,8 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
 
 	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
+	
+	// Calculate shadow
 
 	return float4(directLight, 1.0f);
 }

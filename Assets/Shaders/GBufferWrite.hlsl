@@ -65,6 +65,7 @@ struct PixelOut
 	float4 DiffuseMetallicGBuffer	: SV_TARGET0;
 	float4 NormalRoughnessGBuffer	: SV_TARGET1;
 	float4 PositionDepthGBuffer		: SV_TARGET2;
+	float4 ShadowPosHGBuffer	 	: SV_TARGET3;
 };
 
 VertexOut VS(VertexIn vin)
@@ -99,7 +100,7 @@ PixelOut PS(VertexOut pin) : SV_Target
 	float opacity = albedo.a;
 
 	// Discard the current fragment if it's not opaque.
-	clip(opacity - 0.1f);
+	//clip(opacity - 0.1f);
 		
 	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normalT.a;
@@ -108,12 +109,13 @@ PixelOut PS(VertexOut pin) : SV_Target
 
 	float3 N = NormalSampleToWorldSpace(normalT.xyz, pin.NormalW, pin.TangentW);
 
+	float depth = pin.PosH.z / pin.PosH.w;
 	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
-	float depth = pin.ShadowPosH.z;
 	
 	output.DiffuseMetallicGBuffer = float4(albedo.rgb, gMetallic.r);
 	output.NormalRoughnessGBuffer = float4(N, roughness);
 	output.PositionDepthGBuffer = float4(pin.PosW, depth);
-
+	output.ShadowPosHGBuffer = float4(pin.ShadowPosH);
+	
 	return output;
 }
