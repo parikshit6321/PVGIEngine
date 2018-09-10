@@ -36,7 +36,7 @@ void ToneMappingRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D
 
 void ToneMappingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
-	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0);
+	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0, false);
 }
 
 void ToneMappingRenderPass::BuildRootSignature()

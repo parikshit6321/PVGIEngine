@@ -1,7 +1,7 @@
 #include "RenderObject.h"
 
 void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* objectCB, ID3D12Resource* matCB, 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap, UINT cbvSrvDescriptorSize, UINT objCBByteSize, UINT matCBByteSize)
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap, UINT cbvSrvDescriptorSize, UINT objCBByteSize, UINT matCBByteSize, bool isShadowPass)
 {
 	if (isPostProcessingQuad)
 	{
@@ -13,15 +13,23 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 		cmdList->IASetIndexBuffer(&(Geo->IndexBufferView()));
 		cmdList->IASetPrimitiveTopology(PrimitiveType);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		tex.Offset(Mat->DiffuseSrvHeapIndex, cbvSrvDescriptorSize);
+		if (isShadowPass)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ObjCBIndex * objCBByteSize;
+			cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+		}
+		else
+		{
+			CD3DX12_GPU_DESCRIPTOR_HANDLE tex(srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+			tex.Offset(Mat->DiffuseSrvHeapIndex, cbvSrvDescriptorSize);
 
-		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ObjCBIndex * objCBByteSize;
-		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + Mat->MatCBIndex*matCBByteSize;
+			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ObjCBIndex * objCBByteSize;
+			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + Mat->MatCBIndex*matCBByteSize;
 
-		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+			cmdList->SetGraphicsRootDescriptorTable(0, tex);
+			cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+			cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+		}
 
 		cmdList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
 	}

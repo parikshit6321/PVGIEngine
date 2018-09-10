@@ -11,7 +11,7 @@ public:
 	RenderObject() = default;
 	
 	void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*, 
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT);
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>, UINT, UINT, UINT, bool);
 
 	void InitializeAsQuad(MeshGeometry*, UINT);
 	

@@ -1,6 +1,6 @@
-#include "ColorGradingRenderPass.h"
+#include "ShadowMapRenderPass.h"
 
-void ColorGradingRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
+void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
 	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -21,9 +21,6 @@ void ColorGradingRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3
 		0,
 		rtvDescriptorSize), true, depthStencilViewPtr);
 
-	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
-
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
@@ -34,22 +31,26 @@ void ColorGradingRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void ColorGradingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+void ShadowMapRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
 {
-	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0, false);
+	auto cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	for (size_t i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
+	{
+		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(commandList, objectCB, matCB, mSrvDescriptorHeap, cbvSrvDescriptorSize, objCBByteSize, matCBByteSize, true);
+	}
 }
 
-void ColorGradingRenderPass::BuildRootSignature()
+void ShadowMapRenderPass::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
-
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
 
 	auto staticSamplers = GetStaticSamplers();
 
@@ -77,7 +78,7 @@ void ColorGradingRenderPass::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void ColorGradingRenderPass::BuildDescriptorHeaps()
+void ShadowMapRenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
@@ -125,52 +126,16 @@ void ColorGradingRenderPass::BuildDescriptorHeaps()
 	rtvDesc.Texture2D.PlaneSlice = 0;
 
 	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
-
-	//
-	// Create the SRV heap.
-	//
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 2;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
-
-	//
-	// Fill out the heap with actual descriptors.
-	//
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvDesc.Format = mBackBufferFormat;
-	srvDesc.Texture2D.MipLevels = 1;
-
-	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, cbvSrvDescriptorSize);
-
-	srvDesc.Format = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource->GetDesc().MipLevels;
-
-	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource.Get(), &srvDesc, hDescriptor);
 }
 
-void ColorGradingRenderPass::BuildShaders()
+void ShadowMapRenderPass::BuildShaders()
 {
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/ColorGrading.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/ColorGrading.hlsl", nullptr, "PS", "ps_5_1");
+	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/ShadowMap.hlsl", nullptr, "VS", "vs_5_1");
+	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/ShadowMap.hlsl", nullptr, "PS", "ps_5_1");
 }
 
-void ColorGradingRenderPass::BuildPSOs()
+void ShadowMapRenderPass::BuildPSOs()
 {
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	depthStencilDesc.DepthEnable = false;
-
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -188,7 +153,7 @@ void ColorGradingRenderPass::BuildPSOs()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = depthStencilDesc;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;

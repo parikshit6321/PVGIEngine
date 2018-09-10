@@ -54,7 +54,7 @@ void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resou
 
 	for (size_t i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
 	{
-		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(commandList, objectCB, matCB, mSrvDescriptorHeap, cbvSrvDescriptorSize, objCBByteSize, matCBByteSize);
+		SceneManager::GetScenePtr()->mOpaqueRObjects[i]->Draw(commandList, objectCB, matCB, mSrvDescriptorHeap, cbvSrvDescriptorSize, objCBByteSize, matCBByteSize, false);
 	}
 }
 

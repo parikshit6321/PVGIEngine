@@ -162,6 +162,10 @@ void DemoApp::Draw(const GameTimer& gt)
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	
 	Renderer::gBufferRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
@@ -313,7 +317,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	
 	// Only the first "main" light casts a shadow.
 	XMVECTOR lightDir = XMLoadFloat4(&mMainPassCB.SunLightDirection);
-	XMVECTOR lightPos = -2.0f* 30.0f *lightDir;
+	XMVECTOR lightPos = -2.0f* 10.0f *lightDir;
 	XMFLOAT4 targetPosTemp = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMVECTOR targetPos = XMLoadFloat4(&targetPosTemp);
 	XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
@@ -324,14 +328,16 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, lightView));
 
 	// Ortho frustum in light space encloses scene.
-	float l = sphereCenterLS.x - 30.0f;
-	float b = sphereCenterLS.y - 30.0f;
-	float n = sphereCenterLS.z - 30.0f;
-	float r = sphereCenterLS.x + 30.0f;
-	float t = sphereCenterLS.y + 30.0f;
-	float f = sphereCenterLS.z + 30.0f;
+	float l = sphereCenterLS.x - 10.0f;
+	float b = sphereCenterLS.y - 10.0f;
+	float n = sphereCenterLS.z - 10.0f;
+	float r = sphereCenterLS.x + 10.0f;
+	float t = sphereCenterLS.y + 10.0f;
+	float f = sphereCenterLS.z + 10.0f;
 
-	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, 1.0f, 500.0f);
+	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, 1.0f, 20.0f);
+
+	XMMATRIX shadowViewProjMatrix = lightView * lightProj;
 
 	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
 	XMMATRIX T(
@@ -340,10 +346,10 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.5f, 0.5f, 0.0f, 1.0f);
 
-	XMMATRIX S = lightView * lightProj*T;
+	XMMATRIX S = shadowViewProjMatrix * T;
 	
-	XMStoreFloat4x4(&mMainPassCB.shadowViewProjMatrix, lightView * lightProj);
-	XMStoreFloat4x4(&mMainPassCB.shadowTransform, S);
+	XMStoreFloat4x4(&mMainPassCB.shadowViewProjMatrix, XMMatrixTranspose(shadowViewProjMatrix));
+	XMStoreFloat4x4(&mMainPassCB.shadowTransform, XMMatrixTranspose(S));
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
