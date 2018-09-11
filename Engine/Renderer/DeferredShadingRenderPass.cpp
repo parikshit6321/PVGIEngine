@@ -158,6 +158,7 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 	}
 
 	srvDesc.Format = mBackBufferFormat;
+	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
 
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 }

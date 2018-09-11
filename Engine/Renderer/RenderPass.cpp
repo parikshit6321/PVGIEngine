@@ -46,7 +46,7 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 3> RenderPass::GetStaticSamplers()
 		8);                               // maxAnisotropy
 
 	const CD3DX12_STATIC_SAMPLER_DESC shadow(
-		6, // shaderRegister
+		2, // shaderRegister
 		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV

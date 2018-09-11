@@ -100,7 +100,7 @@ PixelOut PS(VertexOut pin) : SV_Target
 	float opacity = albedo.a;
 
 	// Discard the current fragment if it's not opaque.
-	//clip(opacity - 0.1f);
+	clip(opacity - 0.1f);
 		
 	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normalT.a;
