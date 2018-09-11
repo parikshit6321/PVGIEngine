@@ -116,33 +116,7 @@ float4 PS(VertexOut pin) : SV_Target
 	
 	// Calculate shadow
     float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float currentDepth = shadowPosH.z;
-
-    // Texel size.
-    float dx = 1.0f / gRenderTargetSize.x;
-	float dy = 1.0f / gRenderTargetSize.y;
-
-    float percentLit = 0.0f;
-    const float2 offsets[9] =
-    {
-        float2(-dx,  -dy), float2(0.0f,  -dy), float2(dx,  -dy),
-        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
-        float2(-dx,  +dy), float2(0.0f,  +dy), float2(dx,  +dy)
-    };
-
-	float sampleDepth = 0.0f;
-	
-	//float bias = max(0.05f * (1.0f - NdotL), 0.005f);
-	float bias = 0.005f;
-	
-    [unroll]
-    for(int i = 0; i < 9; ++i)
-    {
-		sampleDepth = ShadowMap.Sample(gsamShadow, shadowPosH.xy + offsets[i]).a;
-		percentLit += ((currentDepth - bias) > sampleDepth ? 1.0f : 0.0f);
-    }
-    
-    float shadow = percentLit / 9.0f;
+	float shadow = CalculateShadow(shadowPosH, ShadowMap, gsamShadow, gRenderTargetSize);
 	
 	directLight *= (1.0f - shadow);
 

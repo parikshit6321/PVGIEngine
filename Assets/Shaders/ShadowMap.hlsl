@@ -60,12 +60,12 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
-float4 PS(VertexOut pin) : SV_Target
+float4 PS(VertexOut pin, bool isFrontFacing : SV_IsFrontFace) : SV_Target
 {
 	float3 position = pin.PosW / 30.0f;
 	position = (position * 0.5f) + 0.5f;
 	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
 	float depth = pin.ShadowPosH.z;
+	depth += (isFrontFacing ? 0.005f : 0.0f);
 	return float4(pin.PosW, depth);
-	//return float4(depth, depth, depth, 1.0f);
 }

@@ -136,6 +136,9 @@ void ShadowMapRenderPass::BuildShaders()
 
 void ShadowMapRenderPass::BuildPSOs()
 {
+	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -151,7 +154,7 @@ void ShadowMapRenderPass::BuildPSOs()
 		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()),
 		mPixelShader->GetBufferSize()
 	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState = rasterizerDesc;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;

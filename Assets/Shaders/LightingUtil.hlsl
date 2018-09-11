@@ -37,10 +37,41 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 
 	return num / denom;
 }
+
 float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
 	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
 	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 	
 	return ggx1 * ggx2;
+}
+
+float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow, float2 gRenderTargetSize)
+{
+	float currentDepth = shadowPosH.z;
+
+    // Texel size.
+    float dx = 1.0f / gRenderTargetSize.x;
+	float dy = 1.0f / gRenderTargetSize.y;
+
+    float percentLit = 0.0f;
+    const float2 offsets[9] =
+    {
+        float2(-dx,  -dy), float2(0.0f,  -dy), float2(dx,  -dy),
+        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+        float2(-dx,  +dy), float2(0.0f,  +dy), float2(dx,  +dy)
+    };
+
+	float sampleDepth = 0.0f;
+	
+    [unroll]
+    for(int i = 0; i < 9; ++i)
+    {
+		sampleDepth = ShadowMap.Sample(gsamShadow, shadowPosH.xy + offsets[i]).a;
+		percentLit += ((currentDepth) > sampleDepth ? 1.0f : 0.0f);
+    }
+    
+    float shadow = percentLit / 9.0f;
+	
+	return shadow;
 }
