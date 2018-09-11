@@ -115,6 +115,34 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
 	
 	// Calculate shadow
+	// Depth in NDC space.
+    float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);
+	float currentDepth = shadowPosH.z;
+
+    // Texel size.
+    float dx = 1.0f / gRenderTargetSize.x;
+	float dy = 1.0f / gRenderTargetSize.y;
+
+    float percentLit = 0.0f;
+    const float2 offsets[9] =
+    {
+        float2(-dx,  -dy), float2(0.0f,  -dy), float2(dx,  -dy),
+        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+        float2(-dx,  +dy), float2(0.0f,  +dy), float2(dx,  +dy)
+    };
+
+	float sampleDepth = 0.0f;
+	
+    [unroll]
+    for(int i = 0; i < 9; ++i)
+    {
+		sampleDepth = ShadowMap.Sample(gsamShadow, shadowPosH.xy + offsets[i]).a;
+		percentLit += (currentDepth > sampleDepth ? 1.0f : 0.0f);
+    }
+    
+    float shadow = percentLit / 9.0f;
+	
+	//directLight *= (1.0f - shadow);
 
 	return float4(directLight, 1.0f);
 }
