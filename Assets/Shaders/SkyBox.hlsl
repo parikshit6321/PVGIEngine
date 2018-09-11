@@ -79,7 +79,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, sampleDirection);
 
 	if (depth == 1.0f)
-		resultingColor = skyBoxColor.rgb;
+		resultingColor = skyBoxColor.rgb * gSunLightStrength.a;
 	else
 		resultingColor = inputColor.rgb;
 

@@ -112,7 +112,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
 
-	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * NdotL));
+	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL));
 	
 	// Calculate shadow
     float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);

@@ -1,0 +1,1 @@
+DemoScene3 0 1 -10 0 0 0 1 -0.3213938 -0.7660444 0.5566705 1 0.9568627 0.8392157 1 MossyTreeLogMesh MossyTreeLogDiffuseOpacity MossyTreeLogNormalRoughness 0.15 0 -7.06 -0.7071068 0 0 0.7071068 1 1 1 

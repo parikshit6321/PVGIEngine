@@ -1,6 +1,5 @@
-float3 Uncharted2Tonemap(float3 x, float exposure)
+float3 Uncharted2Tonemap(float3 x)
 {
-	x *= exposure;
 	float A = 0.15;
 	float B = 0.50;
 	float C = 0.10;

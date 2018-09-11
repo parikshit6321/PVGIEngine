@@ -309,7 +309,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.SunLightStrength = { SceneManager::GetScenePtr()->lightStrength.x, 
 									 SceneManager::GetScenePtr()->lightStrength.y, 
-									 SceneManager::GetScenePtr()->lightStrength.z, 1.0f };
+									 SceneManager::GetScenePtr()->lightStrength.z, 10.0f };
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
 									  SceneManager::GetScenePtr()->lightDirection.y, 
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
