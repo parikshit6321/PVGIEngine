@@ -163,13 +163,6 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 }
 
-void DeferredShadingRenderPass::BuildShaders()
-{
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/DeferredShading.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/DeferredShading.hlsl", nullptr, "PS", "ps_5_1");
-
-}
-
 void DeferredShadingRenderPass::BuildPSOs()
 {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);

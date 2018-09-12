@@ -20,7 +20,8 @@ class RenderPass
 {
 public:
 	RenderPass() = default;
-	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT, ComPtr<ID3D12Resource>*, ComPtr<ID3D12Resource>*);
+	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT, 
+		ComPtr<ID3D12Resource>*, ComPtr<ID3D12Resource>*, std::wstring);
 	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, 
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) = 0;
 	~RenderPass() = default;
@@ -40,7 +41,6 @@ protected:
 
 	virtual void BuildRootSignature() = 0;
 	virtual void BuildDescriptorHeaps() = 0;
-	virtual void BuildShaders() = 0;
 	virtual void BuildPSOs() = 0;
 	virtual void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*) = 0;
 

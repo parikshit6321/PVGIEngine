@@ -2,7 +2,7 @@
 
 void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight, 
 	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer, ComPtr <ID3D12Resource>* inputBuffers,
-	ComPtr<ID3D12Resource>* gBuffers)
+	ComPtr<ID3D12Resource>* gBuffers, const std::wstring shaderName)
 {
 	md3dDevice = inputDevice;
 	mClientWidth = inputWidth;
@@ -21,9 +21,11 @@ void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, in
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
+	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "VS", "vs_5_1");
+	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "PS", "ps_5_1");
+
 	BuildRootSignature();
 	BuildDescriptorHeaps();
-	BuildShaders();
 	BuildPSOs();
 }
 

@@ -160,12 +160,6 @@ void ColorGradingRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource.Get(), &srvDesc, hDescriptor);
 }
 
-void ColorGradingRenderPass::BuildShaders()
-{
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/ColorGrading.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/ColorGrading.hlsl", nullptr, "PS", "ps_5_1");
-}
-
 void ColorGradingRenderPass::BuildPSOs()
 {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);

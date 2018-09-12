@@ -128,12 +128,6 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
 }
 
-void ShadowMapRenderPass::BuildShaders()
-{
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/ShadowMap.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/ShadowMap.hlsl", nullptr, "PS", "ps_5_1");
-}
-
 void ShadowMapRenderPass::BuildPSOs()
 {
 	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);

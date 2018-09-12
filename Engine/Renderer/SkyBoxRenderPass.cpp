@@ -174,12 +174,6 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 	
 }
 
-void SkyBoxRenderPass::BuildShaders()
-{
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/SkyBox.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/SkyBox.hlsl", nullptr, "PS", "ps_5_1");
-}
-
 void SkyBoxRenderPass::BuildPSOs()
 {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);

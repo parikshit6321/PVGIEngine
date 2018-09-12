@@ -190,12 +190,6 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	}
 }
 
-void GBufferRenderPass::BuildShaders()
-{
-	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/GBufferWrite.hlsl", nullptr, "VS", "vs_5_1");
-	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/GBufferWrite.hlsl", nullptr, "PS", "ps_5_1");
-}
-
 void GBufferRenderPass::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;

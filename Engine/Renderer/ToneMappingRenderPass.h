@@ -12,7 +12,6 @@ public:
 protected:
 	virtual void BuildRootSignature() override;
 	virtual void BuildDescriptorHeaps() override;
-	virtual void BuildShaders() override;
 	virtual void BuildPSOs() override;
 	virtual void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*) override;
 };
