@@ -72,6 +72,9 @@
     <ClCompile Include="..\Engine\Renderer\ShadowMapRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\SceneManagement\MeshGeometry.cpp">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -130,6 +133,9 @@
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\ShadowMapRenderPass.h">
       <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\MeshGeometry.h">
+      <Filter>Engine\SceneManagement</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

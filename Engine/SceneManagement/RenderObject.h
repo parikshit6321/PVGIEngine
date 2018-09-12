@@ -2,6 +2,7 @@
 
 #include "../Utilities/d3dApp.h"
 #include "../Utilities/FrameResource.h"
+#include "MeshGeometry.h"
 
 using namespace DirectX;
 
