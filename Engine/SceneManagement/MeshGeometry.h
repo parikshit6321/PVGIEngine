@@ -10,6 +10,7 @@
 // buffers so that we can implement the technique described by Figure 6.3.
 struct SubmeshGeometry
 {
+	std::string Name = "";
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;

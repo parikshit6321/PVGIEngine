@@ -50,6 +50,10 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 
 	mScene.objectsInScene = new SceneObject[numberOfObjects];
 
+	mScene.numberOfUniqueObjects = 0;
+
+	std::vector<std::string> objectMeshNames;
+
 	for (UINT i = 0; i < numberOfObjects; ++i)
 	{
 		inputFile >> mScene.objectsInScene[i].meshName;
@@ -58,6 +62,23 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 		inputFile >> mScene.objectsInScene[i].position.x >> mScene.objectsInScene[i].position.y >> mScene.objectsInScene[i].position.z;
 		inputFile >> mScene.objectsInScene[i].rotation.x >> mScene.objectsInScene[i].rotation.y >> mScene.objectsInScene[i].rotation.z >> mScene.objectsInScene[i].rotation.w;
 		inputFile >> mScene.objectsInScene[i].scale.x >> mScene.objectsInScene[i].scale.y >> mScene.objectsInScene[i].scale.z;
+
+		bool isAlreadyPresent = false;
+
+		for (UINT j = 0; j < objectMeshNames.size(); ++j)
+		{
+			if (objectMeshNames[j] == mScene.objectsInScene[i].meshName)
+			{
+				isAlreadyPresent = true;
+				break;
+			}
+		}
+
+		if (!isAlreadyPresent)
+		{
+			objectMeshNames.push_back(mScene.objectsInScene[i].meshName);
+			++mScene.numberOfUniqueObjects;
+		}
 	}
 
 	inputFile.close();

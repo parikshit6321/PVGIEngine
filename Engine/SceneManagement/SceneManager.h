@@ -26,6 +26,7 @@ struct Scene
 	DirectX::XMFLOAT3			lightDirection;
 	DirectX::XMFLOAT3			lightStrength;
 	UINT						numberOfObjects;
+	UINT						numberOfUniqueObjects;
 
 	SceneObject*				objectsInScene;
 
