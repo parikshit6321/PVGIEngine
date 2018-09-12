@@ -48,9 +48,6 @@
     <ClCompile Include="..\Engine\Utilities\MathHelper.cpp">
       <Filter>Engine\Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\SceneManagement\DDSTextureLoader.cpp">
-      <Filter>Engine\SceneManagement</Filter>
-    </ClCompile>
     <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp">
       <Filter>Engine\SceneManagement</Filter>
     </ClCompile>
@@ -74,6 +71,12 @@
     </ClCompile>
     <ClCompile Include="..\Engine\SceneManagement\MeshGeometry.cpp">
       <Filter>Engine\SceneManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\DxException.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\DDSTextureLoader.cpp">
+      <Filter>Engine\Utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -119,9 +122,6 @@
     <ClInclude Include="..\Engine\SceneManagement\MeshLoader.h">
       <Filter>Engine\SceneManagement</Filter>
     </ClInclude>
-    <ClInclude Include="..\Engine\SceneManagement\DDSTextureLoader.h">
-      <Filter>Engine\SceneManagement</Filter>
-    </ClInclude>
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
@@ -136,6 +136,18 @@
     </ClInclude>
     <ClInclude Include="..\Engine\SceneManagement\MeshGeometry.h">
       <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\Material.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\SceneManagement\Texture.h">
+      <Filter>Engine\SceneManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\DxException.h">
+      <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\DDSTextureLoader.h">
+      <Filter>Engine\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 
 #include "RenderObject.h"
 #include "MeshLoader.h"
+#include "Texture.h"
 
 struct SceneObject
 {

@@ -8,6 +8,11 @@ struct ObjectConstants
     DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 };
 
+struct MaterialConstants
+{
+	DirectX::XMFLOAT4 Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+};
+
 struct PassConstants
 {
     DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
