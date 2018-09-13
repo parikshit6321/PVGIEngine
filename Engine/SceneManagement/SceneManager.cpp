@@ -88,50 +88,75 @@ void SceneManager::ResizeBuffers()
 {
 	mScene.mSceneGeometry = std::make_unique<MeshGeometry>();
 	mScene.mSceneGeometry->Name = mScene.name;
+	
 	// 1 extra for quad
-	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfObjects + 1];
+	mScene.mSceneGeometry->DrawArgs = new SubmeshGeometry[mScene.numberOfUniqueObjects + 1];
 	// 2 extra for skybox cubemap and lut texture
-	mScene.mTextures = new std::unique_ptr<Texture>[(2 * mScene.numberOfObjects) + 2];
-	mScene.mMaterials = new std::unique_ptr<Material>[mScene.numberOfObjects];
+	mScene.mTextures = new std::unique_ptr<Texture>[(2 * mScene.numberOfUniqueObjects) + 2];
+	mScene.mMaterials = new std::unique_ptr<Material>[mScene.numberOfUniqueObjects];
 	// 1 extra for quad
-	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfObjects + 1];
+	mScene.mSubMeshes = new std::unique_ptr<SubmeshGeometry>[mScene.numberOfUniqueObjects + 1];
+	
 	mScene.mOpaqueRObjects = new std::unique_ptr<RenderObject>[mScene.numberOfObjects];
 }
 
 void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice, 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList)
 {
+	UINT index = 0;
+	std::vector<std::string> textureNamesProcessed;
+
 	// Load the scene material textures
-	for (UINT i = 0; i < (2 * mScene.numberOfObjects); i += 2)
+	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
+		bool isAlreadyProcessed = false;
+		
+		for (UINT j = 0; j < textureNamesProcessed.size(); ++j)
+		{
+			if (textureNamesProcessed[j] == mScene.objectsInScene[i].diffuseOpacityTextureName)
+			{
+				isAlreadyProcessed = true;
+				break;
+			}
+		}
+
+		if (isAlreadyProcessed)
+		{
+			continue;
+		}
+		else
+		{
+			textureNamesProcessed.push_back(mScene.objectsInScene[i].diffuseOpacityTextureName);
+		}
+
 		// Load the diffuse opacity texture first
 		std::wstringstream wsDiffuseOpacity;
-		wsDiffuseOpacity << mScene.objectsInScene[i/2].diffuseOpacityTextureName.c_str();
+		wsDiffuseOpacity << mScene.objectsInScene[i].diffuseOpacityTextureName.c_str();
 		std::wstring wsNameDiffuseOpacity = wsDiffuseOpacity.str();
 
 		auto texDiffuseOpacity = std::make_unique<Texture>();
-		texDiffuseOpacity->Name = mScene.objectsInScene[i/2].diffuseOpacityTextureName;
+		texDiffuseOpacity->Name = mScene.objectsInScene[i].diffuseOpacityTextureName;
 		texDiffuseOpacity->Filename = L"../Assets/Textures/" + wsNameDiffuseOpacity + L".dds";
 		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 			mCommandList.Get(), texDiffuseOpacity->Filename.c_str(),
 			texDiffuseOpacity->Resource, texDiffuseOpacity->UploadHeap));
 
-		mScene.mTextures[i] = std::move(texDiffuseOpacity);
+		mScene.mTextures[index++] = std::move(texDiffuseOpacity);
 
 		// Load the normal roughness texture next
 		std::wstringstream wsNormalRoughness;
-		wsNormalRoughness << mScene.objectsInScene[i/2].normalRoughnessTextureName.c_str();
+		wsNormalRoughness << mScene.objectsInScene[i].normalRoughnessTextureName.c_str();
 		std::wstring wsNameNormalRoughness = wsNormalRoughness.str();
 
 		auto texNormalRoughness = std::make_unique<Texture>();
-		texNormalRoughness->Name = mScene.objectsInScene[i/2].normalRoughnessTextureName;
+		texNormalRoughness->Name = mScene.objectsInScene[i].normalRoughnessTextureName;
 		texNormalRoughness->Filename = L"../Assets/Textures/" + wsNameNormalRoughness + L".dds";
 
 		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 			mCommandList.Get(), texNormalRoughness->Filename.c_str(),
 			texNormalRoughness->Resource, texNormalRoughness->UploadHeap));
 
-		mScene.mTextures[i+1] = std::move(texNormalRoughness);
+		mScene.mTextures[index++] = std::move(texNormalRoughness);
 	}
 
 	// Load the skybox texture
@@ -143,7 +168,7 @@ void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
 		mCommandList.Get(), texSkyBox->Filename.c_str(),
 		texSkyBox->Resource, texSkyBox->UploadHeap));
 
-	mScene.mTextures[2 * mScene.numberOfObjects] = std::move(texSkyBox);
+	mScene.mTextures[index++] = std::move(texSkyBox);
 
 	// Load the lut texture
 	auto texLUT = std::make_unique<Texture>();
@@ -154,7 +179,7 @@ void SceneManager::LoadTextures(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
 		mCommandList.Get(), texLUT->Filename.c_str(),
 		texLUT->Resource, texLUT->UploadHeap));
 
-	mScene.mTextures[(2 * mScene.numberOfObjects) + 1] = std::move(texLUT);
+	mScene.mTextures[index++] = std::move(texLUT);
 }
 
 void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice,
@@ -168,14 +193,38 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 	std::vector<std::uint16_t> indices;
 
 	UINT k = 0;
+	UINT index = 0;
+
+	std::vector<std::string> meshNamesProcessed;
 
 	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
+		bool isAlreadyProcessed = false;
+
+		for (UINT j = 0; j < meshNamesProcessed.size(); ++j)
+		{
+			if (meshNamesProcessed[j] == mScene.objectsInScene[i].meshName)
+			{
+				isAlreadyProcessed = true;
+				break;
+			}
+		}
+
+		if (isAlreadyProcessed)
+		{
+			continue;
+		}
+		else
+		{
+			meshNamesProcessed.push_back(mScene.objectsInScene[i].meshName);
+		}
+
 		MeshLoader::MeshData tempMesh = MeshLoader::LoadModel(mScene.objectsInScene[i].meshName);
 
 		totalVertexCount += tempMesh.Vertices.size();
 
 		auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
+		tempSubMesh->Name = mScene.objectsInScene[i].meshName;
 		tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
 		tempSubMesh->StartIndexLocation = currentStartIndexCount;
 		tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
@@ -183,21 +232,23 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 		currentStartIndexCount += tempMesh.Indices32.size();
 		currentBaseVertexLocation += tempMesh.Vertices.size();
 
-		mScene.mSubMeshes[i] = std::move(tempSubMesh);
+		mScene.mSubMeshes[index] = std::move(tempSubMesh);
 
 		vertices.resize(totalVertexCount);
 
-		for (size_t i = 0; i < tempMesh.Vertices.size(); ++i, ++k)
+		for (size_t it = 0; it < tempMesh.Vertices.size(); ++it, ++k)
 		{
-			vertices[k].Pos = tempMesh.Vertices[i].Position;
-			vertices[k].Normal = tempMesh.Vertices[i].Normal;
-			vertices[k].TexC = tempMesh.Vertices[i].TexC;
-			vertices[k].Tangent = tempMesh.Vertices[i].TangentU;
+			vertices[k].Pos = tempMesh.Vertices[it].Position;
+			vertices[k].Normal = tempMesh.Vertices[it].Normal;
+			vertices[k].TexC = tempMesh.Vertices[it].TexC;
+			vertices[k].Tangent = tempMesh.Vertices[it].TangentU;
 		}
 
 		indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
 
-		mScene.mSceneGeometry->DrawArgs[i] = *mScene.mSubMeshes[i];
+		mScene.mSceneGeometry->DrawArgs[index] = *mScene.mSubMeshes[index];
+
+		++index;
 	}
 
 	// Create the post processing quad geometry
@@ -205,7 +256,8 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 	totalVertexCount += tempMesh.Vertices.size();
 
-	auto tempSubMesh = std::make_unique<SubmeshGeometry>();;
+	auto tempSubMesh = std::make_unique<SubmeshGeometry>();
+	tempSubMesh->Name = "Quad";
 	tempSubMesh->IndexCount = (UINT)tempMesh.Indices32.size();
 	tempSubMesh->StartIndexLocation = currentStartIndexCount;
 	tempSubMesh->BaseVertexLocation = currentBaseVertexLocation;
@@ -213,7 +265,7 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 	currentStartIndexCount += tempMesh.Indices32.size();
 	currentBaseVertexLocation += tempMesh.Vertices.size();
 
-	mScene.mSubMeshes[mScene.numberOfObjects] = std::move(tempSubMesh);
+	mScene.mSubMeshes[index] = std::move(tempSubMesh);
 
 	vertices.resize(totalVertexCount);
 
@@ -227,7 +279,7 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 	indices.insert(indices.end(), std::begin(tempMesh.GetIndices16()), std::end(tempMesh.GetIndices16()));
 
-	mScene.mSceneGeometry->DrawArgs[mScene.numberOfObjects] = *mScene.mSubMeshes[mScene.numberOfObjects];
+	mScene.mSceneGeometry->DrawArgs[index] = *mScene.mSubMeshes[index];
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -252,46 +304,126 @@ void SceneManager::BuildSceneGeometry(Microsoft::WRL::ComPtr<ID3D12Device> md3dD
 
 void SceneManager::BuildMaterials()
 {
-	int currentCBIndex = 0;
-	int currentHeapIndex = 0;
+	UINT index = 0;
+	std::vector<std::string> materialNamesProcessed;
 
 	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
+		bool isAlreadyProcessed = false;
+
+		for (UINT j = 0; j < materialNamesProcessed.size(); ++j)
+		{
+			if (materialNamesProcessed[j] == mScene.objectsInScene[i].meshName)
+			{
+				isAlreadyProcessed = true;
+				break;
+			}
+		}
+
+		if (isAlreadyProcessed)
+		{
+			continue;
+		}
+		else
+		{
+			materialNamesProcessed.push_back(mScene.objectsInScene[i].meshName);
+		}
+
 		auto mat = std::make_unique<Material>();
-		mat->MatCBIndex = currentCBIndex++;
-		mat->DiffuseSrvHeapIndex = currentHeapIndex;
+		mat->MatCBIndex = index;
+		mat->DiffuseSrvHeapIndex = index * 2;
 		mat->Metallic = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-
-		mScene.mMaterials[i] = std::move(mat);
-
-		currentHeapIndex += 2;
+		mat->Name = mScene.objectsInScene[i].meshName;
+		mScene.mMaterials[index++] = std::move(mat);
 	}
+}
+
+Material* SceneManager::GetMaterial(std::string materialName)
+{
+	Material* result = nullptr;
+
+	for (UINT i = 0; i < mScene.numberOfUniqueObjects; ++i)
+	{
+		if (mScene.mMaterials[i]->Name == materialName)
+		{
+			result = mScene.mMaterials[i].get();
+			break;
+		}
+	}
+
+	return result;
+}
+
+UINT SceneManager::GetIndexCount(std::string meshName)
+{
+	UINT result = 0;
+
+	for (UINT i = 0; i < mScene.numberOfUniqueObjects; ++i)
+	{
+		if (mScene.mSceneGeometry->DrawArgs[i].Name == meshName)
+		{
+			result = mScene.mSceneGeometry->DrawArgs[i].IndexCount;
+			break;
+		}
+	}
+
+	return result;
+}
+
+UINT SceneManager::GetStartIndexLocation(std::string meshName)
+{
+	UINT result = 0;
+
+	for (UINT i = 0; i < mScene.numberOfUniqueObjects; ++i)
+	{
+		if (mScene.mSceneGeometry->DrawArgs[i].Name == meshName)
+		{
+			result = mScene.mSceneGeometry->DrawArgs[i].StartIndexLocation;
+			break;
+		}
+	}
+
+	return result;
+}
+
+int SceneManager::GetBaseVertexLocation(std::string meshName)
+{
+	int result = 0;
+
+	for (UINT i = 0; i < mScene.numberOfUniqueObjects; ++i)
+	{
+		if (mScene.mSceneGeometry->DrawArgs[i].Name == meshName)
+		{
+			result = mScene.mSceneGeometry->DrawArgs[i].BaseVertexLocation;
+			break;
+		}
+	}
+
+	return result;
 }
 
 void SceneManager::BuildRenderObjects()
 {
-	int currentCBIndex = 0;
-
 	for (UINT i = 0; i < mScene.numberOfObjects; ++i)
 	{
+		std::string meshName = mScene.objectsInScene[i].meshName;
+
 		auto rObject = std::make_unique<RenderObject>();
-		rObject->SetObjCBIndex(currentCBIndex);
-		rObject->SetMat(mScene.mMaterials[i].get());
+		rObject->SetObjCBIndex(i);
+		rObject->SetMat(GetMaterial(meshName));
 		rObject->SetGeo(mScene.mSceneGeometry.get());
 		rObject->SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		rObject->SetIndexCount(mScene.mSceneGeometry.get()->DrawArgs[i].IndexCount);
-		rObject->SetStartIndexLocation(mScene.mSceneGeometry.get()->DrawArgs[i].StartIndexLocation);
-		rObject->SetBaseVertexLocation(mScene.mSceneGeometry.get()->DrawArgs[i].BaseVertexLocation);
+		rObject->SetIndexCount(GetIndexCount(meshName));
+		rObject->SetStartIndexLocation(GetStartIndexLocation(meshName));
+		rObject->SetBaseVertexLocation(GetBaseVertexLocation(meshName));
 		rObject->SetWorldMatrix(&(XMMatrixScaling(mScene.objectsInScene[i].scale.x, mScene.objectsInScene[i].scale.y, mScene.objectsInScene[i].scale.z)
 			* XMMatrixRotationQuaternion(XMLoadFloat4(&mScene.objectsInScene[i].rotation))
 			* XMMatrixTranslation(mScene.objectsInScene[i].position.x, mScene.objectsInScene[i].position.y, mScene.objectsInScene[i].position.z)));
 
 		mScene.mOpaqueRObjects[i] = std::move(rObject);
-
-		currentCBIndex++;
 	}
 
 	// Make the post processing quad render object
 	mScene.mQuadrObject = std::make_unique<RenderObject>();
-	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get(), mScene.numberOfObjects);
+	mScene.mQuadrObject->InitializeAsQuad(mScene.mSceneGeometry.get(), mScene.numberOfUniqueObjects);
 }

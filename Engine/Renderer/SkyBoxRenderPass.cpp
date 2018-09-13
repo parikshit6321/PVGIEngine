@@ -165,11 +165,11 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 	srvDescCubeMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDescCubeMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDescCubeMap.TextureCube.MostDetailedMip = 0;
-	srvDescCubeMap.TextureCube.MipLevels = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfObjects]->Resource->GetDesc().MipLevels;
+	srvDescCubeMap.TextureCube.MipLevels = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource->GetDesc().MipLevels;
 	srvDescCubeMap.TextureCube.ResourceMinLODClamp = 0.0f;
-	srvDescCubeMap.Format = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfObjects]->Resource->GetDesc().Format;
+	srvDescCubeMap.Format = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource->GetDesc().Format;
 
-	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfObjects]->Resource.Get(),
+	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource.Get(),
 		&srvDescCubeMap, hDescriptor);
 	
 }

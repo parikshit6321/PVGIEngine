@@ -59,5 +59,10 @@ private:
 	static void BuildMaterials();
 	static void BuildRenderObjects();
 
+	static Material* GetMaterial(std::string);
+	static UINT GetIndexCount(std::string);
+	static UINT GetStartIndexLocation(std::string);
+	static int GetBaseVertexLocation(std::string);
+
 	static Scene mScene;
 };

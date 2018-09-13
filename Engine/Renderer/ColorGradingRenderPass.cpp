@@ -154,10 +154,10 @@ void ColorGradingRenderPass::BuildDescriptorHeaps()
 
 	hDescriptor.Offset(1, cbvSrvDescriptorSize);
 
-	srvDesc.Format = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource->GetDesc().MipLevels;
+	srvDesc.Format = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfUniqueObjects) + 1]->Resource->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfUniqueObjects) + 1]->Resource->GetDesc().MipLevels;
 
-	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfObjects) + 1]->Resource.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[(2 * SceneManager::GetScenePtr()->numberOfUniqueObjects) + 1]->Resource.Get(), &srvDesc, hDescriptor);
 }
 
 void ColorGradingRenderPass::BuildPSOs()

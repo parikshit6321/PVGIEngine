@@ -267,7 +267,7 @@ void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
-	for(UINT i = 0; i < SceneManager::GetScenePtr()->numberOfObjects; ++i)
+	for(UINT i = 0; i < SceneManager::GetScenePtr()->numberOfUniqueObjects; ++i)
 	{
 		// Only update the cbuffer data if the constants have changed.  If the cbuffer
 		// data changes, it needs to be updated for each FrameResource.
@@ -360,6 +360,6 @@ void DemoApp::BuildFrameResources()
     for(int i = 0; i < 3; ++i)
     {
         mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-            1, (UINT)SceneManager::GetScenePtr()->numberOfObjects, (UINT)SceneManager::GetScenePtr()->numberOfObjects));
+            1, (UINT)SceneManager::GetScenePtr()->numberOfObjects, (UINT)SceneManager::GetScenePtr()->numberOfUniqueObjects));
     }
 }

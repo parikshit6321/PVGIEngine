@@ -161,7 +161,7 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = (2 * SceneManager::GetScenePtr()->numberOfObjects);
+	srvHeapDesc.NumDescriptors = (2 * SceneManager::GetScenePtr()->numberOfUniqueObjects);
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -179,7 +179,7 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 
 	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	
-	for (UINT i = 0; i < (2 * SceneManager::GetScenePtr()->numberOfObjects); ++i)
+	for (UINT i = 0; i < (2 * SceneManager::GetScenePtr()->numberOfUniqueObjects); ++i)
 	{
 		srvDesc.Format = SceneManager::GetScenePtr()->mTextures[i]->Resource->GetDesc().Format;
 		srvDesc.Texture2D.MipLevels = SceneManager::GetScenePtr()->mTextures[i]->Resource->GetDesc().MipLevels;
