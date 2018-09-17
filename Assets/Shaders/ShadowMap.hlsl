@@ -40,8 +40,7 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH    : SV_POSITION;
-	float3 PosW    : POSITION0;
-	float4 ShadowPosH : POSITION1;
+	float4 ShadowPosH : POSITION;
 };
 
 VertexOut VS(VertexIn vin)
@@ -50,7 +49,6 @@ VertexOut VS(VertexIn vin)
 
 	// Transform to world space.
 	float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-	vout.PosW = posW.xyz;
 
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gShadowViewProj);
@@ -62,9 +60,7 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float3 position = pin.PosW / 30.0f;
-	position = (position * 0.5f) + 0.5f;
 	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
 	float depth = pin.ShadowPosH.z;
-	return float4(pin.PosW, depth);
+	return float4(depth, depth, depth, depth);
 }
