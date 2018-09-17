@@ -4,8 +4,11 @@ void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12
 	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	commandList->SetPipelineState(mPSO.Get());
+
+	commandList->ClearDepthStencilView(dsvhDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
 		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -23,7 +26,7 @@ void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12
 	commandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
-		rtvDescriptorSize), true, depthStencilViewPtr);
+		rtvDescriptorSize), true, &dsvhDescriptor);
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
