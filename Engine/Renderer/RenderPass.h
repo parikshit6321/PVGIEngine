@@ -30,12 +30,14 @@ public:
 
 	ComPtr<ID3D12DescriptorHeap> mRtvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> mDsvDescriptorHeap = nullptr;
 
 	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	ComPtr<ID3D12Resource>* mInputBuffers;
 	ComPtr<ID3D12Resource>* mOutputBuffers;
 	ComPtr<ID3D12Resource>* mGBuffers;
+	ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
 protected:
 
