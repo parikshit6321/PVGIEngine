@@ -47,6 +47,8 @@ private:
 	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+	bool mShadowsDrawn = false;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -163,8 +165,12 @@ void DemoApp::Draw(const GameTimer& gt)
 
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
+	if (!mShadowsDrawn)
+	{
+		Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+		mShadowsDrawn = true;
+	}
+	
 	Renderer::gBufferRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);

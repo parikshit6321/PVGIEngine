@@ -157,7 +157,6 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 	}
 
-	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
 
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
