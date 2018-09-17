@@ -3,6 +3,9 @@
 void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
 	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
+	commandList->RSSetViewports(1, &mViewport);
+	commandList->RSSetScissorRects(1, &mScissorRect);
+
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -101,8 +104,8 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	resourceDesc.MipLevels = 1;
 	resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Width = mClientWidth;
-	resourceDesc.Height = mClientHeight;
+	resourceDesc.Width = SHADOW_MAP_RESOLUTION;
+	resourceDesc.Height = SHADOW_MAP_RESOLUTION;
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
@@ -138,8 +141,8 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	depthStencilDesc.Alignment = 0;
-	depthStencilDesc.Width = mClientWidth;
-	depthStencilDesc.Height = mClientHeight;
+	depthStencilDesc.Width = SHADOW_MAP_RESOLUTION;
+	depthStencilDesc.Height = SHADOW_MAP_RESOLUTION;
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -159,7 +162,6 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 		D3D12_RESOURCE_STATE_COMMON,
 		&optClear,
 		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
-
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 	dsvHeapDesc.NumDescriptors = 1;

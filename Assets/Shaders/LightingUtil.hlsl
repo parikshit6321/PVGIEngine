@@ -1,4 +1,5 @@
 #define PI 3.14159265359
+#define SHADOW_MAP_RESOLUTION 2048.0f
 
 float3 DiffuseBurley(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
 {
@@ -46,13 +47,13 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 	return ggx1 * ggx2;
 }
 
-float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow, float2 shadowMapSize)
+float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow)
 {
 	float currentDepth = shadowPosH.z;
 
     // Texel size.
-    float dx = 1.0f / shadowMapSize.x;
-	float dy = 1.0f / shadowMapSize.y;
+    float dx = 1.0f / SHADOW_MAP_RESOLUTION;
+	float dy = 1.0f / SHADOW_MAP_RESOLUTION;
 
     float percentLit = 0.0f;
     const float2 offsets[9] =

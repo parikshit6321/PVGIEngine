@@ -116,7 +116,7 @@ float4 PS(VertexOut pin) : SV_Target
 	
 	// Calculate shadow
     float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float shadow = CalculateShadow(shadowPosH, ShadowMap, gsamShadow, gRenderTargetSize);
+	float shadow = CalculateShadow(shadowPosH, ShadowMap, gsamShadow);
 	
 	directLight *= (1.0f - shadow);
 
