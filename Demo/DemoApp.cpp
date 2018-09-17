@@ -6,6 +6,9 @@ using namespace DirectX;
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 
+/// <summary>
+/// DemoApp class is the main application class which dervices from the D3DApp class and extends it's update, draw and input functions.
+/// </summary>
 class DemoApp : public D3DApp
 {
 public:
@@ -50,6 +53,9 @@ private:
 	bool mShadowsDrawn = false;
 };
 
+/// <summary>
+/// Entry-point of the main application.
+/// </summary>
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
     PSTR cmdLine, int showCmd)
 {
@@ -84,6 +90,9 @@ DemoApp::~DemoApp()
         FlushCommandQueue();
 }
 
+/// <summary>
+/// Function which loads the scene, initializes the renderer, builds the frame resources and executes the initial command lists.
+/// </summary>
 bool DemoApp::Initialize()
 {
     if(!D3DApp::Initialize())
@@ -96,8 +105,11 @@ bool DemoApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	// Load the scene file
 	SceneManager::LoadScene("../Assets/Scenes/DemoScene4.txt", md3dDevice, mCommandList);
+	// Initialize the renderer
 	Renderer::Initialize(md3dDevice, mClientWidth, mClientHeight, mBackBufferFormat, mDepthStencilFormat);
+	// Build the frame resources
 	BuildFrameResources();
 	
     // Execute the initialization commands.
@@ -111,6 +123,9 @@ bool DemoApp::Initialize()
     return true;
 }
  
+/// <summary>
+/// Resize function (currently not implemented dynamic resizing)
+/// </summary>
 void DemoApp::OnResize()
 {
     D3DApp::OnResize();
@@ -120,6 +135,9 @@ void DemoApp::OnResize()
     XMStoreFloat4x4(&mProj, P);
 }
 
+/// <summary>
+/// Function which accepts input, updates the camera and the 3 constant buffers.
+/// </summary>
 void DemoApp::Update(const GameTimer& gt)
 {
     OnKeyboardInput(gt);
@@ -139,11 +157,15 @@ void DemoApp::Update(const GameTimer& gt)
         CloseHandle(eventHandle);
     }
 
+	// Update the 3 constant buffers
 	UpdateObjectCBs(gt);
 	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
+/// <summary>
+/// Function which executes the individual render passes one by one
+/// </summary>
 void DemoApp::Draw(const GameTimer& gt)
 {
     auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
@@ -159,27 +181,36 @@ void DemoApp::Draw(const GameTimer& gt)
     // Reusing the command list reuses memory.
     ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::gBufferRenderPass.mPSO.Get()));
 
+	// Draw shadows only once
 	if (!mShadowsDrawn)
 	{
 		Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 		mShadowsDrawn = true;
 	}
 
+	// Reset viewports and scissor rects after shadow map render passs
     mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
+	// Clear the depth buffer at the beginning of every frame
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
+	// Render the gBuffers
 	Renderer::gBufferRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Compute the lighting using deferred shading
 	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Bring the texture down to LDR range from HDR using Uncharted 2 style tonemapping
 	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Use 2D LUTs for color grading
 	Renderer::colorGradingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Copy the contents of the off-screen texture to the back buffer
 	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());
 
     // Done recording commands.
@@ -202,16 +233,25 @@ void DemoApp::Draw(const GameTimer& gt)
     mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
+/// <summary>
+/// Mouse down input handler (currently not implemented)
+/// </summary>
 void DemoApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
     SetCapture(mhMainWnd);
 }
 
+/// <summary>
+/// Mouse up input handler (currently not implemented)
+/// </summary>
 void DemoApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
     ReleaseCapture();
 }
 
+/// <summary>
+/// Mouse move input handler (currently not implemented)
+/// </summary>
 void DemoApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
     if((btnState & MK_LBUTTON) != 0)
@@ -225,10 +265,16 @@ void DemoApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 }
  
+/// <summary>
+/// Keyboard input handler (currently not implemented)
+/// </summary>
 void DemoApp::OnKeyboardInput(const GameTimer& gt)
 {
 }
  
+/// <summary>
+/// Updates the camera position and rotation and generates the view matrix (currently static camera)
+/// </summary>
 void DemoApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
@@ -245,6 +291,9 @@ void DemoApp::UpdateCamera(const GameTimer& gt)
 	XMStoreFloat4x4(&mView, view);
 }
 
+/// <summary>
+/// Update the object constant buffer (currently only has worldSpace matrix)
+/// </summary>
 void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
@@ -267,6 +316,9 @@ void DemoApp::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
+/// <summary>
+/// Updates the material constant buffer (currently only has a global metallic flag)
+/// </summary>
 void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
@@ -286,6 +338,9 @@ void DemoApp::UpdateMaterialCBs(const GameTimer& gt)
 	}
 }
 
+/// <summary>
+/// Updates the main pass constant buffer which contains the bulk of the constant data
+/// </summary>
 void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = XMLoadFloat4x4(&mView);
@@ -296,29 +351,46 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
 	XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
 
+	// Update view, projection and related matrices
 	XMStoreFloat4x4(&mMainPassCB.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&mMainPassCB.InvView, XMMatrixTranspose(invView));
 	XMStoreFloat4x4(&mMainPassCB.Proj, XMMatrixTranspose(proj));
 	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	// Camera position
 	mMainPassCB.EyePosW = mEyePos;
+	
+	// LUT contribution for color grading pass
 	mMainPassCB.userLUTContribution = 1.0f;
+
+	// Render target size
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
+	
+	// Near and far planes for the camera
 	mMainPassCB.NearZ = 0.1f;
 	mMainPassCB.FarZ = 500.0f;
+
+	// Time parameters (maybe use later for vertex animation)
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
+
+	// RGB - sunlight color; A - sunlight intensity
 	mMainPassCB.SunLightStrength = { SceneManager::GetScenePtr()->lightStrength.x, 
 									 SceneManager::GetScenePtr()->lightStrength.y, 
 									 SceneManager::GetScenePtr()->lightStrength.z, 10.0f };
+
+	// RGB - direction of sunlight; A - unused
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
 									  SceneManager::GetScenePtr()->lightDirection.y, 
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
-	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation)));
+
+	// Matrix used when rendering skybox using a quad
+	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixTranspose(XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation))));
 	
-	// Only the first "main" light casts a shadow.
+	// Only the sun light casts a shadow.
 	XMVECTOR lightDir = XMLoadFloat4(&mMainPassCB.SunLightDirection);
 	XMVECTOR lightPos = -2.0f* 10.0f *lightDir;
 	XMFLOAT4 targetPosTemp = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -330,7 +402,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMFLOAT3 sphereCenterLS;
 	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, lightView));
 
-	// Ortho frustum in light space encloses scene.
+	// Ortho frustum for the shadow mapping pass.
 	float l = sphereCenterLS.x - 10.0f;
 	float b = sphereCenterLS.y - 10.0f;
 	float n = sphereCenterLS.z - 10.0f;
@@ -338,8 +410,10 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	float t = sphereCenterLS.y + 10.0f;
 	float f = sphereCenterLS.z + 10.0f;
 
+	// Light orthographic projection matrix
 	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, 1.0f, 20.0f);
 
+	// View projection matrix for shadow map render pass
 	XMMATRIX shadowViewProjMatrix = lightView * lightProj;
 
 	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
@@ -358,6 +432,9 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
+/// <summary>
+/// Create the frame resources
+/// </summary>
 void DemoApp::BuildFrameResources()
 {
     for(int i = 0; i < 3; ++i)

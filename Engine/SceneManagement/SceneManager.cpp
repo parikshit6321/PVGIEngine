@@ -37,10 +37,6 @@ void SceneManager::ImportScene(std::string sceneFilePath)
 	inputFile >> lightStrength.x >> lightStrength.y >> lightStrength.z;
 	inputFile >> numberOfObjects;
 
-	cameraRotation.x *= -1.0f;
-	cameraRotation.y *= -1.0f;
-	cameraRotation.z *= -1.0f;
-
 	mScene.name = name;
 	mScene.cameraPosition = cameraPosition;
 	mScene.cameraRotation = cameraRotation;
