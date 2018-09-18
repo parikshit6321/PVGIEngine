@@ -50,6 +50,7 @@ protected:
 
 	ComPtr<ID3DBlob> mVertexShader;
 	ComPtr<ID3DBlob> mPixelShader;
+	ComPtr<ID3DBlob> mComputeShader;
 	
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 

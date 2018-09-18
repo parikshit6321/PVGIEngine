@@ -23,6 +23,7 @@ void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, in
 
 	mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "VS", "vs_5_1");
 	mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "PS", "ps_5_1");
+	mComputeShader = d3dUtil::CompileShader(L"../Assets/Shaders/VoxelInjection.hlsl", nullptr, "CS", "cs_5_1");
 
 	BuildRootSignature();
 	BuildDescriptorHeaps();

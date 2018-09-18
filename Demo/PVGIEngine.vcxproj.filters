@@ -78,6 +78,9 @@
     <ClCompile Include="..\Engine\Utilities\DDSTextureLoader.cpp">
       <Filter>Engine\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -148,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="..\Engine\Utilities\DDSTextureLoader.h">
       <Filter>Engine\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

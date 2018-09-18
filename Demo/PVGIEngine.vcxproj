@@ -27,6 +27,7 @@
     <ClCompile Include="..\Engine\Renderer\ShadowMapRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\MeshGeometry.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\RenderObject.cpp" />
@@ -49,6 +50,7 @@
     <ClInclude Include="..\Engine\Renderer\ShadowMapRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h" />
     <ClInclude Include="..\Engine\SceneManagement\Material.h" />
     <ClInclude Include="..\Engine\SceneManagement\MeshGeometry.h" />
     <ClInclude Include="..\Engine\SceneManagement\MeshLoader.h" />
