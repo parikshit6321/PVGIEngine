@@ -21,7 +21,7 @@ class RenderPass
 public:
 	RenderPass() = default;
 	void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT, 
-		ComPtr<ID3D12Resource>*, ComPtr<ID3D12Resource>*, std::wstring);
+		ComPtr<ID3D12Resource>*, ComPtr<ID3D12Resource>*, ComPtr<ID3D12Resource>*, std::wstring);
 	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, 
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) = 0;
 	~RenderPass() = default;
@@ -37,6 +37,7 @@ public:
 	ComPtr<ID3D12Resource>* mInputBuffers;
 	ComPtr<ID3D12Resource>* mOutputBuffers;
 	ComPtr<ID3D12Resource>* mGBuffers;
+	ComPtr<ID3D12Resource>* mVoxelGrids;
 	ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
 protected:

@@ -12,19 +12,19 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer)
 {
 	shadowMapRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, L"ShadowMap.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, nullptr, L"ShadowMap.hlsl");
 	gBufferRenderPass.Initialize(inputDevice, inputWidth, inputHeight, 
-		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, L"GBufferWrite.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, nullptr, L"GBufferWrite.hlsl");
 	deferredShadingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"DeferredShading.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"DeferredShading.hlsl");
 	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"SkyBox.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"SkyBox.hlsl");
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"SkyBox.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"SkyBox.hlsl");
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers, nullptr, L"ToneMapping.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers, nullptr, nullptr, L"ToneMapping.hlsl");
 	colorGradingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers, nullptr, L"ColorGrading.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers, nullptr, nullptr, L"ColorGrading.hlsl");
 }
 
 void Renderer::CopyToBackBuffer(ID3D12GraphicsCommandList* commandList, ID3D12Resource * backBuffer)
