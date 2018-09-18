@@ -7,8 +7,14 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->SetPipelineState(mPSO.Get());
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(voxelGrid1.Get(),
-		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
+
+	for (int i = 0; i < 5; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	}
 
 	commandList->SetComputeRootSignature(mRootSignature.Get());
 
@@ -17,16 +23,23 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-	commandList->SetGraphicsRootDescriptorTable(1, tex);
+	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(2, cbvSrvUavDescriptorSize);
+	tex.Offset(1, cbvSrvUavDescriptorSize);
 
-	commandList->SetGraphicsRootDescriptorTable(2, tex);
+	commandList->SetComputeRootDescriptorTable(2, tex);
+
+	tex.Offset(1, cbvSrvUavDescriptorSize);
+
+	commandList->SetComputeRootDescriptorTable(3, tex);
 
 	commandList->Dispatch(mClientWidth, mClientHeight, 1);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(voxelGrid1.Get(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
+	for (int i = 0; i < 5; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
+	}
 }
 
 void VoxelInjectionRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource *, ID3D12Resource *)
@@ -35,24 +48,28 @@ void VoxelInjectionRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource 
 
 void VoxelInjectionRenderPass::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE srvTable;
-	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE uavTable;
-	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE srvTable1;
+	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 5, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstants(2, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable1);
+	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable0);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -77,13 +94,12 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 
 void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 {
+	mOutputBuffers = new ComPtr<ID3D12Resource>[5];
+
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
 	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
 	texDesc.Alignment = 0;
-	texDesc.Width = voxelResolution;
-	texDesc.Height = voxelResolution;
-	texDesc.DepthOrArraySize = voxelResolution;
 	texDesc.MipLevels = 1;
 	texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	texDesc.SampleDesc.Count = 1;
@@ -98,19 +114,26 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[3] = 0.0f;
 	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	ThrowIfFailed(md3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(&voxelGrid1)));
+	for (int i = 0; i < 5; ++i)
+	{
+		texDesc.Width = voxelResolution / ((int)(pow(2, i)));
+		texDesc.Height = voxelResolution / ((int)(pow(2, i)));
+		texDesc.DepthOrArraySize = voxelResolution / ((int)(pow(2, i)));
+
+		ThrowIfFailed(md3dDevice->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&texDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&mOutputBuffers[i])));
+	}
 
 	//
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 7;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -140,19 +163,23 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	// Position and depth texture as an SRV
 	md3dDevice->CreateShaderResourceView(mGBuffers[2].Get(), &srvDesc, hDescriptor);
 
-	// next descriptor
-	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
 	uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
 	uavDesc.Texture3D.MipSlice = 0;
-	uavDesc.Texture3D.WSize = 64;
 	uavDesc.Texture3D.FirstWSlice = 0;
 
-	// Voxel grid 3D texture as a UAV
-	md3dDevice->CreateUnorderedAccessView(voxelGrid1.Get(), nullptr, &uavDesc, hDescriptor);
+	for (int i = 0; i < 5; ++i)
+	{
+		uavDesc.Texture3D.WSize = voxelResolution / ((int)pow(2, i));
+
+		// next descriptor
+		hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+
+		// Voxel grid 3D texture as a UAV
+		md3dDevice->CreateUnorderedAccessView(mOutputBuffers[i].Get(), nullptr, &uavDesc, hDescriptor);
+	}
 }
 
 void VoxelInjectionRenderPass::BuildPSOs()

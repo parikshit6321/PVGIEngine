@@ -202,7 +202,7 @@ void DemoApp::Draw(const GameTimer& gt)
 	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Inject lighting data into the voxel grids
-	//Renderer::voxelInjectionRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::voxelInjectionRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);

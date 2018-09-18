@@ -10,7 +10,6 @@ public:
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) override;
 	~VoxelInjectionRenderPass() = default;
 
-	ComPtr<ID3D12Resource> voxelGrid1 = nullptr;
 	UINT voxelResolution = 64;
 	float worldVolumeBoundary = 50.0f;
 
