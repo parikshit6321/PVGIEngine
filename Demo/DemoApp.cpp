@@ -386,7 +386,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	// RGB - sunlight color; A - sunlight intensity
 	mMainPassCB.SunLightStrength = { SceneManager::GetScenePtr()->lightStrength.x, 
 									 SceneManager::GetScenePtr()->lightStrength.y, 
-									 SceneManager::GetScenePtr()->lightStrength.z, 10.0f };
+									 SceneManager::GetScenePtr()->lightStrength.z, 9.0f };
 
 	// RGB - direction of sunlight; A - unused
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
@@ -433,6 +433,10 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	
 	XMStoreFloat4x4(&mMainPassCB.shadowViewProjMatrix, XMMatrixTranspose(shadowViewProjMatrix));
 	XMStoreFloat4x4(&mMainPassCB.shadowTransform, XMMatrixTranspose(S));
+
+	float lengthOfCone = (32.0f * Renderer::voxelInjectionRenderPass.worldVolumeBoundary) / (Renderer::voxelInjectionRenderPass.voxelResolution * tan(MathHelper::Pi / 6.0f));
+
+	mMainPassCB.WB_MI_LC_U = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, 64.0f, lengthOfCone, 0.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

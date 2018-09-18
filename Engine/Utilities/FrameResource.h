@@ -36,6 +36,8 @@ struct PassConstants
 	DirectX::XMFLOAT4X4 skyBoxMatrix = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 shadowViewProjMatrix = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 shadowTransform = MathHelper::Identity4x4();
+
+	DirectX::XMFLOAT4 WB_MI_LC_U = { 50.0f, 64.0f, 0.0f, 0.0f };
 };
 
 struct Vertex

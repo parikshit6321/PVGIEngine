@@ -8,39 +8,6 @@ Texture2D	 PositionDepthGBuffer	 : register(t2);
 Texture2D	 ShadowPosHGBuffer		 : register(t3);
 Texture2D	 MainTex				 : register(t4);
 
-Texture3D	 VoxelGrid1				 : register(t5);
-Texture3D	 VoxelGrid2				 : register(t6);
-Texture3D	 VoxelGrid3				 : register(t7);
-Texture3D	 VoxelGrid4				 : register(t8);
-Texture3D	 VoxelGrid5				 : register(t9);
-
-SamplerState gsamLinearWrap			 : register(s0);
-SamplerState gsamAnisotropicWrap	 : register(s1);
-
-// Constant data that varies per material.
-cbuffer cbPass : register(b0)
-{
-	float4x4 gView;
-	float4x4 gInvView;
-	float4x4 gProj;
-	float4x4 gInvProj;
-	float4x4 gViewProj;
-	float4x4 gInvViewProj;
-	float3 gEyePosW;
-	float userLUTContribution;
-	float2 gRenderTargetSize;
-	float2 gInvRenderTargetSize;
-	float gNearZ;
-	float gFarZ;
-	float gTotalTime;
-	float gDeltaTime;
-	float4 gSunLightStrength;
-	float4 gSunLightDirection;
-	float4x4 gSkyBoxMatrix;
-	float4x4 gShadowViewProj;
-	float4x4 gShadowTransform;
-};
-
 struct VertexIn
 {
 	float3 PosL    : POSITION;
@@ -99,16 +66,6 @@ float4 PS(VertexOut pin) : SV_Target
 	F0 = lerp(F0, albedo.rgb, metallic);
 	float3 F = FresnelSchlick(VdotH, F0);
 
-	// Calculate Normal distribution function
-	float NDF = DistributionGGX(NdotH, roughness);
-
-	// Calculate Geometry function
-	float G = GeometrySmith(NdotV, NdotL, roughness);
-
-	float3 numerator = (F * NDF * G);
-	float denominator = (4.0f * NdotV * NdotL);
-	float3 specular = numerator / max(denominator, 0.001f);
-
 	float3 kS = F;
 	float3 kD = (float3(1.0f, 1.0f, 1.0f) - kS);
 
@@ -116,7 +73,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
 
-	float3 indirectLight = ((diffuse + specular) * CalculateIndirectLighting(position.xyz, normalize(N)));
+	float3 indirectLight = (diffuse * CalculateIndirectLighting(position.xyz, normalize(N)));
 	
 	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
 	float3 finalResult = directLight + indirectLight;
