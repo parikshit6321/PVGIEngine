@@ -70,7 +70,7 @@ float4 PS(VertexOut pin) : SV_Target
 {
 	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
 	float depth = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).a;
-	float3 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
+	float3 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).rgb;
 
 	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
 

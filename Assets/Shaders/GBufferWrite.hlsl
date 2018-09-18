@@ -92,7 +92,7 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
-PixelOut PS(VertexOut pin) : SV_Target
+PixelOut PS(VertexOut pin)
 {
 	PixelOut output;
 

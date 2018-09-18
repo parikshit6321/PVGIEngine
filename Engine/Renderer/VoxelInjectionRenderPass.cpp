@@ -166,6 +166,5 @@ void VoxelInjectionRenderPass::BuildPSOs()
 		mComputeShader->GetBufferSize()
 	};
 	computePSODesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-	md3dDevice->CreateComputePipelineState(&computePSODesc, IID_PPV_ARGS(&mPSO));
-	ThrowIfFailed(md3dDevice->GetDeviceRemovedReason());
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&computePSODesc, IID_PPV_ARGS(&mPSO)));
 }
