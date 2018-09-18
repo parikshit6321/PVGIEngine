@@ -204,6 +204,9 @@ void DemoApp::Draw(const GameTimer& gt)
 	// Inject lighting data into the voxel grids
 	Renderer::voxelInjectionRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Perform cone tracing to compute indirect lighting
+	Renderer::indirectLightingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
 	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 

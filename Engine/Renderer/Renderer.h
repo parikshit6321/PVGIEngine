@@ -4,6 +4,7 @@
 #include "GBufferRenderPass.h"
 #include "DeferredShadingRenderPass.h"
 #include "VoxelInjectionRenderPass.h"
+#include "IndirectLightingRenderPass.h"
 #include "SkyBoxRenderPass.h"
 #include "ToneMappingRenderPass.h"
 #include "ColorGradingRenderPass.h"
@@ -21,6 +22,7 @@ public:
 	static GBufferRenderPass gBufferRenderPass;
 	static DeferredShadingRenderPass deferredShadingRenderPass;
 	static VoxelInjectionRenderPass voxelInjectionRenderPass;
+	static IndirectLightingRenderPass indirectLightingRenderPass;
 	static SkyBoxRenderPass skyBoxRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
 	static ColorGradingRenderPass colorGradingRenderPass;

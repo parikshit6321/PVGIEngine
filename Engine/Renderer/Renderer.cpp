@@ -4,6 +4,7 @@ ShadowMapRenderPass Renderer::shadowMapRenderPass;
 GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
+IndirectLightingRenderPass Renderer::indirectLightingRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
 ColorGradingRenderPass Renderer::colorGradingRenderPass;
@@ -19,8 +20,10 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"DeferredShading.hlsl");
 	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"SkyBox.hlsl");
+	indirectLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, voxelInjectionRenderPass.mOutputBuffers, L"IndirectLighting.hlsl");
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"SkyBox.hlsl");
+		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, nullptr, L"SkyBox.hlsl");
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers, nullptr, nullptr, L"ToneMapping.hlsl");
 	colorGradingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,

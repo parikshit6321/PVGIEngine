@@ -81,6 +81,9 @@
     <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -153,6 +156,9 @@
       <Filter>Engine\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
