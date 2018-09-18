@@ -3,6 +3,7 @@
 #include "ShadowMapRenderPass.h"
 #include "GBufferRenderPass.h"
 #include "DeferredShadingRenderPass.h"
+#include "VoxelInjectionRenderPass.h"
 #include "SkyBoxRenderPass.h"
 #include "ToneMappingRenderPass.h"
 #include "ColorGradingRenderPass.h"
@@ -19,6 +20,7 @@ public:
 	static ShadowMapRenderPass shadowMapRenderPass;
 	static GBufferRenderPass gBufferRenderPass;
 	static DeferredShadingRenderPass deferredShadingRenderPass;
+	static VoxelInjectionRenderPass voxelInjectionRenderPass;
 	static SkyBoxRenderPass skyBoxRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
 	static ColorGradingRenderPass colorGradingRenderPass;

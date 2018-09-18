@@ -3,6 +3,8 @@
 void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
 	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	commandList->SetPipelineState(mPSO.Get());
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(voxelGrid1.Get(),
@@ -15,13 +17,16 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-	commandList->SetGraphicsRootDescriptorTable(0, tex);
+	commandList->SetGraphicsRootDescriptorTable(1, tex);
+
+	tex.Offset(2, cbvSrvUavDescriptorSize);
+
+	commandList->SetGraphicsRootDescriptorTable(2, tex);
 
 	commandList->Dispatch(mClientWidth, mClientHeight, 1);
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(voxelGrid1.Get(),
 		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
-
 }
 
 void VoxelInjectionRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource *, ID3D12Resource *)
@@ -44,9 +49,11 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
 	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
 
+	auto staticSamplers = GetStaticSamplers();
+
 	// A root signature is an array of root parameters.
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
-		0, nullptr,
+		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
@@ -70,12 +77,6 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 
 void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 {
-	// Note, compressed formats cannot be used for UAV.  We get error like:
-	// ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM) 
-	// cannot be bound as an UnorderedAccessView, or cast to a format that
-	// could be bound as an UnorderedAccessView.  Therefore this format 
-	// does not support D3D11_BIND_UNORDERED_ACCESS.
-
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
 	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
@@ -102,7 +103,7 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 		D3D12_HEAP_FLAG_NONE,
 		&texDesc,
 		D3D12_RESOURCE_STATE_COMMON,
-		&clearVal,
+		nullptr,
 		IID_PPV_ARGS(&voxelGrid1)));
 
 	//
@@ -147,6 +148,8 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
 	uavDesc.Texture3D.MipSlice = 0;
+	uavDesc.Texture3D.WSize = 64;
+	uavDesc.Texture3D.FirstWSlice = 0;
 
 	// Voxel grid 3D texture as a UAV
 	md3dDevice->CreateUnorderedAccessView(voxelGrid1.Get(), nullptr, &uavDesc, hDescriptor);
@@ -163,5 +166,6 @@ void VoxelInjectionRenderPass::BuildPSOs()
 		mComputeShader->GetBufferSize()
 	};
 	computePSODesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&computePSODesc, IID_PPV_ARGS(&mPSO)));
+	md3dDevice->CreateComputePipelineState(&computePSODesc, IID_PPV_ARGS(&mPSO));
+	ThrowIfFailed(md3dDevice->GetDeviceRemovedReason());
 }

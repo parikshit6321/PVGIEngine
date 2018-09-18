@@ -3,6 +3,7 @@
 ShadowMapRenderPass Renderer::shadowMapRenderPass;
 GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
+VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
 ColorGradingRenderPass Renderer::colorGradingRenderPass;
@@ -16,6 +17,8 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, L"GBufferWrite.hlsl");
 	deferredShadingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"DeferredShading.hlsl");
+	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"SkyBox.hlsl");
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, gBufferRenderPass.mOutputBuffers, L"SkyBox.hlsl");
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
