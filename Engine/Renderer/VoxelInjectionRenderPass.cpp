@@ -33,7 +33,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->SetComputeRootDescriptorTable(3, tex);
 
-	commandList->Dispatch(mClientWidth, mClientHeight, 1);
+	commandList->Dispatch(mClientWidth / 16, mClientHeight / 16, 1);
 
 	for (int i = 0; i < 5; ++i)
 	{

@@ -22,7 +22,7 @@ inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
 	return voxelPosition;
 }
 
-[numthreads(1, 1, 1)]
+[numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	// Color of the current voxel with lighting
