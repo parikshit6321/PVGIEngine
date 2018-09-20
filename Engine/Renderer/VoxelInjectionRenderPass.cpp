@@ -20,6 +20,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->SetComputeRoot32BitConstants(0, 1, &voxelResolution, 0);
 	commandList->SetComputeRoot32BitConstants(0, 1, &worldVolumeBoundary, 1);
+	commandList->SetComputeRoot32BitConstants(0, 1, &rsmDownsample, 2);
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
@@ -33,7 +34,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->SetComputeRootDescriptorTable(3, tex);
 
-	commandList->Dispatch(mClientWidth / 16, mClientHeight / 16, 1);
+	commandList->Dispatch((mClientWidth / rsmDownsample) / 16, (mClientHeight / rsmDownsample) / 16, 1);
 
 	for (int i = 0; i < 5; ++i)
 	{
@@ -61,7 +62,7 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstants(2, 0);
+	slotRootParameter[0].InitAsConstants(3, 0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
 	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable1);
 	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable0);

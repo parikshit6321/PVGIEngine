@@ -2,6 +2,7 @@ cbuffer cbSettings : register(b0)
 {
 	uint voxelResolution;
 	float worldVolumeBoundary;
+	uint rsmDownsample;
 };
 
 Texture2D lightingTexture           : register(t0);
@@ -26,10 +27,10 @@ inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	// Color of the current voxel with lighting
-	float3 lightingColor = lightingTexture[id.xy].rgb;
+	float3 lightingColor = lightingTexture[id.xy * rsmDownsample].rgb;
 
 	// World space position
-	float3 worldPosition = positionDepthTexture[id.xy].rgb;
+	float3 worldPosition = positionDepthTexture[id.xy * rsmDownsample].rgb;
 
 	// Extract the pixel's depth
 	float depth = positionDepthTexture[id.xy].a;
