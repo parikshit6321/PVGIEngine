@@ -1,6 +1,4 @@
-//---------------------------------------------------------------------------------------
 // Transforms a normal map sample to world space.
-//---------------------------------------------------------------------------------------
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
 {
 	// Uncompress each component from [0,1] to [-1,1].

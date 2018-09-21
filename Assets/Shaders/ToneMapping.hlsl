@@ -41,7 +41,6 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
-	float3 PosV : POSITION;
 	float2 TexC : TEXCOORD0;
 };
 
@@ -54,16 +53,10 @@ VertexOut VS(VertexIn vin)
 	// Quad covering screen in NDC space.
 	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
 
-	// Transform quad corners to view space near plane.
-	float4 ph = mul(vout.PosH, gInvProj);
-	vout.PosV = ph.xyz / ph.w;
-
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 inputColor = MainTex.Sample(gsamAnisotropicWrap, pin.TexC);
-	float3 resultingColor = Uncharted2Tonemap(inputColor.rgb);
-	return float4(resultingColor, 1.0f);
+	return float4(Uncharted2Tonemap(MainTex.Sample(gsamLinearWrap, pin.TexC).rgb), 1.0f);
 }

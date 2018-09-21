@@ -1,10 +1,10 @@
-#define PI 3.14159265359
+#define PI 3.14159265359f
 #define SHADOW_MAP_RESOLUTION 2048.0f
+#define SHADOW_MAP_RESOLUTION_INV 0.00048828125f
 
 float3 DiffuseBurley(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
 {
-	float roughnessSq = Roughness * Roughness;
-	float FD90 = 0.5f + (2 * VoH * VoH * roughnessSq);
+	float FD90 = 0.5f + (2 * VoH * VoH * Roughness * Roughness);
 	float FdV = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoV), 5.0f));
 	float FdL = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoL), 5.0f));
 	return DiffuseColor * ((1 / PI) * FdV * FdL);
@@ -49,18 +49,13 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 
 float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow)
 {
-	float currentDepth = shadowPosH.z;
-
-    // Texel size.
-    float dx = 1.0f / SHADOW_MAP_RESOLUTION;
-	float dy = 1.0f / SHADOW_MAP_RESOLUTION;
-
-    float percentLit = 0.0f;
+	float percentLit = 0.0f;
+	
     const float2 offsets[9] =
     {
-        float2(-dx,  -dy), float2(0.0f,  -dy), float2(dx,  -dy),
-        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
-        float2(-dx,  +dy), float2(0.0f,  +dy), float2(dx,  +dy)
+        float2(-SHADOW_MAP_RESOLUTION_INV,  -SHADOW_MAP_RESOLUTION_INV), float2(0.0f,  -SHADOW_MAP_RESOLUTION_INV), float2(SHADOW_MAP_RESOLUTION_INV,  -SHADOW_MAP_RESOLUTION_INV),
+        float2(-SHADOW_MAP_RESOLUTION_INV, 0.0f), float2(0.0f, 0.0f), float2(SHADOW_MAP_RESOLUTION_INV, 0.0f),
+        float2(-SHADOW_MAP_RESOLUTION_INV,  SHADOW_MAP_RESOLUTION_INV), float2(0.0f,  SHADOW_MAP_RESOLUTION_INV), float2(SHADOW_MAP_RESOLUTION_INV,  SHADOW_MAP_RESOLUTION_INV)
     };
 
 	float sampleDepth = 0.0f;
@@ -69,10 +64,10 @@ float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamS
     for(int i = 0; i < 9; ++i)
     {
 		sampleDepth = ShadowMap.Sample(gsamShadow, shadowPosH.xy + offsets[i]).a;
-		percentLit += ((currentDepth - 0.005f) > sampleDepth ? 1.0f : 0.0f);
+		percentLit += ((shadowPosH.z - 0.005f) > sampleDepth ? 1.0f : 0.0f);
     }
     
-    float shadow = percentLit / 9.0f;
+    percentLit *= 0.1111111111f;
 	
-	return shadow;
+	return percentLit;
 }

@@ -68,20 +68,15 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
+	float3 pixelColor = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
 	float depth = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).a;
-	float3 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC).rgb;
-
-	float3 resultingColor = float3(0.0f, 0.0f, 0.0f);
 
 	float3 sampleDirection = mul(float4(pin.PosV, 1.0f), gSkyBoxMatrix).xyz;
 
 	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, sampleDirection);
-
+	
 	if (depth == 1.0f)
-		resultingColor = skyBoxColor.rgb * gSunLightStrength.a;
-	else
-		resultingColor = inputColor.rgb;
+		pixelColor = skyBoxColor.rgb * gSunLightStrength.a;
 
-	return float4(resultingColor, 1.0f);
+	return float4(pixelColor, 1.0f);
 }

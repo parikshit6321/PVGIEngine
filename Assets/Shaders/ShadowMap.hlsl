@@ -61,6 +61,5 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
-	float depth = pin.ShadowPosH.z;
-	return float4(depth, depth, depth, depth);
+	return float4(pin.ShadowPosH.z, pin.ShadowPosH.z, pin.ShadowPosH.z, pin.ShadowPosH.z);
 }

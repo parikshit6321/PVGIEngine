@@ -1,3 +1,8 @@
+#define HALF_PIXEL_X 0.001953125f
+#define HALF_PIXEL_Y 0.03125f
+#define DIMENSION 16.0f
+#define DIMENSION_MINUS_1 15.0f
+
 Texture2D    MainTex  : register(t0);
 Texture2D	 UserLUT  : register(t1);
 
@@ -39,7 +44,6 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
-	float3 PosV : POSITION;
 	float2 TexC : TEXCOORD0;
 };
 
@@ -52,34 +56,23 @@ VertexOut VS(VertexIn vin)
 	// Quad covering screen in NDC space.
 	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
 
-	// Transform quad corners to view space near plane.
-	float4 ph = mul(vout.PosH, gInvProj);
-	vout.PosV = ph.xyz / ph.w;
-
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float width = 256.0f;
-	float height = 16.0f;
-	float dimension = 16.0f;
-	
 	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
 
-	float blueCell = inputColor.b * (dimension - 1.0f);
+	float blueCell = inputColor.b * DIMENSION_MINUS_1;
 
 	float blueCellLower = floor(blueCell);
 	float blueCellUpper = ceil(blueCell);
 
-	float halfPixelInX = 0.5f / width;
-	float halfPixelInY = 0.5f / height;
+	float rComponentOffset = HALF_PIXEL_X + inputColor.r / DIMENSION * (DIMENSION_MINUS_1 / DIMENSION);
+	float gComponentOffset = HALF_PIXEL_Y + inputColor.g * (DIMENSION_MINUS_1 / DIMENSION);
 
-	float rComponentOffset = halfPixelInX + inputColor.r / dimension * ((dimension - 1.0f) / dimension);
-	float gComponentOffset = halfPixelInY + inputColor.g * ((dimension - 1.0f) / dimension);
-
-	float2 positionInLUTLower = float2(blueCellLower / dimension + rComponentOffset, gComponentOffset);
-	float2 positionInLUTUpper = float2(blueCellUpper / dimension + rComponentOffset, gComponentOffset);
+	float2 positionInLUTLower = float2(blueCellLower / DIMENSION + rComponentOffset, gComponentOffset);
+	float2 positionInLUTUpper = float2(blueCellUpper / DIMENSION + rComponentOffset, gComponentOffset);
 
 	float4 gradedColorLower = UserLUT.Sample(gsamLinearWrap, positionInLUTLower);
 	float4 gradedColorUpper = UserLUT.Sample(gsamLinearWrap, positionInLUTUpper);

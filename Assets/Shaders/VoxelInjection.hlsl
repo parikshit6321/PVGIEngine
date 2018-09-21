@@ -18,7 +18,7 @@ inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
 {
 	float3 encodedPosition = worldPosition / worldVolumeBoundary;
 	encodedPosition += float3(1.0f, 1.0f, 1.0f);
-	encodedPosition /= 2.0f;
+	encodedPosition *= 0.5f;
 	uint3 voxelPosition = (uint3)(encodedPosition * resolution);
 	return voxelPosition;
 }
