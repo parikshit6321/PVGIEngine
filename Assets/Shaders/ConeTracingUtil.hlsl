@@ -1,4 +1,11 @@
-// Need to input a vector which has r - worldVolumeBoundary, g - maximumIterations, b - lengthOfCone, a - unused
+#define ITERATIONS_0 (MAXIMUM_ITERATIONS / 32.0f)
+#define ITERATIONS_1 (MAXIMUM_ITERATIONS / 32.0f)
+#define ITERATIONS_2 (MAXIMUM_ITERATIONS / 16.0f)
+#define ITERATIONS_3 (MAXIMUM_ITERATIONS / 8.0f)
+#define ITERATIONS_4 (MAXIMUM_ITERATIONS / 4.0f)
+#define ITERATIONS_5 (MAXIMUM_ITERATIONS / 2.0f)
+#define MAXIMUM_ITERATIONS 64.0f
+#define RANDOM_VECTOR float3(0.267261f, 0.534522f, 0.801784f)
 
 Texture3D	 VoxelGrid1				 : register(t5);
 Texture3D	 VoxelGrid2				 : register(t6);
@@ -31,15 +38,15 @@ cbuffer cbPass : register(b0)
 	float4x4 gSkyBoxMatrix;
 	float4x4 gShadowViewProj;
 	float4x4 gShadowTransform;
-	float4 gWB_MI_LC_U;
+	float4 gWorldBoundary_R_ConeStep_G;
 };
 
 // Returns the voxel position in the grids
 inline float3 GetVoxelPosition(float3 worldPosition)
 {
-	float3 voxelPosition = worldPosition / gWB_MI_LC_U.r;
+	float3 voxelPosition = worldPosition / gWorldBoundary_R_ConeStep_G.r;
 	voxelPosition += float3(1.0f, 1.0f, 1.0f);
-	voxelPosition /= 2.0f;
+	voxelPosition *= 0.5f;
 	return voxelPosition;
 }
 
@@ -80,112 +87,81 @@ inline float4 GetVoxelInfo5(float3 voxelPosition)
 
 inline float3 ConeTrace(float3 worldPosition, float3 coneDirection, float3 worldNormal)
 {
-	float3 computedColor = float3(0.0f, 0.0f, 0.0f);
-
-	float coneStep = gWB_MI_LC_U.b / gWB_MI_LC_U.g;
-
-	float iteration0 = gWB_MI_LC_U.g / 32.0f;
-	float iteration1 = gWB_MI_LC_U.g / 32.0f;
-	float iteration2 = gWB_MI_LC_U.g / 16.0f;
-	float iteration3 = gWB_MI_LC_U.g / 8.0f;
-	float iteration4 = gWB_MI_LC_U.g / 4.0f;
-	float iteration5 = gWB_MI_LC_U.g / 2.0f;
-
-	float3 coneOrigin = worldPosition + (coneDirection * coneStep * iteration0);
+	float3 coneOrigin = worldPosition + (coneDirection * gWorldBoundary_R_ConeStep_G.g * ITERATIONS_0);
 
 	float3 currentPosition = coneOrigin;
 	float4 currentVoxelInfo = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	float hitFound = 0.0f;
-	float3 hitPosition = float3(0.0f, 0.0f, 0.0f);
 
 	// Sample voxel grid 1
-	for (float i1 = 0.0f; i1 < iteration1; i1 += 1.0f)
+	for (float i1 = 0.0f; i1 < ITERATIONS_1; i1 += 1.0f)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (gWorldBoundary_R_ConeStep_G.g * coneDirection);
 
-		if (hitFound < 0.9f)
+		if (hitFound < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo1(GetVoxelPosition(currentPosition));
-			if (currentVoxelInfo.a > 0.0f)
-			{
-				hitFound = 1.0f;
-			}
+			hitFound = currentVoxelInfo.a;
 		}
 	}
 
 	// Sample voxel grid 2
-	for (float i2 = 0.0f; i2 < iteration2; i2 += 1.0f)
+	for (float i2 = 0.0f; i2 < ITERATIONS_2; i2 += 1.0f)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (gWorldBoundary_R_ConeStep_G.g * coneDirection);
 
-		if (hitFound < 0.9f)
+		if (hitFound < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo2(GetVoxelPosition(currentPosition));
-			if (currentVoxelInfo.a > 0.0f)
-			{
-				hitFound = 1.0f;
-			}
+			hitFound = currentVoxelInfo.a;
 		}
 	}
 
 	// Sample voxel grid 3
-	for (float i3 = 0.0f; i3 < iteration3; i3 += 1.0f)
+	for (float i3 = 0.0f; i3 < ITERATIONS_3; i3 += 1.0f)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (gWorldBoundary_R_ConeStep_G.g * coneDirection);
 
-		if (hitFound < 0.9f)
+		if (hitFound < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo3(GetVoxelPosition(currentPosition));
-			if (currentVoxelInfo.a > 0.0f)
-			{
-				hitFound = 1.0f;
-			}
+			hitFound = currentVoxelInfo.a;
 		}
 	}
 
 	// Sample voxel grid 4
-	for (float i4 = 0.0f; i4 < iteration4; i4 += 1.0f)
+	for (float i4 = 0.0f; i4 < ITERATIONS_4; i4 += 1.0f)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (gWorldBoundary_R_ConeStep_G.g * coneDirection);
 
-		if (hitFound < 0.9f)
+		if (hitFound < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo4(GetVoxelPosition(currentPosition));
-			if (currentVoxelInfo.a > 0.0f)
-			{
-				hitFound = 1.0f;
-			}
+			hitFound = currentVoxelInfo.a;
 		}
 	}
 
 	// Sample voxel grid 5
-	for (float i5 = 0.0f; i5 < iteration5; i5 += 1.0f)
+	for (float i5 = 0.0f; i5 < ITERATIONS_5; i5 += 1.0f)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (gWorldBoundary_R_ConeStep_G.g * coneDirection);
 
-		if (hitFound < 0.9f)
+		if (hitFound < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo5(GetVoxelPosition(currentPosition));
-			if (currentVoxelInfo.a > 0.0f)
-			{
-				hitFound = 1.0f;
-			}
+			hitFound = currentVoxelInfo.a;
 		}
 	}
 
-	computedColor = currentVoxelInfo.rgb;
-	
-	return computedColor;
+	return currentVoxelInfo.rgb;
 }
 
 inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal)
 {
 	float3 accumulatedColor = float3(0.0f, 0.0f, 0.0f);
 
-	float3 randomVector = normalize(float3(1.0f, 2.0f, 3.0f));
-
-	float3 direction1 = normalize(cross(worldNormal, randomVector));
+	float3 direction1 = normalize(cross(worldNormal, RANDOM_VECTOR));
 	float3 direction2 = -direction1;
 	float3 direction3 = normalize(cross(worldNormal, direction1));	// Not used in cone tracing
 	float3 direction4 = -direction3; 								// Not used in cone tracing

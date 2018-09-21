@@ -436,7 +436,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 	float lengthOfCone = (32.0f * Renderer::voxelInjectionRenderPass.worldVolumeBoundary) / (Renderer::voxelInjectionRenderPass.voxelResolution * tan(MathHelper::Pi / 6.0f));
 
-	mMainPassCB.WB_MI_LC_U = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, 64.0f, lengthOfCone, 0.0f };
+	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
