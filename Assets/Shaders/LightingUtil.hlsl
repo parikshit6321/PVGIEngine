@@ -25,12 +25,12 @@ float D_GGX(float NdotH, float m)
 	return (m2 / (f * f));
 }
 
-float3 DiffuseDisneyNormalized(float3 DiffuseColor, float Roughness, float NdotV, float NdotL, float LdotH)
+float3 DiffuseDisneyNormalized(float3 DiffuseColor, float LineaRoughness, float NdotV, float NdotL, float LdotH)
 {
-	float energyBias = lerp(0.0f, 0.5f, Roughness);
-	float energyFactor = lerp(1.0f, 1.0f / 1.51f, Roughness);
+	float energyBias = lerp(0.0f, 0.5f, LineaRoughness);
+	float energyFactor = lerp(1.0f, 1.0f / 1.51f, LineaRoughness);
 	
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * Roughness ;
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * LineaRoughness ;
 	float3 f0 = float3(1.0f, 1.0f, 1.0f);
 	
 	float lightScatter = FresnelSchlick (f0, fd90, NdotL).r;

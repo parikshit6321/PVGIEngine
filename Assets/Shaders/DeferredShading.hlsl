@@ -84,7 +84,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float energyBias = lerp(0.0f, 0.5f, roughness);
 	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
-	float3 f0 = float3(1.0f, 1.0f, 1.0f);
+	float3 f0 = lerp(float3(0.05f, 0.05f, 0.05f), albedo.rgb, metallic);
 	
 	// Specular BRDF
 	float3 F = FresnelSchlick(f0, fd90, LdotH);
@@ -93,7 +93,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 Fr = D * F * Vis / PI;
 
 	// Diffuse BRDF
-	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, roughness, NdotV, NdotL, LdotH) / PI;
+	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, roughness * roughness, NdotV, NdotL, LdotH) / PI;
 
 	Fd *= (1.0f - metallic);
 
