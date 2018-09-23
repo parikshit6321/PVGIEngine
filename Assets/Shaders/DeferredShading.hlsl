@@ -84,7 +84,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float energyBias = lerp(0.0f, 0.5f, roughness);
 	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
-	float3 f0 = lerp(float3(0.05f, 0.05f, 0.05f), albedo.rgb, metallic);
+	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
 	
 	// Specular BRDF
 	float3 F = FresnelSchlick(f0, fd90, LdotH);
