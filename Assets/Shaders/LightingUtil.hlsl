@@ -2,49 +2,41 @@
 #define SHADOW_MAP_RESOLUTION 2048.0f
 #define SHADOW_MAP_RESOLUTION_INV 0.00048828125f
 
-float3 DiffuseBurley(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
+float3 FresnelSchlick (float3 f0, float f90, float cosTheta)
 {
-	float FD90 = 0.5f + (2 * VoH * VoH * Roughness * Roughness);
-	float FdV = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoV), 5.0f));
-	float FdL = 1.0f + ((FD90 - 1.0f) * pow((1.0f - NoL), 5.0f));
-	return DiffuseColor * ((1 / PI) * FdV * FdL);
+	return f0 + (f90 - f0) * pow ((1.0f - cosTheta), 5.0f);
 }
 
-float3 FresnelSchlick(float cosTheta, float3 F0)
+float SmithGGXCorrelated (float NdotL, float NdotV, float alphaG)
 {
-	return (F0 + ((1.0f - F0) * pow((1.0f - cosTheta), 5.0f)));
+	float alphaG2 = alphaG * alphaG;
+	// Caution : the " NdotL *" and " NdotV *" are explicitely inversed , this is not a mistake .
+	float Lambda_GGXV = NdotL * sqrt((- NdotV * alphaG2 + NdotV) * NdotV + alphaG2);
+	float Lambda_GGXL = NdotV * sqrt((- NdotL * alphaG2 + NdotL) * NdotL + alphaG2);
+
+	return (0.5f / (Lambda_GGXV + Lambda_GGXL));
 }
 
-float DistributionGGX(float NdotH, float roughness)
+float D_GGX(float NdotH, float m)
 {
-	float a = roughness * roughness;
-	float a2 = a * a;
-	float NdotH2 = NdotH * NdotH;
-
-	float num = a2;
-	float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
-	denom = PI * denom * denom;
-
-	return num / denom;
+	// Divide by PI is apply later
+	float m2 = m * m;
+	float f = (NdotH * m2 - NdotH) * NdotH + 1.0f;
+	return (m2 / (f * f));
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float3 DiffuseDisneyNormalized(float3 DiffuseColor, float Roughness, float NdotV, float NdotL, float LdotH)
 {
-	float r = (roughness + 1.0f);
-	float k = (r*r) / 8.0f;
-
-	float num = NdotV;
-	float denom = NdotV * (1.0f - k) + k;
-
-	return num / denom;
-}
-
-float GeometrySmith(float NdotV, float NdotL, float roughness)
-{
-	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+	float energyBias = lerp(0.0f, 0.5f, Roughness);
+	float energyFactor = lerp(1.0f, 1.0f / 1.51f, Roughness);
 	
-	return ggx1 * ggx2;
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * Roughness ;
+	float3 f0 = float3(1.0f, 1.0f, 1.0f);
+	
+	float lightScatter = FresnelSchlick (f0, fd90, NdotL).r;
+	float viewScatter = FresnelSchlick (f0, fd90, NdotV).r;
+	
+	return (DiffuseColor * lightScatter * viewScatter * energyFactor);
 }
 
 float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow)

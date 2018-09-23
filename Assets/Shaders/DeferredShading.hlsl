@@ -75,35 +75,29 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
 	float3 H = normalize(V + L);
 
-	float NdotV = max(dot(N, V), 0.0f);
-	float NdotL = max(dot(N, L), 0.0f);
-	float VdotH = max(dot(V, H), 0.0f);
-	float NdotH = max(dot(N, H), 0.0f);
+	float NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
+	float LdotH = saturate(dot(L ,H));
+	float NdotH = saturate(dot(N ,H));
+	float NdotL = saturate(dot(N ,L));
 
 	// BRDF : Disney Diffuse + GGX Specular
 
-	// Calculate Fresnel effect
-	float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
-	float3 F = FresnelSchlick(VdotH, F0);
+	float energyBias = lerp(0.0f, 0.5f, roughness);
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
+	float3 f0 = float3(1.0f, 1.0f, 1.0f);
+	
+	// Specular BRDF
+	float3 F = FresnelSchlick(f0, fd90, LdotH);
+	float Vis = SmithGGXCorrelated(NdotV, NdotL, roughness);
+	float D = D_GGX(NdotH, roughness);
+	float3 Fr = D * F * Vis / PI;
 
-	// Calculate Normal distribution function
-	float NDF = DistributionGGX(NdotH, roughness);
+	// Diffuse BRDF
+	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, roughness, NdotV, NdotL, LdotH) / PI;
 
-	// Calculate Geometry function
-	float G = GeometrySmith(NdotV, NdotL, roughness);
+	Fd *= (1.0f - metallic);
 
-	float3 numerator = (F * NDF * G);
-	float denominator = (4.0f * NdotV * NdotL);
-	float3 specular = numerator / max(denominator, 0.001f);
-
-	float3 kS = F;
-	float3 kD = (float3(1.0f, 1.0f, 1.0f) - kS);
-
-	kD *= (1.0f - metallic);
-
-	float3 diffuse = kD * DiffuseBurley(albedo.rgb, roughness, NdotV, NdotL, VdotH);
-
-	float3 directLight = ((diffuse + specular) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL));
+	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL));
 	
 	// Calculate shadow
     float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);

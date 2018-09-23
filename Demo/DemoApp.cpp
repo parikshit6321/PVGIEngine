@@ -386,7 +386,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	// RGB - sunlight color; A - sunlight intensity
 	mMainPassCB.SunLightStrength = { SceneManager::GetScenePtr()->lightStrength.x, 
 									 SceneManager::GetScenePtr()->lightStrength.y, 
-									 SceneManager::GetScenePtr()->lightStrength.z, 9.0f };
+									 SceneManager::GetScenePtr()->lightStrength.z, 10.0f };
 
 	// RGB - direction of sunlight; A - unused
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
