@@ -1,3 +1,5 @@
+#include "LightingUtil.hlsl"
+
 // For maximum 64 iterations
 #define ITERATIONS_0 2.0f
 #define ITERATIONS_1 2.0f
@@ -158,8 +160,10 @@ inline float3 ConeTrace(float3 worldPosition, float3 coneDirection, float3 world
 	return currentVoxelInfo.rgb;
 }
 
-inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal)
+inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal, float3 V, float linearRoughness, float3 diffuseColor)
 {
+	float NdotV = abs(dot(worldNormal, V)) + 1e-5f; // avoid artifact
+	
 	float3 accumulatedColor = float3(0.0f, 0.0f, 0.0f);
 
 	float3 direction1 = normalize(cross(worldNormal, RANDOM_VECTOR));
@@ -172,20 +176,36 @@ inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal
 	float3 direction8 = -direction7;
 
 	float3 coneDirection1 = worldNormal;
-	float3 coneDirection2 = lerp(direction1, worldNormal, 0.3333f);
-	float3 coneDirection3 = lerp(direction2, worldNormal, 0.3333f);
-	float3 coneDirection4 = lerp(direction5, worldNormal, 0.3333f);
-	float3 coneDirection5 = lerp(direction6, worldNormal, 0.3333f);
-	float3 coneDirection6 = lerp(direction7, worldNormal, 0.3333f);
-	float3 coneDirection7 = lerp(direction8, worldNormal, 0.3333f);
+	float3 coneDirection2 = normalize(lerp(direction1, worldNormal, 0.3333f));
+	float3 coneDirection3 = normalize(lerp(direction2, worldNormal, 0.3333f));
+	float3 coneDirection4 = normalize(lerp(direction5, worldNormal, 0.3333f));
+	float3 coneDirection5 = normalize(lerp(direction6, worldNormal, 0.3333f));
+	float3 coneDirection6 = normalize(lerp(direction7, worldNormal, 0.3333f));
+	float3 coneDirection7 = normalize(lerp(direction8, worldNormal, 0.3333f));
 
-	accumulatedColor += ConeTrace(worldPosition, coneDirection1, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection2, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection3, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection4, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection5, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection6, worldNormal);
-	accumulatedColor += ConeTrace(worldPosition, coneDirection7, worldNormal);
-
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection1)), 
+												saturate(dot(-coneDirection1, normalize(-coneDirection1 + V)))) * 
+												ConeTrace(worldPosition, coneDirection1, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection2)), 
+												saturate(dot(-coneDirection2, normalize(-coneDirection2 + V)))) * 
+												ConeTrace(worldPosition, coneDirection2, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection3)), 
+												saturate(dot(-coneDirection3, normalize(-coneDirection3 + V)))) * 
+												ConeTrace(worldPosition, coneDirection3, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection4)), 
+												saturate(dot(-coneDirection4, normalize(-coneDirection4 + V)))) * 
+												ConeTrace(worldPosition, coneDirection4, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection5)), 
+												saturate(dot(-coneDirection5, normalize(-coneDirection5 + V)))) * 
+												ConeTrace(worldPosition, coneDirection5, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection6)), 
+												saturate(dot(-coneDirection6, normalize(-coneDirection6 + V)))) * 
+												ConeTrace(worldPosition, coneDirection6, worldNormal));
+	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection7)), 
+												saturate(dot(-coneDirection7, normalize(-coneDirection7 + V)))) * 
+												ConeTrace(worldPosition, coneDirection7, worldNormal));
+	
+	accumulatedColor /= PI;
+	
 	return accumulatedColor;
 }

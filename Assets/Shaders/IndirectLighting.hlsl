@@ -1,5 +1,3 @@
-// Include structures and functions for lighting.
-#include "LightingUtil.hlsl"
 #include "ConeTracingUtil.hlsl"
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
@@ -36,6 +34,8 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
+	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
+
 	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float metallic = albedo.a;
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
@@ -45,28 +45,10 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
-	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
-	float3 H = normalize(V + L);
-
-	float NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
-	float LdotH = saturate(dot(L ,H));
-	float NdotH = saturate(dot(N ,H));
-	float NdotL = saturate(dot(N ,L));
-
 	// BRDF : Disney Diffuse + GGX Specular
 
-	float energyBias = lerp(0.0f, 0.5f, roughness);
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
-	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
+	float3 indirectLight = CalculateIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, albedo.rgb);
 	
-	// Diffuse BRDF
-	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, roughness * roughness, NdotV, NdotL, LdotH) / PI;
-	
-	Fd *= (1.0f - metallic);
-	
-	float3 indirectLight = (Fd * CalculateIndirectLighting(position.xyz, normalize(N)));
-	
-	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
 	float3 finalResult = directLight + indirectLight;
 	
 	return float4(finalResult, 1.0f);
