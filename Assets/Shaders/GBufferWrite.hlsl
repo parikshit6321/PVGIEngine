@@ -96,7 +96,7 @@ PixelOut PS(VertexOut pin)
 {
 	PixelOut output;
 
-	float4 albedo = gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 albedo = pow(gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC), 2.2f);
 	float opacity = albedo.a;
 
 	// Discard the current fragment if it's not opaque.

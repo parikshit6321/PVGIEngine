@@ -73,10 +73,10 @@ float4 PS(VertexOut pin) : SV_Target
 
 	float3 sampleDirection = mul(float4(pin.PosV, 1.0f), gSkyBoxMatrix).xyz;
 
-	float4 skyBoxColor = SkyBoxTex.Sample(gsamLinearWrap, sampleDirection);
+	float4 skyBoxColor = pow(SkyBoxTex.Sample(gsamLinearWrap, sampleDirection), 2.2f);
 	
 	if (depth == 1.0f)
-		pixelColor = skyBoxColor.rgb * gSunLightStrength.a;
+		pixelColor = skyBoxColor.rgb;
 
 	return float4(pixelColor, 1.0f);
 }
