@@ -47,9 +47,9 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// BRDF : Disney Diffuse + GGX Specular
 
-	float3 indirectLight = CalculateIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, albedo.rgb);
+	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, albedo.rgb);
 	
-	float3 finalResult = directLight + indirectLight;
+	float3 finalResult = directLight + indirectDiffuseLight;
 	
 	return float4(finalResult, 1.0f);
 }

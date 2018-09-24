@@ -7,6 +7,8 @@
 #define ITERATIONS_3 8.0f
 #define ITERATIONS_4 16.0f
 #define ITERATIONS_5 32.0f
+#define MAXIMUM_ITERATIONS 64.0f
+#define RAY_STEP 0.2f
 
 #define RANDOM_VECTOR float3(0.267261f, 0.534522f, 0.801784f)
 
@@ -96,7 +98,7 @@ inline float4 GetVoxelInfo5(float3 voxelPosition)
 	return info;
 }
 
-inline float3 ConeTrace(float3 worldPosition, float3 coneDirection, float3 worldNormal)
+inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 {
 	float3 coneOrigin = worldPosition + (coneDirection * gWorldBoundary_R_ConeStep_G.g * ITERATIONS_0);
 
@@ -168,7 +170,7 @@ inline float3 ConeTrace(float3 worldPosition, float3 coneDirection, float3 world
 	return currentVoxelInfo.rgb;
 }
 
-inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal, float3 V, float linearRoughness, float3 diffuseColor)
+inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worldNormal, float3 V, float linearRoughness, float3 diffuseColor)
 {
 	float NdotV = abs(dot(worldNormal, V)) + 1e-5f; // avoid artifact
 	
@@ -191,29 +193,92 @@ inline float3 CalculateIndirectLighting(float3 worldPosition, float3 worldNormal
 	float3 coneDirection6 = normalize(lerp(direction7, worldNormal, 0.3333f));
 	float3 coneDirection7 = normalize(lerp(direction8, worldNormal, 0.3333f));
 
+	// BRDF : Disney Diffuse
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection1)), 
 												saturate(dot(-coneDirection1, normalize(-coneDirection1 + V)))) * 
-												ConeTrace(worldPosition, coneDirection1, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection1));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection2)), 
 												saturate(dot(-coneDirection2, normalize(-coneDirection2 + V)))) * 
-												ConeTrace(worldPosition, coneDirection2, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection2));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection3)), 
 												saturate(dot(-coneDirection3, normalize(-coneDirection3 + V)))) * 
-												ConeTrace(worldPosition, coneDirection3, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection3));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection4)), 
 												saturate(dot(-coneDirection4, normalize(-coneDirection4 + V)))) * 
-												ConeTrace(worldPosition, coneDirection4, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection4));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection5)), 
 												saturate(dot(-coneDirection5, normalize(-coneDirection5 + V)))) * 
-												ConeTrace(worldPosition, coneDirection5, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection5));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection6)), 
 												saturate(dot(-coneDirection6, normalize(-coneDirection6 + V)))) * 
-												ConeTrace(worldPosition, coneDirection6, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection6));
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection7)), 
 												saturate(dot(-coneDirection7, normalize(-coneDirection7 + V)))) * 
-												ConeTrace(worldPosition, coneDirection7, worldNormal));
+												DiffuseConeTrace(worldPosition, coneDirection7));
 	
 	accumulatedColor /= PI;
 	
 	return accumulatedColor;
+}
+
+inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float roughness)
+{
+	float3 currentPosition = worldPosition;
+	float3 currentVoxelPosition = float3(0.0f, 0.0f, 0.0f);
+	float4 currentVoxelInfo0 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 currentVoxelInfo2 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	float hitFound0 = 0.0f;
+	float hitFound2 = 0.0f;
+	
+	// Ray tracing loop
+	for (float i = 0.0f; i < MAXIMUM_ITERATIONS; i += 1.0f)
+	{
+		currentPosition += (RAY_STEP * rayDirection);
+		currentVoxelPosition = GetVoxelPosition(currentPosition);
+
+		if (hitFound0 < 0.05f)
+		{
+			currentVoxelInfo0 = GetVoxelInfo0(currentVoxelPosition);
+			hitFound0 = currentVoxelInfo0.a;
+		}
+		
+		if (hitFound2 < 0.05f)
+		{
+			currentVoxelInfo2 = GetVoxelInfo2(currentVoxelPosition);
+			hitFound2 = currentVoxelInfo2.a;
+		}
+	}
+	
+	float3 resultingColor = lerp(currentVoxelInfo0.rgb, currentVoxelInfo2.rgb, roughness);
+
+	return resultingColor;
+}
+
+inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 reflectedDirection, float3 N, float3 V, float roughness, float metallic, float3 albedo)
+{
+	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, roughness);
+	
+	float3 L = -reflectedDirection;
+	float3 H = normalize(V + L);
+
+	float NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
+	float LdotH = saturate(dot(L ,H));
+	float NdotH = saturate(dot(N ,H));
+	float NdotL = saturate(dot(N ,L));
+
+	// BRDF : GGX Specular
+
+	float energyBias = lerp(0.0f, 0.5f, roughness);
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
+	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
+	
+	// Specular BRDF
+	float3 F = FresnelSchlick(f0, fd90, LdotH);
+	float Vis = SmithGGXCorrelated(NdotV, NdotL, roughness);
+	float D = D_GGX(NdotH, roughness);
+	float3 Fr = D * F * Vis / PI;
+	
+	return (Fr * rayTracedColor * NdotL);
 }
