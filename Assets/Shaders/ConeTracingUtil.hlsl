@@ -10,11 +10,12 @@
 
 #define RANDOM_VECTOR float3(0.267261f, 0.534522f, 0.801784f)
 
-Texture3D	 VoxelGrid1				 : register(t5);
-Texture3D	 VoxelGrid2				 : register(t6);
-Texture3D	 VoxelGrid3				 : register(t7);
-Texture3D	 VoxelGrid4				 : register(t8);
-Texture3D	 VoxelGrid5				 : register(t9);
+Texture3D	 VoxelGrid0				 : register(t5);
+Texture3D	 VoxelGrid1				 : register(t6);
+Texture3D	 VoxelGrid2				 : register(t7);
+Texture3D	 VoxelGrid3				 : register(t8);
+Texture3D	 VoxelGrid4				 : register(t9);
+Texture3D	 VoxelGrid5				 : register(t10);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
@@ -51,6 +52,13 @@ inline float3 GetVoxelPosition(float3 worldPosition)
 	voxelPosition += float3(1.0f, 1.0f, 1.0f);
 	voxelPosition *= 0.5f;
 	return voxelPosition;
+}
+
+// Returns the voxel information from grid 0
+inline float4 GetVoxelInfo0(float3 voxelPosition)
+{
+	float4 info = VoxelGrid0.Sample(gsamLinearWrap, voxelPosition);
+	return info;
 }
 
 // Returns the voxel information from grid 1

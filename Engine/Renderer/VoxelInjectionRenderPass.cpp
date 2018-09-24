@@ -10,7 +10,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
@@ -36,7 +36,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->Dispatch((mClientWidth / rsmDownsample) / 16, (mClientHeight / rsmDownsample) / 16, 1);
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
@@ -56,7 +56,7 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
-	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 5, 0);
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 6, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -95,7 +95,7 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 
 void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 {
-	mOutputBuffers = new ComPtr<ID3D12Resource>[5];
+	mOutputBuffers = new ComPtr<ID3D12Resource>[6];
 
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -115,7 +115,7 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[3] = 0.0f;
 	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		texDesc.Width = voxelResolution / ((int)(pow(2, i)));
 		texDesc.Height = voxelResolution / ((int)(pow(2, i)));
@@ -134,7 +134,7 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 7;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -171,7 +171,7 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	uavDesc.Texture3D.MipSlice = 0;
 	uavDesc.Texture3D.FirstWSlice = 0;
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		uavDesc.Texture3D.WSize = voxelResolution / ((int)pow(2, i));
 

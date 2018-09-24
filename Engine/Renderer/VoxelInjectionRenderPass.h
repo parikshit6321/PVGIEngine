@@ -10,7 +10,8 @@ public:
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) override;
 	~VoxelInjectionRenderPass() = default;
 
-	UINT voxelResolution = 64;
+	// Highest resolution grid used only in specular GI
+	UINT voxelResolution = 128;
 	float worldVolumeBoundary = 50.0f;
 	int rsmDownsample = 1;
 
