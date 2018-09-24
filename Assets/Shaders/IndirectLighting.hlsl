@@ -34,8 +34,6 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
-
 	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float metallic = albedo.a;
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
@@ -45,11 +43,11 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
-	// BRDF : Disney Diffuse + GGX Specular
-
-	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, albedo.rgb);
+	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
+	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, metallic, albedo.rgb);
+	float3 indirectSpecularLight = CalculateSpecularIndirectLighting(position.xyz, N, V, roughness, metallic, albedo.rgb);
 	
-	float3 finalResult = directLight + indirectDiffuseLight;
+	float3 finalResult = directLight + indirectDiffuseLight + indirectSpecularLight;
 	
 	return float4(finalResult, 1.0f);
 }

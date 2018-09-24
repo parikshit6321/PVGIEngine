@@ -7,8 +7,11 @@
 #define ITERATIONS_3 8.0f
 #define ITERATIONS_4 16.0f
 #define ITERATIONS_5 32.0f
+
 #define MAXIMUM_ITERATIONS 64.0f
+
 #define RAY_STEP 0.2f
+#define RAY_OFFSET 0.2f
 
 #define RANDOM_VECTOR float3(0.267261f, 0.534522f, 0.801784f)
 
@@ -170,7 +173,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	return currentVoxelInfo.rgb;
 }
 
-inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worldNormal, float3 V, float linearRoughness, float3 diffuseColor)
+inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worldNormal, float3 V, float linearRoughness, float metallic, float3 diffuseColor)
 {
 	float NdotV = abs(dot(worldNormal, V)) + 1e-5f; // avoid artifact
 	
@@ -217,6 +220,7 @@ inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worl
 												saturate(dot(-coneDirection7, normalize(-coneDirection7 + V)))) * 
 												DiffuseConeTrace(worldPosition, coneDirection7));
 	
+	accumulatedColor *= (1.0f - metallic);
 	accumulatedColor /= PI;
 	
 	return accumulatedColor;
@@ -224,7 +228,7 @@ inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worl
 
 inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float roughness)
 {
-	float3 currentPosition = worldPosition;
+	float3 currentPosition = worldPosition + (rayDirection * RAY_OFFSET);
 	float3 currentVoxelPosition = float3(0.0f, 0.0f, 0.0f);
 	float4 currentVoxelInfo0 = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 currentVoxelInfo2 = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -256,8 +260,10 @@ inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float 
 	return resultingColor;
 }
 
-inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 reflectedDirection, float3 N, float3 V, float roughness, float metallic, float3 albedo)
+inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, float3 V, float roughness, float metallic, float3 albedo)
 {
+	float3 reflectedDirection = normalize(-V - (2.0f * dot(-V, N) * N));
+	
 	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, roughness);
 	
 	float3 L = -reflectedDirection;
