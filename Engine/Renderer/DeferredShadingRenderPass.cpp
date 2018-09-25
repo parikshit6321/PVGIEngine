@@ -157,9 +157,17 @@ void DeferredShadingRenderPass::BuildDescriptorHeaps()
 		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 	}
 
-	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
+	// Create SRV to resource so we can sample the shadow map in a shader program.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescShadowMap = {};
+	srvDescShadowMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescShadowMap.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDescShadowMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescShadowMap.Texture2D.MostDetailedMip = 0;
+	srvDescShadowMap.Texture2D.MipLevels = 1;
+	srvDescShadowMap.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDescShadowMap.Texture2D.PlaneSlice = 0;
 
-	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDescShadowMap, hDescriptor);
 }
 
 void DeferredShadingRenderPass::BuildPSOs()

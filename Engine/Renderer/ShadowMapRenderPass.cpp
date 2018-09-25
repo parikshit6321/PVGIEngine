@@ -6,26 +6,16 @@ void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12
 	commandList->RSSetViewports(1, &mViewport);
 	commandList->RSSetScissorRects(1, &mScissorRect);
 
-	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	commandList->SetPipelineState(mPSO.Get());
 
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
 	commandList->ClearDepthStencilView(dsvhDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		rtvDescriptorSize), Colors::Black, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		rtvDescriptorSize), true, &dsvhDescriptor);
+	commandList->OMSetRenderTargets(0, nullptr, false, &dsvhDescriptor);
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
@@ -34,7 +24,7 @@ void ShadowMapRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12
 	Draw(commandList, objectCB, matCB);
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
 void ShadowMapRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
@@ -88,51 +78,6 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
-	// Construct the RTV Heap first
-	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
-
-	D3D12_RESOURCE_DESC resourceDesc;
-	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	resourceDesc.Alignment = 0;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.SampleDesc.Quality = 0;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Width = SHADOW_MAP_RESOLUTION;
-	resourceDesc.Height = SHADOW_MAP_RESOLUTION;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-	D3D12_CLEAR_VALUE clearVal;
-	clearVal.Color[0] = 0.0f;
-	clearVal.Color[1] = 0.0f;
-	clearVal.Color[2] = 0.0f;
-	clearVal.Color[3] = 1.0f;
-	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-
-	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
-		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
-
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 1;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-		&rtvHeapDesc, IID_PPV_ARGS(mRtvDescriptorHeap.GetAddressOf())));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
-
-	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
-
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -141,23 +86,23 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	depthStencilDesc.Height = SHADOW_MAP_RESOLUTION;
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	depthStencilDesc.SampleDesc.Count = 1;
 	depthStencilDesc.SampleDesc.Quality = 0;
 	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_CLEAR_VALUE optClear;
-	optClear.Format = mDepthStencilFormat;
+	optClear.Format = DXGI_FORMAT_D32_FLOAT;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&depthStencilDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
 		&optClear,
-		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
+		IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 	dsvHeapDesc.NumDescriptors = 1;
@@ -171,12 +116,12 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Format = mDepthStencilFormat;
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	dsvDesc.Texture2D.MipSlice = 0;
 	
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	
-	md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, dsvhDescriptor);
+	md3dDevice->CreateDepthStencilView(mOutputBuffers[0].Get(), &dsvDesc, dsvhDescriptor);
 }
 
 void ShadowMapRenderPass::BuildPSOs()
@@ -197,14 +142,17 @@ void ShadowMapRenderPass::BuildPSOs()
 		mPixelShader->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState.DepthBias = 100000;
+	psoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+	psoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	psoDesc.NumRenderTargets = 0;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = mDepthStencilFormat;
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }

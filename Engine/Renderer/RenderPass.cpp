@@ -56,7 +56,7 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 3> RenderPass::GetStaticSamplers()
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
 		0.0f,                               // mipLODBias
 		16,                                 // maxAnisotropy
-		D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		D3D12_COMPARISON_FUNC_GREATER_EQUAL,
 		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
 
 	return { linearWrap, anisotropicWrap, shadow };

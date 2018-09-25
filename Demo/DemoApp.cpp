@@ -49,8 +49,6 @@ private:
 	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-	bool mShadowsDrawn = false;
 };
 
 /// <summary>
@@ -181,12 +179,8 @@ void DemoApp::Draw(const GameTimer& gt)
     // Reusing the command list reuses memory.
     ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::gBufferRenderPass.mPSO.Get()));
 
-	// Draw shadows only once
-	if (!mShadowsDrawn)
-	{
-		Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-		mShadowsDrawn = true;
-	}
+	// Draw shadows
+	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Reset viewports and scissor rects after shadow map render passs
     mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -417,7 +411,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	float f = sphereCenterLS.z + 10.0f;
 
 	// Light orthographic projection matrix
-	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, 1.0f, 20.0f);
+	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, 10.0f, 40.0f);
 
 	// View projection matrix for shadow map render pass
 	XMMATRIX shadowViewProjMatrix = lightView * lightProj;

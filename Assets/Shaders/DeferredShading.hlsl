@@ -9,7 +9,7 @@ Texture2D	 ShadowMap				 : register(t4);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
-SamplerState gsamShadow				 : register(s2);
+SamplerComparisonState gsamShadow	 : register(s2);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)

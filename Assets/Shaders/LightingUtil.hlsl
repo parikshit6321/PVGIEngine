@@ -25,12 +25,12 @@ float D_GGX(float NdotH, float m)
 	return (m2 / (f * f));
 }
 
-float3 DiffuseDisneyNormalized(float3 DiffuseColor, float LineaRoughness, float NdotV, float NdotL, float LdotH)
+float3 DiffuseDisneyNormalized(float3 DiffuseColor, float LinearRoughness, float NdotV, float NdotL, float LdotH)
 {
-	float energyBias = lerp(0.0f, 0.5f, LineaRoughness);
-	float energyFactor = lerp(1.0f, 1.0f / 1.51f, LineaRoughness);
+	float energyBias = lerp(0.0f, 0.5f, LinearRoughness);
+	float energyFactor = lerp(1.0f, 1.0f / 1.51f, LinearRoughness);
 	
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * LineaRoughness ;
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * LinearRoughness ;
 	float3 f0 = float3(1.0f, 1.0f, 1.0f);
 	
 	float lightScatter = FresnelSchlick (f0, fd90, NdotL).r;
@@ -39,7 +39,7 @@ float3 DiffuseDisneyNormalized(float3 DiffuseColor, float LineaRoughness, float 
 	return (DiffuseColor * lightScatter * viewScatter * energyFactor);
 }
 
-float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamShadow)
+float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerComparisonState gsamShadow)
 {
 	float percentLit = 0.0f;
 	
@@ -50,14 +50,11 @@ float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerState gsamS
         float2(-SHADOW_MAP_RESOLUTION_INV,  SHADOW_MAP_RESOLUTION_INV), float2(0.0f,  SHADOW_MAP_RESOLUTION_INV), float2(SHADOW_MAP_RESOLUTION_INV,  SHADOW_MAP_RESOLUTION_INV)
     };
 
-	float sampleDepth = 0.0f;
-	
     [unroll]
     for(int i = 0; i < 9; ++i)
     {
-		sampleDepth = ShadowMap.Sample(gsamShadow, shadowPosH.xy + offsets[i]).a;
-		percentLit += ((shadowPosH.z - 0.005f) > sampleDepth ? 1.0f : 0.0f);
-    }
+		percentLit += ShadowMap.SampleCmpLevelZero(gsamShadow, shadowPosH.xy + offsets[i], shadowPosH.z).r;
+	}
     
     percentLit *= 0.1111111111f;
 	
