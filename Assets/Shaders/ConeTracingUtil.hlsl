@@ -226,7 +226,7 @@ inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worl
 	return accumulatedColor;
 }
 
-inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float roughness)
+inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float LinearRoughness)
 {
 	float3 currentPosition = worldPosition + (rayDirection * RAY_OFFSET);
 	float3 currentVoxelPosition = float3(0.0f, 0.0f, 0.0f);
@@ -255,7 +255,7 @@ inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float 
 		}
 	}
 	
-	float3 resultingColor = lerp(currentVoxelInfo0.rgb, currentVoxelInfo2.rgb, roughness);
+	float3 resultingColor = lerp(currentVoxelInfo0.rgb, currentVoxelInfo2.rgb, LinearRoughness);
 
 	return resultingColor;
 }
@@ -264,7 +264,7 @@ inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, 
 {
 	float3 reflectedDirection = normalize(-V - (2.0f * dot(-V, N) * N));
 	
-	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, roughness);
+	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, roughness * roughness);
 	
 	float3 L = -reflectedDirection;
 	float3 H = normalize(V + L);
