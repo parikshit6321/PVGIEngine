@@ -96,13 +96,13 @@ PixelOut PS(VertexOut pin)
 {
 	PixelOut output;
 
-	float4 albedo = pow(gDiffuseOpacityMap.Sample(gsamAnisotropicWrap, pin.TexC), 2.2f);
+	float4 albedo = pow(gDiffuseOpacityMap.SampleLevel(gsamAnisotropicWrap, pin.TexC, 0), 2.2f);
 	float opacity = albedo.a;
 
 	// Discard the current fragment if it's not opaque.
 	clip(opacity - 0.1f);
 		
-	float4 normalT = gNormalRoughnessMap.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 normalT = gNormalRoughnessMap.SampleLevel(gsamAnisotropicWrap, pin.TexC, 0);
 	float roughness = normalT.a;
 	// Interpolating normal can unnormalize it, so renormalize it.
 	pin.NormalW = normalize(pin.NormalW);
