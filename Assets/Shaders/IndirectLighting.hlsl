@@ -34,16 +34,22 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
+	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
+	
+	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float depth = position.a;
+	
+	if (depth == 1.0f)
+		return float4(directLight, 1.0f);
+	
 	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float metallic = albedo.a;
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float roughness = normal.a;
-	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
-
+	
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
-	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
 	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, metallic, albedo.rgb);
 	float3 indirectSpecularLight = CalculateSpecularIndirectLighting(position.xyz, N, V, roughness, metallic, albedo.rgb);
 	
