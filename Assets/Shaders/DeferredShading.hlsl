@@ -66,9 +66,9 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamLinearWrap, pin.TexC);
 	float metallic = albedo.a;
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float roughness = normal.a;
+	float linearRoughness = normal.a * normal.a;
 	float4 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
-
+	
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
@@ -82,18 +82,21 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// BRDF : Disney Diffuse + GGX Specular
 
-	float energyBias = lerp(0.0f, 0.5f, roughness);
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
-	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
+	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
+	float energyFactor = lerp(1.0f, 1.0f / 1.51f, linearRoughness);
+	float3 f0 = float3(1.0f, 1.0f, 1.0f);
+	
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * linearRoughness;
+	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
 	
 	// Specular BRDF
-	float3 F = FresnelSchlick(f0, fd90, LdotH);
-	float Vis = SmithGGXCorrelated(NdotV, NdotL, roughness);
-	float D = D_GGX(NdotH, roughness);
+	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
+	float Vis = SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
+	float D = D_GGX(NdotH, linearRoughness);
 	float3 Fr = D * F * Vis / PI;
 
 	// Diffuse BRDF
-	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, roughness * roughness, NdotV, NdotL, LdotH) / PI;
+	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, linearRoughness, NdotV, NdotL, LdotH, energyBias, energyFactor, f0) / PI;
 
 	Fd *= (1.0f - metallic);
 

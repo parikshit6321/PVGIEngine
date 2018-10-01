@@ -189,6 +189,10 @@ inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worl
 {
 	float NdotV = abs(dot(worldNormal, V)) + 1e-5f; // avoid artifact
 	
+	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
+	float energyFactor = lerp(1.0f, 1.0f / 1.51f, linearRoughness);
+	float3 f0 = float3(1.0f, 1.0f, 1.0f);
+	
 	float3 accumulatedColor = float3(0.0f, 0.0f, 0.0f);
 
 	float3 direction1 = normalize(cross(worldNormal, RANDOM_VECTOR));
@@ -211,25 +215,31 @@ inline float3 CalculateDiffuseIndirectLighting(float3 worldPosition, float3 worl
 	// BRDF : Disney Diffuse
 	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection1)), 
-												saturate(dot(-coneDirection1, normalize(-coneDirection1 + V)))) * 
+												saturate(dot(-coneDirection1, normalize(-coneDirection1 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection1));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection2)), 
-												saturate(dot(-coneDirection2, normalize(-coneDirection2 + V)))) * 
+												saturate(dot(-coneDirection2, normalize(-coneDirection2 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection2));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection3)), 
-												saturate(dot(-coneDirection3, normalize(-coneDirection3 + V)))) * 
+												saturate(dot(-coneDirection3, normalize(-coneDirection3 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection3));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection4)), 
-												saturate(dot(-coneDirection4, normalize(-coneDirection4 + V)))) * 
+												saturate(dot(-coneDirection4, normalize(-coneDirection4 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection4));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection5)), 
-												saturate(dot(-coneDirection5, normalize(-coneDirection5 + V)))) * 
+												saturate(dot(-coneDirection5, normalize(-coneDirection5 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection5));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection6)), 
-												saturate(dot(-coneDirection6, normalize(-coneDirection6 + V)))) * 
+												saturate(dot(-coneDirection6, normalize(-coneDirection6 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection6));
+	
 	accumulatedColor += (DiffuseDisneyNormalized(diffuseColor, linearRoughness, NdotV, saturate(dot(worldNormal, -coneDirection7)), 
-												saturate(dot(-coneDirection7, normalize(-coneDirection7 + V)))) * 
+												saturate(dot(-coneDirection7, normalize(-coneDirection7 + V))), energyBias, energyFactor, f0) * 
 												DiffuseConeTrace(worldPosition, coneDirection7));
 	
 	accumulatedColor *= (1.0f - metallic);
@@ -272,11 +282,11 @@ inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float 
 	return resultingColor;
 }
 
-inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, float3 V, float roughness, float metallic, float3 albedo)
+inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, float3 V, float linearRoughness, float metallic, float3 albedo)
 {
 	float3 reflectedDirection = normalize(-V - (2.0f * dot(-V, N) * N));
 	
-	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, roughness * roughness);
+	float3 rayTracedColor = SpecularRayTrace(worldPosition, reflectedDirection, linearRoughness);
 	
 	float3 L = -reflectedDirection;
 	float3 H = normalize(V + L);
@@ -288,14 +298,14 @@ inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, 
 
 	// BRDF : GGX Specular
 
-	float energyBias = lerp(0.0f, 0.5f, roughness);
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * roughness ;
+	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
+	float fd90 = energyBias + 2.0f * LdotH * LdotH * linearRoughness ;
 	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
 	
 	// Specular BRDF
 	float3 F = FresnelSchlick(f0, fd90, LdotH);
-	float Vis = SmithGGXCorrelated(NdotV, NdotL, roughness);
-	float D = D_GGX(NdotH, roughness);
+	float Vis = SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
+	float D = D_GGX(NdotH, linearRoughness);
 	float3 Fr = D * F * Vis / PI;
 	
 	return (Fr * rayTracedColor * NdotL);

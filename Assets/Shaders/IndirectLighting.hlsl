@@ -45,13 +45,13 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
 	float metallic = albedo.a;
 	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
-	float roughness = normal.a;
+	float linearRoughness = normal.a * normal.a;
 	
 	float3 N = normal.xyz;
 	float3 V = normalize(gEyePosW - position.xyz);
 
-	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, roughness * roughness, metallic, albedo.rgb);
-	float3 indirectSpecularLight = CalculateSpecularIndirectLighting(position.xyz, N, V, roughness, metallic, albedo.rgb);
+	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, linearRoughness, metallic, albedo.rgb);
+	float3 indirectSpecularLight = CalculateSpecularIndirectLighting(position.xyz, N, V, linearRoughness, metallic, albedo.rgb);
 	
 	float3 finalResult = directLight + indirectDiffuseLight + indirectSpecularLight;
 	
