@@ -4,8 +4,14 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	ID3D12Resource* passCB, ID3D12Resource* objectCB, ID3D12Resource* matCB)
 {
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	commandList->SetPipelineState(mPSO.Get());
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
+	commandList->ClearDepthStencilView(dsvhDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Indicate a state transition on the resource usage.
 	for (int i = 0; i < 4; ++i)
@@ -27,7 +33,7 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	commandList->OMSetRenderTargets(4, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
-		rtvDescriptorSize), true, depthStencilViewPtr);
+		rtvDescriptorSize), true, &dsvhDescriptor);
 
 	ID3D12DescriptorHeap* descriptorHeapsGBuffer[] = { mSrvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeapsGBuffer), descriptorHeapsGBuffer);
@@ -44,6 +50,9 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
 void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
@@ -264,6 +273,6 @@ void GBufferRenderPass::BuildPSOs()
 	psoDesc.RTVFormats[3] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = mDepthStencilFormat;
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }
