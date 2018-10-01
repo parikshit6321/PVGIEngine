@@ -67,6 +67,11 @@ void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resou
 	}
 }
 
+D3D12_CPU_DESCRIPTOR_HANDLE GBufferRenderPass::DepthStencilView()
+{
+	return mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
 void GBufferRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;

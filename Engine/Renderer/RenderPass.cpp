@@ -2,7 +2,8 @@
 
 void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int inputHeight, 
 	DXGI_FORMAT inputFormatBackBuffer, DXGI_FORMAT inputFormatDepthBuffer, ComPtr <ID3D12Resource>* inputBuffers,
-	ComPtr<ID3D12Resource>* gBuffers, ComPtr<ID3D12Resource>* voxelGrids, const std::wstring shaderName)
+	ComPtr<ID3D12Resource>* gBuffers, ComPtr<ID3D12Resource>* voxelGrids, ComPtr<ID3D12Resource> inputDepthBuffer,
+	const std::wstring shaderName)
 {
 	md3dDevice = inputDevice;
 	mClientWidth = inputWidth;
@@ -12,6 +13,7 @@ void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, in
 	mInputBuffers = inputBuffers;
 	mGBuffers = gBuffers;
 	mVoxelGrids = voxelGrids;
+	mDepthStencilBuffer = inputDepthBuffer;
 
 	mInputLayout =
 	{
