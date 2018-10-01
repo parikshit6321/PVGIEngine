@@ -121,6 +121,9 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 			hitFound = currentVoxelInfo.a;
 		}
 	}
+	
+	if (hitFound > 0.05f)
+		return currentVoxelInfo.rgb;
 
 	// Sample voxel grid 2
 	for (float i2 = 0.0f; i2 < ITERATIONS_2; i2 += 1.0f)
@@ -134,6 +137,9 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 		}
 	}
 
+	if (hitFound > 0.05f)
+		return currentVoxelInfo.rgb;
+	
 	// Sample voxel grid 3
 	for (float i3 = 0.0f; i3 < ITERATIONS_3; i3 += 1.0f)
 	{
@@ -146,6 +152,9 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 		}
 	}
 
+	if (hitFound > 0.05f)
+		return currentVoxelInfo.rgb;
+	
 	// Sample voxel grid 4
 	for (float i4 = 0.0f; i4 < ITERATIONS_4; i4 += 1.0f)
 	{
@@ -158,6 +167,9 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 		}
 	}
 
+	if (hitFound > 0.05f)
+		return currentVoxelInfo.rgb;
+	
 	// Sample voxel grid 5
 	for (float i5 = 0.0f; i5 < ITERATIONS_5; i5 += 1.0f)
 	{
