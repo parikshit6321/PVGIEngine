@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\Engine\Renderer\ColorGradingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
@@ -45,6 +46,7 @@
   <ItemGroup>
     <ClInclude Include="..\Engine\Renderer\ColorGradingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\Renderer.h" />

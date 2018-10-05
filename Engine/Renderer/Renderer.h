@@ -6,6 +6,7 @@
 #include "VoxelInjectionRenderPass.h"
 #include "IndirectLightingRenderPass.h"
 #include "SkyBoxRenderPass.h"
+#include "FXAARenderPass.h"
 #include "ToneMappingRenderPass.h"
 #include "ColorGradingRenderPass.h"
 
@@ -24,6 +25,7 @@ public:
 	static VoxelInjectionRenderPass voxelInjectionRenderPass;
 	static IndirectLightingRenderPass indirectLightingRenderPass;
 	static SkyBoxRenderPass skyBoxRenderPass;
+	static FXAARenderPass fxaaRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
 	static ColorGradingRenderPass colorGradingRenderPass;
 };

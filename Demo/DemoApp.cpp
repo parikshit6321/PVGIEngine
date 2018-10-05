@@ -204,6 +204,9 @@ void DemoApp::Draw(const GameTimer& gt)
 	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
+	// Perform anti-aliasing using FXAA
+	Renderer::fxaaRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
 	// Bring the texture down to LDR range from HDR using Uncharted 2 style tonemapping
 	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
