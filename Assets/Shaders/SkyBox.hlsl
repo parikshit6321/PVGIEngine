@@ -1,6 +1,3 @@
-// Include structures and functions for lighting.
-#include "ToneMappingUtil.hlsl"
-
 Texture2D    MainTex				 : register(t0);
 Texture2D  	 DepthMap				 : register(t1);
 TextureCube  SkyBoxTex				 : register(t2);
