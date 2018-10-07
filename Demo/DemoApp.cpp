@@ -27,6 +27,7 @@ private:
     virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
     virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
     virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
+	virtual void OnKeyPress(WPARAM keyState)override;
 
     void OnKeyboardInput(const GameTimer& gt);
 	void UpdateCamera(const GameTimer& gt);
@@ -110,6 +111,11 @@ bool DemoApp::Initialize()
 	// Build the frame resources
 	BuildFrameResources();
 	
+	// Convert Spherical to Cartesian coordinates.
+	mEyePos.x = SceneManager::GetScenePtr()->cameraPosition.x;
+	mEyePos.y = SceneManager::GetScenePtr()->cameraPosition.y;
+	mEyePos.z = SceneManager::GetScenePtr()->cameraPosition.z;
+
     // Execute the initialization commands.
     ThrowIfFailed(mCommandList->Close());
     ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -275,16 +281,35 @@ void DemoApp::OnKeyboardInput(const GameTimer& gt)
 {
 }
  
+
+/// <summary>
+/// Camera keyboard input
+/// </summary>
+void DemoApp::OnKeyPress(WPARAM keyState)
+{
+	if (keyState == VK_UP)
+	{
+		mEyePos.z += 0.05f;
+	}
+	else if (keyState == VK_DOWN)
+	{
+		mEyePos.z -= 0.05f;
+	}
+	else if (keyState == VK_LEFT)
+	{
+		mEyePos.x -= 0.05f;
+	}
+	else if (keyState == VK_RIGHT)
+	{
+		mEyePos.x += 0.05f;
+	}
+}
+
 /// <summary>
 /// Updates the camera position and rotation and generates the view matrix (currently static camera)
 /// </summary>
 void DemoApp::UpdateCamera(const GameTimer& gt)
 {
-	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = SceneManager::GetScenePtr()->cameraPosition.x;
-	mEyePos.y = SceneManager::GetScenePtr()->cameraPosition.y;
-	mEyePos.z = SceneManager::GetScenePtr()->cameraPosition.z;
-
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
 	XMVECTOR target = XMVectorZero();
