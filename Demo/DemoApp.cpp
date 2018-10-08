@@ -287,19 +287,23 @@ void DemoApp::OnKeyboardInput(const GameTimer& gt)
 /// </summary>
 void DemoApp::OnKeyPress(WPARAM keyState)
 {
-	if (keyState == VK_UP)
+	// W pressed
+	if (keyState == 0x57)
 	{
 		mEyePos.z += 0.05f;
 	}
-	else if (keyState == VK_DOWN)
+	// S pressed
+	else if (keyState == 0x53)
 	{
 		mEyePos.z -= 0.05f;
 	}
-	else if (keyState == VK_LEFT)
+	// A pressed
+	else if (keyState == 0x41)
 	{
 		mEyePos.x -= 0.05f;
 	}
-	else if (keyState == VK_RIGHT)
+	// D pressed
+	else if (keyState == 0x44)
 	{
 		mEyePos.x += 0.05f;
 	}
@@ -312,7 +316,13 @@ void DemoApp::UpdateCamera(const GameTimer& gt)
 {
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
-	XMVECTOR target = XMVectorZero();
+	XMFLOAT4 lookDir = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
+	XMStoreFloat4(&lookDir, pos);
+	XMFLOAT4 forwardDir = XMFLOAT4(0.0f, 0.0f, 10.0f, 0.0f);
+	lookDir.x += forwardDir.x;
+	lookDir.y += forwardDir.y;
+	lookDir.z += forwardDir.z;
+	XMVECTOR target = XMLoadFloat4(&lookDir);
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
