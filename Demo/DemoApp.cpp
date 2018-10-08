@@ -1,4 +1,4 @@
-#include "../Engine/Renderer/Renderer.h"
+#include "../Engine/Utilities/Camera.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -47,7 +47,7 @@ private:
 
     PassConstants mMainPassCB;
 
-	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
+	Camera mCamera;
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 };
@@ -112,9 +112,10 @@ bool DemoApp::Initialize()
 	BuildFrameResources();
 	
 	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = SceneManager::GetScenePtr()->cameraPosition.x;
-	mEyePos.y = SceneManager::GetScenePtr()->cameraPosition.y;
-	mEyePos.z = SceneManager::GetScenePtr()->cameraPosition.z;
+	mCamera.Initialize(XMFLOAT4(SceneManager::GetScenePtr()->cameraPosition.x,
+		SceneManager::GetScenePtr()->cameraPosition.y,
+		SceneManager::GetScenePtr()->cameraPosition.z,
+		1.0f));
 
     // Execute the initialization commands.
     ThrowIfFailed(mCommandList->Close());
@@ -290,22 +291,22 @@ void DemoApp::OnKeyPress(WPARAM keyState)
 	// W pressed
 	if (keyState == 0x57)
 	{
-		mEyePos.z += 0.05f;
+		mCamera.MoveForward();
 	}
 	// S pressed
 	else if (keyState == 0x53)
 	{
-		mEyePos.z -= 0.05f;
+		mCamera.MoveBackward();
 	}
 	// A pressed
 	else if (keyState == 0x41)
 	{
-		mEyePos.x -= 0.05f;
+		mCamera.MoveLeft();
 	}
 	// D pressed
 	else if (keyState == 0x44)
 	{
-		mEyePos.x += 0.05f;
+		mCamera.MoveRight();
 	}
 }
 
@@ -315,15 +316,9 @@ void DemoApp::OnKeyPress(WPARAM keyState)
 void DemoApp::UpdateCamera(const GameTimer& gt)
 {
 	// Build the view matrix.
-	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
-	XMFLOAT4 lookDir = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
-	XMStoreFloat4(&lookDir, pos);
-	XMFLOAT4 forwardDir = XMFLOAT4(0.0f, 0.0f, 10.0f, 0.0f);
-	lookDir.x += forwardDir.x;
-	lookDir.y += forwardDir.y;
-	lookDir.z += forwardDir.z;
-	XMVECTOR target = XMLoadFloat4(&lookDir);
-	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMVECTOR pos = XMLoadFloat4(mCamera.GetPositionPtr());
+	XMVECTOR target = XMLoadFloat4(mCamera.GetTargetPtr());
+	XMVECTOR up = XMLoadFloat4(mCamera.GetUpDirectionPtr());
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&mView, view);
@@ -398,7 +393,7 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 
 	// Camera position
-	mMainPassCB.EyePosW = mEyePos;
+	mMainPassCB.EyePosW = XMFLOAT3(mCamera.GetPositionPtr()->x, mCamera.GetPositionPtr()->y, mCamera.GetPositionPtr()->z);
 	
 	// LUT contribution for color grading pass
 	mMainPassCB.userLUTContribution = 1.0f;

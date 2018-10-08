@@ -87,6 +87,9 @@
     <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Utilities\Camera.cpp">
+      <Filter>Engine\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -166,6 +169,9 @@
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h">
       <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Utilities\Camera.h">
+      <Filter>Engine\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

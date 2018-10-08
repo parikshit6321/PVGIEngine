@@ -34,6 +34,7 @@
     <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\RenderObject.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\SceneManager.cpp" />
+    <ClCompile Include="..\Engine\Utilities\Camera.cpp" />
     <ClCompile Include="..\Engine\Utilities\d3dApp.cpp" />
     <ClCompile Include="..\Engine\Utilities\d3dUtil.cpp" />
     <ClCompile Include="..\Engine\Utilities\DDSTextureLoader.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="..\Engine\SceneManagement\RenderObject.h" />
     <ClInclude Include="..\Engine\SceneManagement\SceneManager.h" />
     <ClInclude Include="..\Engine\SceneManagement\Texture.h" />
+    <ClInclude Include="..\Engine\Utilities\Camera.h" />
     <ClInclude Include="..\Engine\Utilities\d3dApp.h" />
     <ClInclude Include="..\Engine\Utilities\d3dUtil.h" />
     <ClInclude Include="..\Engine\Utilities\d3dx12.h" />
