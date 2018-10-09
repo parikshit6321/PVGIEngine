@@ -91,7 +91,7 @@ void FXAARenderPass::BuildDescriptorHeaps()
 	resourceDesc.SampleDesc.Count = 1;
 	resourceDesc.SampleDesc.Quality = 0;
 	resourceDesc.MipLevels = 1;
-	resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	resourceDesc.Format = mBackBufferFormat;
 	resourceDesc.DepthOrArraySize = 1;
 	resourceDesc.Width = mClientWidth;
 	resourceDesc.Height = mClientHeight;
@@ -103,7 +103,7 @@ void FXAARenderPass::BuildDescriptorHeaps()
 	clearVal.Color[1] = 0.0f;
 	clearVal.Color[2] = 0.0f;
 	clearVal.Color[3] = 1.0f;
-	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	clearVal.Format = mBackBufferFormat;
 
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
@@ -120,7 +120,7 @@ void FXAARenderPass::BuildDescriptorHeaps()
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	rtvDesc.Format = mBackBufferFormat;
 	rtvDesc.Texture2D.MipSlice = 0;
 	rtvDesc.Texture2D.PlaneSlice = 0;
 
@@ -145,7 +145,7 @@ void FXAARenderPass::BuildDescriptorHeaps()
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDesc.Format = mBackBufferFormat;
 	srvDesc.Texture2D.MipLevels = 1;
 
 	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -181,7 +181,7 @@ void FXAARenderPass::BuildPSOs()
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	psoDesc.RTVFormats[0] = mBackBufferFormat;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = mDepthStencilFormat;

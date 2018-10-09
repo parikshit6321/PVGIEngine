@@ -36,16 +36,16 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers, 
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl");
 
-	fxaaRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers,
+		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"ToneMapping.hlsl");
+
+	fxaaRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers,
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"FXAA.hlsl");
 	
-	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, fxaaRenderPass.mOutputBuffers, 
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"ToneMapping.hlsl");
-	
 	colorGradingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers, 
+		inputFormatBackBuffer, inputFormatDepthBuffer, fxaaRenderPass.mOutputBuffers, 
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"ColorGrading.hlsl");
 }
 
