@@ -24,13 +24,9 @@ private:
     virtual void Update(const GameTimer& gt)override;
     virtual void Draw(const GameTimer& gt)override;
 
-    virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 	virtual void OnKeyPress(WPARAM keyState)override;
 
-    void OnKeyboardInput(const GameTimer& gt);
-	void UpdateCamera(const GameTimer& gt);
+    void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
@@ -145,8 +141,7 @@ void DemoApp::OnResize()
 /// </summary>
 void DemoApp::Update(const GameTimer& gt)
 {
-    OnKeyboardInput(gt);
-	UpdateCamera(gt);
+    UpdateCamera(gt);
 
     // Cycle through the circular frame resource array.
     mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % 3;
@@ -244,46 +239,6 @@ void DemoApp::Draw(const GameTimer& gt)
 }
 
 /// <summary>
-/// Mouse down input handler (currently not implemented)
-/// </summary>
-void DemoApp::OnMouseDown(WPARAM btnState, int x, int y)
-{
-    SetCapture(mhMainWnd);
-}
-
-/// <summary>
-/// Mouse up input handler (currently not implemented)
-/// </summary>
-void DemoApp::OnMouseUp(WPARAM btnState, int x, int y)
-{
-    ReleaseCapture();
-}
-
-/// <summary>
-/// Mouse move input handler (currently not implemented)
-/// </summary>
-void DemoApp::OnMouseMove(WPARAM btnState, int x, int y)
-{
-    if((btnState & MK_LBUTTON) != 0)
-    {
-        
-    }
-    else if((btnState & MK_RBUTTON) != 0)
-    {
-        
-    }
-
-}
- 
-/// <summary>
-/// Keyboard input handler (currently not implemented)
-/// </summary>
-void DemoApp::OnKeyboardInput(const GameTimer& gt)
-{
-}
- 
-
-/// <summary>
 /// Camera keyboard input
 /// </summary>
 void DemoApp::OnKeyPress(WPARAM keyState)
@@ -291,23 +246,53 @@ void DemoApp::OnKeyPress(WPARAM keyState)
 	// W pressed
 	if (keyState == 0x57)
 	{
-		mCamera.MoveForward();
+		mCamera.MoveForward(mTimer.DeltaTime());
 	}
 	// S pressed
 	else if (keyState == 0x53)
 	{
-		mCamera.MoveBackward();
+		mCamera.MoveBackward(mTimer.DeltaTime());
 	}
 	// A pressed
 	else if (keyState == 0x41)
 	{
-		mCamera.MoveLeft();
+		mCamera.MoveLeft(mTimer.DeltaTime());
 	}
 	// D pressed
 	else if (keyState == 0x44)
 	{
-		mCamera.MoveRight();
+		mCamera.MoveRight(mTimer.DeltaTime());
 	}
+	// Q pressed
+	else if (keyState == 0x51)
+	{
+		mCamera.MoveUp(mTimer.DeltaTime());
+	}
+	// E pressed
+	else if (keyState == 0x45)
+	{
+		mCamera.MoveDown(mTimer.DeltaTime());
+	}
+	// Right arrow pressed
+	else if (keyState == VK_RIGHT)
+	{
+		mCamera.RotateRight(mTimer.DeltaTime());
+	}
+	// Left arrow pressed
+	else if (keyState == VK_LEFT)
+	{
+		mCamera.RotateLeft(mTimer.DeltaTime());
+	}
+	// Up arrow pressed
+	else if (keyState == VK_UP)
+	{
+		mCamera.RotateUp(mTimer.DeltaTime());
+	}
+	// Down arrow pressed
+	else if (keyState == VK_DOWN)
+	{
+		mCamera.RotateDown(mTimer.DeltaTime());
+	}	
 }
 
 /// <summary>
@@ -421,8 +406,12 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
 
 	// Matrix used when rendering skybox using a quad
-	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixTranspose(XMMatrixRotationQuaternion(XMLoadFloat4(&SceneManager::GetScenePtr()->cameraRotation))));
+	XMFLOAT4 skyboxTranslationRow = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	
+	XMStoreFloat4x4(&mMainPassCB.skyBoxMatrix, XMMatrixTranspose(
+		XMMATRIX(XMLoadFloat4(mCamera.GetRightDirectionPtr()), XMLoadFloat4(mCamera.GetUpDirectionPtr()),
+		XMLoadFloat4(mCamera.GetForwardDirectionPtr()), XMLoadFloat4(&skyboxTranslationRow))));
+
 	// Only the sun light casts a shadow.
 	XMVECTOR lightDir = XMLoadFloat4(&mMainPassCB.SunLightDirection);
 	XMVECTOR lightPos = -2.0f* 10.0f *lightDir;
