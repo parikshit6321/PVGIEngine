@@ -1,3 +1,6 @@
+#define LUMA_THRESHOLD_FACTOR 0.1f
+#define LUMA_DEPTH_FACTOR 100.0f
+
 cbuffer cbSettings : register(b0)
 {
 	uint voxelResolution;
@@ -25,6 +28,12 @@ inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
 	return voxelPosition;
 }
 
+// Function to get the luma value of the input color
+inline float GetLuma(float3 inputColor)
+{
+	return ((0.299f * inputColor.r) + (0.587f * inputColor.g) + (0.114f * inputColor.b));
+}
+
 [numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
@@ -37,11 +46,24 @@ void CS(uint3 id : SV_DispatchThreadID)
 	// Extract the pixel's depth
 	float depth = positionDepthTexture[id.xy].a;
 
+	// Calculate depth based luma threshold (decreases with increasing depth)
+	float lumaThreshold = LUMA_THRESHOLD_FACTOR * (1.0f / max(depth * LUMA_DEPTH_FACTOR, 0.1f));
+	
+	// Find the current pixel's luma
+	float pixelLuma = GetLuma(lightingColor);
+	
 	// Enter data into the zeroith voxel grid
 	uint3 voxelPosition = GetVoxelPosition(worldPosition, voxelResolution);
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid0[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid0[voxelPosition].a == 0.0f))
+	float4 currentVoxelInfo = voxelGrid0[voxelPosition];
+
+	// Calculate difference between voxel and pixel luma
+	float currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	float lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid0[voxelPosition] = float4(lightingColor, depth);
 	}
@@ -50,7 +72,14 @@ void CS(uint3 id : SV_DispatchThreadID)
 	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 2));
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid1[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid1[voxelPosition].a == 0.0f))
+	currentVoxelInfo = voxelGrid1[voxelPosition];
+	
+	// Calculate difference between voxel and pixel luma
+	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid1[voxelPosition] = float4(lightingColor, depth);
 	}
@@ -59,7 +88,14 @@ void CS(uint3 id : SV_DispatchThreadID)
 	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 4));
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid2[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid2[voxelPosition].a == 0.0f))
+	currentVoxelInfo = voxelGrid2[voxelPosition];
+	
+	// Calculate difference between voxel and pixel luma
+	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid2[voxelPosition] = float4(lightingColor, depth);
 	}
@@ -68,7 +104,14 @@ void CS(uint3 id : SV_DispatchThreadID)
 	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 8));
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid3[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid3[voxelPosition].a == 0.0f))
+	currentVoxelInfo = voxelGrid3[voxelPosition];
+	
+	// Calculate difference between voxel and pixel luma
+	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid3[voxelPosition] = float4(lightingColor, depth);
 	}
@@ -77,7 +120,14 @@ void CS(uint3 id : SV_DispatchThreadID)
 	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 16));
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid4[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid4[voxelPosition].a == 0.0f))
+	currentVoxelInfo = voxelGrid4[voxelPosition];
+	
+	// Calculate difference between voxel and pixel luma
+	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid4[voxelPosition] = float4(lightingColor, depth);
 	}
@@ -86,7 +136,14 @@ void CS(uint3 id : SV_DispatchThreadID)
 	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 32));
 
 	// Inject the current voxel's information into the grid
-	if (((depth < voxelGrid5[voxelPosition].a) && (depth > 0.1f)) || (voxelGrid5[voxelPosition].a == 0.0f))
+	currentVoxelInfo = voxelGrid5[voxelPosition];
+	
+	// Calculate difference between voxel and pixel luma
+	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
+	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	
+	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
+	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
 	{
 		voxelGrid5[voxelPosition] = float4(lightingColor, depth);
 	}
