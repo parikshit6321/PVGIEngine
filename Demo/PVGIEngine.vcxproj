@@ -27,6 +27,7 @@
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
     <ClCompile Include="..\Engine\Renderer\RenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ShadowMapRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\SHIndirectRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp" />
@@ -53,6 +54,7 @@
     <ClInclude Include="..\Engine\Renderer\Renderer.h" />
     <ClInclude Include="..\Engine\Renderer\RenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ShadowMapRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\SHIndirectRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h" />
