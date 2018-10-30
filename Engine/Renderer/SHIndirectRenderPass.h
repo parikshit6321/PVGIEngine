@@ -12,6 +12,7 @@ public:
 
 	UINT gridResolution = 16;
 	float worldVolumeBoundary = 50.0f;
+	UINT voxelResolution = 128;
 
 protected:
 	virtual void BuildRootSignature() override;

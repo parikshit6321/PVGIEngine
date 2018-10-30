@@ -13,10 +13,14 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
+	float lengthOfCone = (32.0f * worldVolumeBoundary) / ((voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
+	float coneStep = lengthOfCone / 64.0f;
+	
 	commandList->SetComputeRootSignature(mRootSignature.Get());
 
 	commandList->SetComputeRoot32BitConstants(0, 1, &gridResolution, 0);
 	commandList->SetComputeRoot32BitConstants(0, 1, &worldVolumeBoundary, 1);
+	commandList->SetComputeRoot32BitConstants(0, 1, &coneStep, 2);
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
@@ -49,7 +53,7 @@ void SHIndirectRenderPass::BuildRootSignature()
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstants(2, 0);
+	slotRootParameter[0].InitAsConstants(3, 0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
 	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable0);
 
