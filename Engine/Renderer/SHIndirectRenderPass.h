@@ -10,7 +10,7 @@ public:
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) override;
 	~SHIndirectRenderPass() = default;
 
-	UINT gridResolution = 16;
+	UINT gridResolution = 8;
 	float worldVolumeBoundary = 50.0f;
 	UINT voxelResolution = 128;
 

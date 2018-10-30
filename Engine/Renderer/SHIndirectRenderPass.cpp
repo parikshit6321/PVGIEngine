@@ -33,7 +33,7 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
-	commandList->Dispatch(gridResolution, gridResolution, gridResolution);
+	commandList->Dispatch(gridResolution / 2, gridResolution / 2, gridResolution / 2);
 
 	for (int i = 0; i < 3; ++i)
 	{

@@ -43,7 +43,7 @@ void IndirectLightingRenderPass::BuildRootSignature()
 {
 	// 4 GBuffers + 1 Main Texture + 6 Voxel Grids
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 11, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 8, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
@@ -131,7 +131,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 11;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -170,7 +170,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	srvDescVoxelGrid.Texture3D.MipLevels = 1;
 
-	for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 

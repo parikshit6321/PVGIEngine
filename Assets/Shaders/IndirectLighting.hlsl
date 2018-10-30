@@ -36,24 +36,23 @@ float4 PS(VertexOut pin) : SV_Target
 {
 	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
 	
-	float4 position = PositionDepthGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
 	float depth = position.a;
 	
 	if (depth == 1.0f)
 		return float4(directLight, 1.0f);
 	
-	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
+	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamLinearWrap, pin.TexC);
 	float metallic = albedo.a;
-	float4 normal = NormalRoughnessGBuffer.Sample(gsamAnisotropicWrap, pin.TexC);
-	float linearRoughness = normal.a * normal.a;
 	
-	float3 N = normal.xyz;
-	float3 V = normalize(gEyePosW - position.xyz);
-
-	float3 indirectDiffuseLight = CalculateDiffuseIndirectLighting(position.xyz, normalize(N), V, linearRoughness, metallic, albedo.rgb);
-	float3 indirectSpecularLight = CalculateSpecularIndirectLighting(position.xyz, N, V, linearRoughness, metallic, albedo.rgb);
+	if (metallic > 0.9f)
+		return float4(directLight, 1.0f);
 	
-	float3 finalResult = directLight + indirectDiffuseLight + indirectSpecularLight;
+	float4 normal = NormalRoughnessGBuffer.Sample(gsamLinearWrap, pin.TexC);
+	
+	float3 indirectDiffuseLight = albedo.rgb * SampleSHIndirectLighting(position.xyz, normal.xyz);
+	
+	float3 finalResult = directLight + indirectDiffuseLight;
 	
 	return float4(finalResult, 1.0f);
 }

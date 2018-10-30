@@ -4,6 +4,7 @@ ShadowMapRenderPass Renderer::shadowMapRenderPass;
 GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
+SHIndirectRenderPass Renderer::shIndirectRenderPass;
 IndirectLightingRenderPass Renderer::indirectLightingRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
@@ -27,9 +28,13 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
 		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"VoxelInjection.hlsl", true);
 	
+	shIndirectRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, 
+		voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
+
 	indirectLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mOutputBuffers, voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
+		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
 		L"IndirectLighting.hlsl", L"");
 	
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,

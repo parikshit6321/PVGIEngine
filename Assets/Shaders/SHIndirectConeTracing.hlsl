@@ -178,7 +178,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	return currentVoxelInfo.rgb;
 }
 
-[numthreads(1, 1, 1)]
+[numthreads(2, 2, 2)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	// Compute the current cell's world space position
