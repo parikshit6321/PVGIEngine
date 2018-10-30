@@ -10,8 +10,11 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+	for (int i = 0; i < 3; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	}
 
 	float lengthOfCone = (32.0f * worldVolumeBoundary) / ((voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
 	float coneStep = lengthOfCone / 64.0f;
@@ -32,9 +35,11 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 
 	commandList->Dispatch(gridResolution, gridResolution, gridResolution);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+	for (int i = 0; i < 3; ++i)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
-	
+	}
 }
 
 void SHIndirectRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource *, ID3D12Resource *)
@@ -47,7 +52,7 @@ void SHIndirectRenderPass::BuildRootSignature()
 	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
-	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 3, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
@@ -85,7 +90,7 @@ void SHIndirectRenderPass::BuildRootSignature()
 
 void SHIndirectRenderPass::BuildDescriptorHeaps()
 {
-	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
+	mOutputBuffers = new ComPtr<ID3D12Resource>[3];
 
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -109,19 +114,22 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	texDesc.Height = gridResolution;
 	texDesc.DepthOrArraySize = gridResolution;
 
-	ThrowIfFailed(md3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&mOutputBuffers[0])));
+	for (int i = 0; i < 3; ++i)
+	{
+		ThrowIfFailed(md3dDevice->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&texDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&mOutputBuffers[i])));
+	}
 	
 	//
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 7;
+	srvHeapDesc.NumDescriptors = 9;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -156,8 +164,12 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	uavDesc.Texture3D.FirstWSlice = 0;
 	uavDesc.Texture3D.WSize = gridResolution;
 
-	// Voxel grid 3D texture as a UAV
-	md3dDevice->CreateUnorderedAccessView(mOutputBuffers[0].Get(), nullptr, &uavDesc, hDescriptor);
+	for (int i = 0; i < 3; ++i)
+	{
+		md3dDevice->CreateUnorderedAccessView(mOutputBuffers[i].Get(), nullptr, &uavDesc, hDescriptor);
+
+		hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+	}
 }
 
 void SHIndirectRenderPass::BuildPSOs()
