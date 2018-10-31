@@ -7,7 +7,7 @@ class Camera
 public:
 	Camera() = default;
 	
-	void Initialize(DirectX::XMFLOAT4 &position, float movementSpeed = 5.0f, float rotationSpeed = 5.0f);
+	void Initialize(DirectX::XMFLOAT4 &position, float movementSpeed = 10.0f, float rotationSpeed = 10.0f);
 	
 	DirectX::XMFLOAT4 * GetPositionPtr();
 	DirectX::XMFLOAT4 * GetRightDirectionPtr();
