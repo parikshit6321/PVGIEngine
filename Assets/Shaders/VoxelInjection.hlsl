@@ -1,4 +1,4 @@
-#define LUMA_THRESHOLD_FACTOR 0.1f
+#define LUMA_THRESHOLD_FACTOR 0.05f
 #define LUMA_DEPTH_FACTOR 100.0f
 
 cbuffer cbSettings : register(b0)

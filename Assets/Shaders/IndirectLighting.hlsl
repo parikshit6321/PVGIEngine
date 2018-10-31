@@ -1,4 +1,4 @@
-#include "ConeTracingUtil.hlsl"
+#include "SHLightingUtil.hlsl"
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
