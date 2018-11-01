@@ -198,16 +198,22 @@ void DemoApp::Draw(const GameTimer& gt)
 	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Inject lighting data into the voxel grids
-	Renderer::voxelInjectionRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::voxelInjectionFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	Renderer::shIndirectRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::shIndirectFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Sample SH grid to compute indirect lighting
-	Renderer::indirectLightingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::indirectLightingFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
-	// Perform cone tracing to compute indirect lighting
-	Renderer::lightingCompositeRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	// Inject lighting data into the voxel grids
+	Renderer::voxelInjectionSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
+	// Cone trace indirect lighting and inject it into the spherical harmonic grids
+	Renderer::shIndirectSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
+	// Sample SH grid to compute indirect lighting
+	Renderer::indirectLightingSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
@@ -456,9 +462,9 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.shadowViewProjMatrix, XMMatrixTranspose(shadowViewProjMatrix));
 	XMStoreFloat4x4(&mMainPassCB.shadowTransform, XMMatrixTranspose(S));
 
-	float lengthOfCone = (32.0f * Renderer::voxelInjectionRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
+	float lengthOfCone = (32.0f * Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionFirstBounceRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
 
-	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
+	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

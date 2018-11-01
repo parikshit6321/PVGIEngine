@@ -93,9 +93,6 @@
     <ClCompile Include="..\Engine\Renderer\SHIndirectRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\Renderer\LightingCompositeRenderPass.cpp">
-      <Filter>Engine\Renderer</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -180,9 +177,6 @@
       <Filter>Engine\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\SHIndirectRenderPass.h">
-      <Filter>Engine\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Renderer\LightingCompositeRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
