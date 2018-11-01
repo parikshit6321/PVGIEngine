@@ -24,6 +24,7 @@
     <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\LightingCompositeRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
     <ClCompile Include="..\Engine\Renderer\RenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ShadowMapRenderPass.cpp" />
@@ -51,6 +52,7 @@
     <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\LightingCompositeRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\Renderer.h" />
     <ClInclude Include="..\Engine\Renderer\RenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ShadowMapRenderPass.h" />
