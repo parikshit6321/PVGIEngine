@@ -12,7 +12,7 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 	float3x3 TBN = float3x3(T, B, N);
 
 	// Transform from tangent space to world space.
-	float3 bumpedNormalW = mul(normalT, TBN);
+	float3 bumpedNormalW = normalize(mul(normalT, TBN));
 
 	return bumpedNormalW;
 }
