@@ -45,7 +45,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	for (uint iter1 = 0; iter1 < 7; ++iter1)
 	{
 		coneTracedColor = DiffuseConeTrace(cellWorldPosition, coneDirections[iter1]);
-		coeffs = (dirToCosineLobe(coneDirections[iter1]) / PI);
+		coeffs = (dirToCosineLobe(coneDirections[iter1]));
 		accumulatedSHRed += (coeffs * coneTracedColor.r);
 		accumulatedSHGreen += (coeffs * coneTracedColor.g);
 		accumulatedSHBlue += (coeffs * coneTracedColor.b);
@@ -54,13 +54,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	for (uint iter2 = 0; iter2 < 7; ++iter2)
 	{
 		coneTracedColor = DiffuseConeTrace(cellWorldPosition, -coneDirections[iter2]);
-		coeffs = (dirToCosineLobe(-coneDirections[iter2]) / PI);
+		coeffs = (dirToCosineLobe(-coneDirections[iter2]));
 		accumulatedSHRed += (coeffs * coneTracedColor.r);
 		accumulatedSHGreen += (coeffs * coneTracedColor.g);
 		accumulatedSHBlue += (coeffs * coneTracedColor.b);
 	}
 	
-	shGridRed[id.xyz] = accumulatedSHRed;
-	shGridGreen[id.xyz] = accumulatedSHGreen;
-	shGridBlue[id.xyz] = accumulatedSHBlue;
+	shGridRed[id.xyz] = accumulatedSHRed / PI;
+	shGridGreen[id.xyz] = accumulatedSHGreen / PI;
+	shGridBlue[id.xyz] = accumulatedSHBlue / PI;
 }

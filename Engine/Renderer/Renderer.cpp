@@ -6,6 +6,7 @@ DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
 SHIndirectRenderPass Renderer::shIndirectRenderPass;
 IndirectLightingRenderPass Renderer::indirectLightingRenderPass;
+LightingCompositeRenderPass Renderer::lightingCompositeRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
@@ -37,6 +38,10 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
 		L"IndirectLighting.hlsl", L"");
 	
+	lightingCompositeRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers,
+		indirectLightingRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"LightingComposite.hlsl", L"");
+
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers, 
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
