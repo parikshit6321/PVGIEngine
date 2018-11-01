@@ -45,22 +45,21 @@ inline float3 GetCellPosition (float3 worldPosition)
 {
 	float3 encodedPosition = worldPosition / gWorldBoundary_R_ConeStep_G.r;
 	encodedPosition += float3(1.0f, 1.0f, 1.0f);
-	encodedPosition /= 2.0f;
+	encodedPosition *= 0.5f;
 	return encodedPosition;
 }
 
 inline float3 SampleSHIndirectLighting(float3 worldPosition, float3 worldNormal)
 {
-	float4 SHintensity = dirToSH(normalize(-worldNormal));
-
 	float3 cellPosition = GetCellPosition(worldPosition);
 
 	float4 currentCellRedSH = SHGridRed.Sample(gsamLinearWrap, cellPosition);
 	float4 currentCellGreenSH = SHGridGreen.Sample(gsamLinearWrap, cellPosition);
 	float4 currentCellBlueSH = SHGridBlue.Sample(gsamLinearWrap, cellPosition);
 
-	float3 indirect = float3(dot(SHintensity, currentCellRedSH), dot(SHintensity, currentCellGreenSH), dot(SHintensity, currentCellBlueSH));
-	indirect = max(0.0f, indirect);
+	float4 SHintensity = dirToSH(-worldNormal);
+	
+	float3 indirect = float3(saturate(dot(SHintensity, currentCellRedSH)), saturate(dot(SHintensity, currentCellGreenSH)), saturate(dot(SHintensity, currentCellBlueSH)));
 	
 	return indirect;
 }

@@ -34,25 +34,14 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float3 directLight = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
+	float4 position = PositionDepthGBuffer.Load(int3(pin.PosH.xy, 0));
+	float4 normal = NormalRoughnessGBuffer.Load(int3(pin.PosH.xy, 0));
+	float4 albedo = DiffuseMetallicGBuffer.Load(int3(pin.PosH.xy, 0));
+	float4 finalResult = MainTex.Load(int3(pin.PosH.xy, 0));
 	
-	float4 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float depth = position.a;
+	float3 indirectDiffuse = SampleSHIndirectLighting(position.xyz, normal.xyz);
 	
-	if (depth == 1.0f)
-		return float4(directLight, 1.0f);
+	finalResult.xyz += ((1.0f - frac(albedo.a)) * (1.0f - position.a) * albedo.rgb * indirectDiffuse);
 	
-	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float metallic = albedo.a;
-	
-	if (metallic > 0.9f)
-		return float4(directLight, 1.0f);
-	
-	float4 normal = NormalRoughnessGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	
-	float3 indirectDiffuseLight = albedo.rgb * SampleSHIndirectLighting(position.xyz, normal.xyz);
-	
-	float3 finalResult = directLight + indirectDiffuseLight;
-	
-	return float4(finalResult, 1.0f);
+	return finalResult;
 }
