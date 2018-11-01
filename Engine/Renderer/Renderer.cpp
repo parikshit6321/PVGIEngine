@@ -43,7 +43,7 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		indirectLightingRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"LightingComposite.hlsl", L"");
 
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers, 
+		inputFormatBackBuffer, inputFormatDepthBuffer, lightingCompositeRenderPass.mOutputBuffers, 
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,

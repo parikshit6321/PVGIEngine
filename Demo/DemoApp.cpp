@@ -203,8 +203,11 @@ void DemoApp::Draw(const GameTimer& gt)
 	// Cone trace indirect lighting and inject it into the spherical harmonic grids
 	Renderer::shIndirectRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
-	// Perform cone tracing to compute indirect lighting
+	// Sample SH grid to compute indirect lighting
 	Renderer::indirectLightingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+
+	// Perform cone tracing to compute indirect lighting
+	Renderer::lightingCompositeRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
