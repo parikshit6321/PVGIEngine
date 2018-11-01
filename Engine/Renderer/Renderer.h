@@ -18,6 +18,7 @@ public:
 	~Renderer() = default;
 
 	static void Initialize(ComPtr<ID3D12Device>, int, int, DXGI_FORMAT, DXGI_FORMAT);
+	static void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, ID3D12Resource*, ID3D12Resource*, ID3D12Resource*);
 	static void CopyToBackBuffer(ID3D12GraphicsCommandList*, ID3D12Resource*);
 
 	static ShadowMapRenderPass shadowMapRenderPass;

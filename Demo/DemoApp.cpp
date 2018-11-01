@@ -191,41 +191,8 @@ void DemoApp::Draw(const GameTimer& gt)
 	// Clear the depth buffer at the beginning of every frame
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// Render the gBuffers
-	Renderer::gBufferRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Compute the lighting using deferred shading
-	Renderer::deferredShadingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Inject lighting data into the voxel grids
-	Renderer::voxelInjectionFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	Renderer::shIndirectFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Sample SH grid to compute indirect lighting
-	Renderer::indirectLightingFirstBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Inject lighting data into the voxel grids
-	Renderer::voxelInjectionSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	Renderer::shIndirectSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Sample SH grid to compute indirect lighting
-	Renderer::indirectLightingSecondBounceRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Render skybox on the background pixels using a quad
-	Renderer::skyBoxRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Perform anti-aliasing using FXAA
-	Renderer::fxaaRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Bring the texture down to LDR range from HDR using Uncharted 2 style tonemapping
-	Renderer::toneMappingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
-
-	// Use 2D LUTs for color grading
-	Renderer::colorGradingRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	// Execute all the render passes
+	Renderer::Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
 
 	// Copy the contents of the off-screen texture to the back buffer
 	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());
