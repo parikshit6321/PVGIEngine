@@ -41,36 +41,32 @@ struct VertexOut
 {
 	float4 PosH : SV_POSITION;
 	float3 PosV : POSITION;
-	float2 TexC : TEXCOORD0;
 };
 
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
 
-	vout.TexC = vin.TexC;
-
 	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
+	vout.PosH = float4(2.0f * vin.TexC.x - 1.0f, 1.0f - 2.0f * vin.TexC.y, 0.0f, 1.0f);
 
 	// Transform quad corners to view space near plane.
 	float4 ph = mul(vout.PosH, gInvProj);
-	vout.PosV = ph.xyz / ph.w;
+	ph.xyz /= ph.w;
+	
+	vout.PosV = mul(float4(ph.xyz, 1.0f), gSkyBoxMatrix).xyz;
 
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float3 pixelColor = MainTex.Sample(gsamLinearWrap, pin.TexC).rgb;
-	float depth = DepthMap.Sample(gsamLinearWrap, pin.TexC).r;
+	float4 pixelColor = MainTex.Load(int3(pin.PosH.xy, 0));
+	float depth = DepthMap.Load(int3(pin.PosH.xy, 0)).r;
 
-	float3 sampleDirection = mul(float4(pin.PosV, 1.0f), gSkyBoxMatrix).xyz;
-
-	float4 skyBoxColor = pow(SkyBoxTex.Sample(gsamLinearWrap, sampleDirection), 2.2f);
+	float4 skyBoxColor = pow(SkyBoxTex.Sample(gsamLinearWrap, pin.PosV), 2.2f);
 	
-	if (depth == 1.0f)
-		pixelColor = skyBoxColor.rgb;
+	float4 result = lerp(pixelColor, skyBoxColor, floor(depth));
 
-	return float4(pixelColor, 1.0f);
+	return result;
 }
