@@ -17,17 +17,14 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
-	float2 TexC : TEXCOORD0;
 };
 
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
 
-	vout.TexC = vin.TexC;
-
 	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
+	vout.PosH = float4(2.0f*vin.TexC.x - 1.0f, 1.0f - 2.0f*vin.TexC.y, 0.0f, 1.0f);
 
 	return vout;
 }
