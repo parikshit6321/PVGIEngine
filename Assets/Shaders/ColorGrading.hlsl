@@ -1,7 +1,9 @@
 #define HALF_PIXEL_X 0.001953125f
 #define HALF_PIXEL_Y 0.03125f
 #define DIMENSION 16.0f
+#define ONE_DIV_DIMENSION 0.0625f
 #define DIMENSION_MINUS_1 15.0f
+#define DIMENSION_MINUS_1_DIV_DIMENSION 0.9375f
 
 Texture2D    MainTex  : register(t0);
 Texture2D	 UserLUT  : register(t1);
@@ -44,35 +46,29 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
-	float2 TexC : TEXCOORD0;
 };
 
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
 
-	vout.TexC = vin.TexC;
-
 	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
+	vout.PosH = float4(2.0f*vin.TexC.x - 1.0f, 1.0f - 2.0f*vin.TexC.y, 0.0f, 1.0f);
 
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 inputColor = MainTex.Sample(gsamLinearWrap, pin.TexC);
+	float4 inputColor = MainTex.Load(int3(pin.PosH.xy, 0));
 
 	float blueCell = inputColor.b * DIMENSION_MINUS_1;
+	
+	float rComponentOffset = ((inputColor.r * ONE_DIV_DIMENSION) * DIMENSION_MINUS_1_DIV_DIMENSION) + HALF_PIXEL_X;
+	float gComponentOffset = (inputColor.g * DIMENSION_MINUS_1_DIV_DIMENSION) + HALF_PIXEL_Y;
 
-	float blueCellLower = floor(blueCell);
-	float blueCellUpper = ceil(blueCell);
-
-	float rComponentOffset = HALF_PIXEL_X + inputColor.r / DIMENSION * (DIMENSION_MINUS_1 / DIMENSION);
-	float gComponentOffset = HALF_PIXEL_Y + inputColor.g * (DIMENSION_MINUS_1 / DIMENSION);
-
-	float2 positionInLUTLower = float2(blueCellLower / DIMENSION + rComponentOffset, gComponentOffset);
-	float2 positionInLUTUpper = float2(blueCellUpper / DIMENSION + rComponentOffset, gComponentOffset);
+	float2 positionInLUTLower = float2((floor(blueCell) * ONE_DIV_DIMENSION) + rComponentOffset, gComponentOffset);
+	float2 positionInLUTUpper = float2((ceil(blueCell) * ONE_DIV_DIMENSION) + rComponentOffset, gComponentOffset);
 
 	float4 gradedColorLower = UserLUT.Sample(gsamLinearWrap, positionInLUTLower);
 	float4 gradedColorUpper = UserLUT.Sample(gsamLinearWrap, positionInLUTUpper);
