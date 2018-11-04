@@ -34,11 +34,10 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 position = PositionDepthGBuffer.Load(int3(pin.PosH.xy, 0));
 	float4 normal = NormalRoughnessGBuffer.Load(int3(pin.PosH.xy, 0));
 	float4 albedo = DiffuseMetallicGBuffer.Load(int3(pin.PosH.xy, 0));
-	float4 finalResult = MainTex.Load(int3(pin.PosH.xy, 0));
 	
 	float3 indirectDiffuse = SampleSHIndirectLighting(position.xyz, normal.xyz);
 	
-	finalResult.xyz += ((1.0f - frac(albedo.a)) * (1.0f - position.a) * albedo.rgb * indirectDiffuse);
+	float3 finalResult = ((1.0f - albedo.a) * (1.0f - floor(position.a)) * albedo.rgb * indirectDiffuse);
 	
-	return finalResult;
+	return float4(finalResult, 1.0f);
 }

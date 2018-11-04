@@ -60,7 +60,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 		accumulatedSHBlue += (coeffs * coneTracedColor.b);
 	}
 	
-	shGridRed[id.xyz] = accumulatedSHRed / PI;
-	shGridGreen[id.xyz] = accumulatedSHGreen / PI;
-	shGridBlue[id.xyz] = accumulatedSHBlue / PI;
+	shGridRed[id.xyz] = accumulatedSHRed;
+	shGridGreen[id.xyz] = accumulatedSHGreen;
+	shGridBlue[id.xyz] = accumulatedSHBlue;
 }

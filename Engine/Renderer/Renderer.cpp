@@ -9,6 +9,7 @@ IndirectLightingRenderPass Renderer::indirectLightingFirstBounceRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionSecondBounceRenderPass;
 SHIndirectRenderPass Renderer::shIndirectSecondBounceRenderPass;
 IndirectLightingRenderPass Renderer::indirectLightingSecondBounceRenderPass;
+LightCompositeRenderPass Renderer::lightCompositeRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
@@ -53,8 +54,13 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		gBufferRenderPass.mOutputBuffers, shIndirectSecondBounceRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer,
 		L"IndirectLighting.hlsl", L"");
 
+	lightCompositeRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers,
+		indirectLightingFirstBounceRenderPass.mOutputBuffers, indirectLightingSecondBounceRenderPass.mOutputBuffers, 
+		gBufferRenderPass.mDepthStencilBuffer, L"LightComposite.hlsl", L"");
+
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingSecondBounceRenderPass.mOutputBuffers,
+		inputFormatBackBuffer, inputFormatDepthBuffer, lightCompositeRenderPass.mOutputBuffers,
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
@@ -96,6 +102,9 @@ void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRI
 
 	// Sample SH grid to compute indirect lighting
 	indirectLightingSecondBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+
+	// Compute the final lighting
+	lightCompositeRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
