@@ -21,38 +21,9 @@ inline float D_GGX(float NdotH, float m2)
 	return (m2 / (f * f));
 }
 
-inline float3 DiffuseDisneyNormalized(float3 DiffuseColor, float LinearRoughness, float NdotV, float NdotL, float LdotH, float energyBias, float energyFactor, float3 f0)
+inline float3 LambertianDiffuse(float3 DiffuseColor)
 {
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * LinearRoughness ;
-	
-	float lightScatter = FresnelSchlick (f0, fd90, NdotL).r;
-	float viewScatter = FresnelSchlick (f0, fd90, NdotV).r;
-	
-	return (DiffuseColor * lightScatter * viewScatter * energyFactor);
-}
-
-inline float Heaviside(float input)
-{
-	if (input > 0.0f)
-		return 1.0f;
-	else
-		return 0.0f;
-}
-
-inline float3 HammonDiffuse(float3 DiffuseColor, float linearRoughness, float NdotV, float NdotL, float LdotV, float NdotH, float3 F0)
-{
-	float term1 = Heaviside(NdotL);
-	float term2 = Heaviside(NdotV);
-	float3 term3 = DiffuseColor / PI;
-	
-	float kfacing = 0.5f + (0.5f * LdotV);
-	float fmulti = 0.3641f * linearRoughness;
-	float3 fsmooth = (21.0f / 20.0f) * (1.0f - F0) * (1.0f - pow((1.0f - NdotL), 5.0f)) * (1.0f - pow((1.0f - NdotV), 5.0f));
-	float frough = kfacing * (0.9f - (0.4f * kfacing)) * ((0.5f + NdotH) / NdotH);
-	
-	float3 term4 = ((1.0f - linearRoughness) * fsmooth) + (linearRoughness * frough) + (DiffuseColor * fmulti);
-	
-	return (term1 * term2 * term3 * term4);
+	return (DiffuseColor / PI);
 }
 
 inline float CalculateShadow(float4 shadowPosH, Texture2D ShadowMap, SamplerComparisonState gsamShadow)

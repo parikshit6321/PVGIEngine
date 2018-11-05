@@ -80,25 +80,19 @@ float4 PS(VertexOut pin) : SV_Target
 	float NdotH = saturate(dot(N ,H));
 	float NdotL = saturate(dot(N ,L));
 
-	// BRDF : Disney Diffuse + GGX Specular
-
 	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
-	float energyFactor = lerp(1.0f, 1.0f / 1.51f, linearRoughness);
-	float3 f0 = float3(1.0f, 1.0f, 1.0f);
 	
 	float fd90 = energyBias + 2.0f * LdotH * LdotH * linearRoughness;
 	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
 	
-	// Specular BRDF
+	// Specular BRDF (GGX)
 	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
 	float Vis = SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
 	float D = D_GGX(NdotH, linearRoughness);
 	float3 Fr = D * F * Vis / PI;
 
-	// Diffuse BRDF
-	float3 Fd = DiffuseDisneyNormalized(albedo.rgb, linearRoughness, NdotV, NdotL, LdotH, energyBias, energyFactor, f0) / PI;
-
-	Fd *= (1.0f - metallic);
+	// Diffuse BRDF (Lambertian)
+	float3 Fd = LambertianDiffuse(albedo.rgb) * (1.0f - metallic);
 
 	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL));
 	

@@ -107,7 +107,7 @@ bool DemoApp::Initialize()
 	// Build the frame resources
 	BuildFrameResources();
 	
-	// Convert Spherical to Cartesian coordinates.
+	// Initialize the game camera.
 	mCamera.Initialize(XMFLOAT4(SceneManager::GetScenePtr()->cameraPosition.x,
 		SceneManager::GetScenePtr()->cameraPosition.y,
 		SceneManager::GetScenePtr()->cameraPosition.z,
