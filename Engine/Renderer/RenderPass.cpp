@@ -25,12 +25,12 @@ void RenderPass::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, in
 
 	if (isComputePass)
 	{
-		mComputeShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + computeShaderName, nullptr, "CS", "cs_5_1");
+		mComputeShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + computeShaderName, nullptr, "CS", "cs_5_0");
 	}
 	else
 	{
-		mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "VS", "vs_5_1");
-		mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "PS", "ps_5_1");
+		mVertexShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "VS", "vs_5_0");
+		mPixelShader = d3dUtil::CompileShader(L"../Assets/Shaders/" + shaderName, nullptr, "PS", "ps_5_0");
 	}
 	
 	BuildRootSignature();
