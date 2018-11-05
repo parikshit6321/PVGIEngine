@@ -381,8 +381,8 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 	// RGB - direction of sunlight; A - unused
 	mMainPassCB.SunLightDirection = { SceneManager::GetScenePtr()->lightDirection.x, 
-									  SceneManager::GetScenePtr()->lightDirection.y, 
-									  SceneManager::GetScenePtr()->lightDirection.z, 1.0f };
+									  SceneManager::GetScenePtr()->lightDirection.y,
+									  SceneManager::GetScenePtr()->lightDirection.z, 0.0f };
 
 	// Matrix used when rendering skybox using a quad
 	XMFLOAT4 skyboxTranslationRow = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -432,6 +432,10 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	float lengthOfCone = (32.0f * Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionFirstBounceRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
 
 	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
+
+	mMainPassCB.SunLightDirection.x *= -1.0f;
+	mMainPassCB.SunLightDirection.y *= -1.0f;
+	mMainPassCB.SunLightDirection.z *= -1.0f;
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

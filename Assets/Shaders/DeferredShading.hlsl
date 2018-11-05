@@ -46,61 +46,56 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH : SV_POSITION;
-	float2 TexC : TEXCOORD0;
 };
 
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
 
-	vout.TexC = vin.TexC;
-
 	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
-
+	vout.PosH = float4(2.0f * vin.TexC.x - 1.0f, 1.0f - 2.0f * vin.TexC.y, 0.0f, 1.0f);
+	
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 albedo = DiffuseMetallicGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float metallic = albedo.a;
-	float4 normal = NormalRoughnessGBuffer.Sample(gsamLinearWrap, pin.TexC);
-	float linearRoughness = normal.a * normal.a;
-	float4 position = PositionDepthGBuffer.Sample(gsamLinearWrap, pin.TexC);
+	int3 TexC = int3(pin.PosH.xy, 0);
+
+	float3 V = normalize(gEyePosW - PositionDepthGBuffer.Load(TexC).xyz);
+	
+	float4 normal = NormalRoughnessGBuffer.Load(TexC);
+	float4 albedo = DiffuseMetallicGBuffer.Load(TexC);
+	float4 shadowPosH = ShadowPosHGBuffer.Load(TexC);
+	
+	float3 L = normalize(gSunLightDirection.xyz);
+	float3 H = normalize(V + L);
+	float LdotH = saturate(dot(L ,H));
 	
 	float3 N = normal.xyz;
-	float3 V = normalize(gEyePosW - position.xyz);
-
-	float3 L = normalize(-1.0f * gSunLightDirection.xyz);
-	float3 H = normalize(V + L);
-
+	float linearRoughness = normal.a * normal.a;
 	float NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
-	float LdotH = saturate(dot(L ,H));
-	float NdotH = saturate(dot(N ,H));
 	float NdotL = saturate(dot(N ,L));
-
-	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
+	float NdotH = saturate(dot(N ,H));
 	
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * linearRoughness;
-	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, metallic);
+	float fd90 = linearRoughness * (0.5f + (2.0f * LdotH * LdotH));
 	
 	// Specular BRDF (GGX)
-	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
 	float Vis = SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
 	float D = D_GGX(NdotH, linearRoughness);
-	float3 Fr = D * F * Vis / PI;
-
+	
+	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, albedo.a);
+	
 	// Diffuse BRDF (Lambertian)
-	float3 Fd = LambertianDiffuse(albedo.rgb) * (1.0f - metallic);
-
-	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL));
+	float3 Fd = LambertianDiffuse(albedo.rgb) * (1.0f - albedo.a);
 	
 	// Calculate shadow
-    float4 shadowPosH = ShadowPosHGBuffer.Sample(gsamLinearWrap, pin.TexC);
 	float shadow = CalculateShadow(shadowPosH, ShadowMap, gsamShadow);
-	
-	directLight *= (1.0f - shadow);
 
+	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
+	float3 Fr = D * Vis * PI_INVERSE * F;
+	
+	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL * (1.0f - shadow)));
+	
 	return float4(directLight, 1.0f);
 }
