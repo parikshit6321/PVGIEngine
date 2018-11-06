@@ -1,5 +1,6 @@
-#define LUMA_THRESHOLD_FACTOR 0.05f
-#define LUMA_DEPTH_FACTOR 100.0f
+#define LUMA_THRESHOLD_FACTOR 0.05f // Higher = higher accuracy with higher flickering
+#define LUMA_DEPTH_FACTOR 50.0f 	// Higher = lesser variation with depth
+#define LUMA_VECTOR float3(0.299f, 0.587f, 0.114f)
 
 cbuffer cbSettings : register(b0)
 {
@@ -18,12 +19,18 @@ RWTexture3D<float4> voxelGrid3 		: register(u3);
 RWTexture3D<float4> voxelGrid4 		: register(u4);
 RWTexture3D<float4> voxelGrid5 		: register(u5);
 
-// Function to get position of voxel in the grid
-inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
+// Function to encode worldPosition in [0..1] range
+inline float3 EncodePosition(float3 worldPosition)
 {
 	float3 encodedPosition = worldPosition / worldVolumeBoundary;
 	encodedPosition += float3(1.0f, 1.0f, 1.0f);
 	encodedPosition *= 0.5f;
+	return encodedPosition;
+}
+
+// Function to get position of voxel in the grid
+inline uint3 GetVoxelPosition(float3 encodedPosition, uint resolution)
+{
 	uint3 voxelPosition = (uint3)(encodedPosition * resolution);
 	return voxelPosition;
 }
@@ -31,21 +38,25 @@ inline uint3 GetVoxelPosition (float3 worldPosition, uint resolution)
 // Function to get the luma value of the input color
 inline float GetLuma(float3 inputColor)
 {
-	return ((0.299f * inputColor.r) + (0.587f * inputColor.g) + (0.114f * inputColor.b));
+	return dot(LUMA_VECTOR, inputColor);
 }
 
 [numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
-	// Color of the current voxel with lighting
-	float3 lightingColor = lightingTexture[id.xy * rsmDownsample].rgb;
-
-	// World space position
-	float3 worldPosition = positionDepthTexture[id.xy * rsmDownsample].rgb;
-
+	// World space position in [0..1] range
+	float3 encodedPosition = EncodePosition(positionDepthTexture[id.xy * rsmDownsample].rgb);
+	
 	// Extract the pixel's depth
 	float depth = positionDepthTexture[id.xy].a;
 
+	// Only carry on with injection if voxels don't already have the most accurate data
+	if (depth <= 0.1f)
+		return;
+	
+	// Color of the current voxel with lighting
+	float3 lightingColor = lightingTexture[id.xy * rsmDownsample].rgb;
+	
 	// Calculate depth based luma threshold (decreases with increasing depth)
 	float lumaThreshold = LUMA_THRESHOLD_FACTOR * (1.0f / max(depth * LUMA_DEPTH_FACTOR, 0.1f));
 	
@@ -53,8 +64,11 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float pixelLuma = GetLuma(lightingColor);
 	
 	// Enter data into the zeroith voxel grid
-	uint3 voxelPosition = GetVoxelPosition(worldPosition, voxelResolution);
+	uint3 voxelPosition = GetVoxelPosition(encodedPosition, voxelResolution);
 
+	// Value to be injected into the voxel grids
+	float4 injectionValue = float4(lightingColor, depth);
+	
 	// Inject the current voxel's information into the grid
 	float4 currentVoxelInfo = voxelGrid0[voxelPosition];
 
@@ -63,13 +77,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid0[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid0[voxelPosition] = injectionValue;
 	}
 	
 	// Enter data into the first voxel grid
-	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 2));
+	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 1));
 
 	// Inject the current voxel's information into the grid
 	currentVoxelInfo = voxelGrid1[voxelPosition];
@@ -79,13 +93,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid1[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid1[voxelPosition] = injectionValue;
 	}
 	
 	// Enter data into the second voxel grid
-	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 4));
+	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 2));
 
 	// Inject the current voxel's information into the grid
 	currentVoxelInfo = voxelGrid2[voxelPosition];
@@ -95,13 +109,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid2[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid2[voxelPosition] = injectionValue;
 	}
 	
 	// Enter data into the third voxel grid
-	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 8));
+	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 3));
 
 	// Inject the current voxel's information into the grid
 	currentVoxelInfo = voxelGrid3[voxelPosition];
@@ -111,13 +125,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid3[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid3[voxelPosition] = injectionValue;
 	}
 	
 	// Enter data into the fourth voxel grid
-	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 16));
+	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 4));
 
 	// Inject the current voxel's information into the grid
 	currentVoxelInfo = voxelGrid4[voxelPosition];
@@ -127,13 +141,13 @@ void CS(uint3 id : SV_DispatchThreadID)
 	lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid4[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid4[voxelPosition] = injectionValue;
 	}
 	
 	// Enter data into the fifth voxel grid
-	voxelPosition = GetVoxelPosition(worldPosition, (voxelResolution / 32));
+	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 5));
 
 	// Inject the current voxel's information into the grid
 	currentVoxelInfo = voxelGrid5[voxelPosition];
@@ -143,8 +157,8 @@ void CS(uint3 id : SV_DispatchThreadID)
 	lumaDiff = abs(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if (((depth < currentVoxelInfo.a) && (depth > 0.1f) && (lumaDiff < lumaThreshold)) || (currentVoxelInfo.a == 0.0f))
+	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
-		voxelGrid5[voxelPosition] = float4(lightingColor, depth);
+		voxelGrid5[voxelPosition] = injectionValue;
 	}
 }
