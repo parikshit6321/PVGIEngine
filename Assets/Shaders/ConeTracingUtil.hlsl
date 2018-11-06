@@ -1,6 +1,6 @@
 cbuffer cbSettings : register(b0)
 {
-	uint voxelResolution;
+	uint gridResolution;
 	float worldVolumeBoundary;
 	float coneStep;
 };
@@ -19,14 +19,14 @@ RWTexture3D<float4> shGridBlue	: register(u2);
 SamplerState gsamLinearWrap	: register(s0);
 
 // For maximum 64 iterations
-#define ITERATIONS_0 2.0f
-#define ITERATIONS_1 2.0f
-#define ITERATIONS_2 4.0f
-#define ITERATIONS_3 8.0f
-#define ITERATIONS_4 16.0f
-#define ITERATIONS_5 32.0f
+#define ITERATIONS_0 2
+#define ITERATIONS_1 2
+#define ITERATIONS_2 4
+#define ITERATIONS_3 8
+#define ITERATIONS_4 16
+#define ITERATIONS_5 32
 
-#define MAXIMUM_ITERATIONS 64.0f
+#define MAXIMUM_ITERATIONS 64
 
 #define RAY_STEP 0.2f
 #define RAY_OFFSET 0.2f
@@ -36,11 +36,13 @@ SamplerState gsamLinearWrap	: register(s0);
 /*Cosine lobe coeff*/
 #define SH_cosLobe_C0 0.886226925f // sqrt(pi)/2
 #define SH_cosLobe_C1 1.02332671f // sqrt(pi/3)
+#define SH_cosLobe_C1_NEGATIVE -1.02332671f // -sqrt(pi/3);
 
 #define PI 3.1415926f
+#define PI_INVERSE 0.31830988618f
 
 inline float4 dirToCosineLobe(float3 dir) {
-	return float4(SH_cosLobe_C0, -SH_cosLobe_C1 * dir.y, SH_cosLobe_C1 * dir.z, -SH_cosLobe_C1 * dir.x);
+	return float4(SH_cosLobe_C0, SH_cosLobe_C1_NEGATIVE * dir.y, SH_cosLobe_C1 * dir.z, SH_cosLobe_C1_NEGATIVE * dir.x);
 }
 
 // Returns the voxel position in the grids
@@ -96,82 +98,76 @@ inline float4 GetVoxelInfo5(float3 voxelPosition)
 
 inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 {
-	float3 coneOrigin = worldPosition + (coneDirection * coneStep * ITERATIONS_0);
+	float3 currentPosition = worldPosition + (coneDirection * coneStep * ITERATIONS_0);
 
-	float3 currentPosition = coneOrigin;
 	float4 currentVoxelInfo = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	float hitFound = 0.0f;
-
 	// Sample voxel grid 1
-	for (float i1 = 0.0f; i1 < ITERATIONS_1; i1 += 1.0f)
+	uint iter;
+	
+	for (iter = 0; iter < ITERATIONS_1; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
 
-		if (hitFound < 0.05f)
+		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo1(GetVoxelPosition(currentPosition));
-			hitFound = currentVoxelInfo.a;
 		}
 	}
 	
-	if (hitFound > 0.05f)
+	if (currentVoxelInfo.a > 0.05f)
 		return currentVoxelInfo.rgb;
 
 	// Sample voxel grid 2
-	for (float i2 = 0.0f; i2 < ITERATIONS_2; i2 += 1.0f)
+	for (iter = 0; iter < ITERATIONS_2; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
 
-		if (hitFound < 0.05f)
+		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo2(GetVoxelPosition(currentPosition));
-			hitFound = currentVoxelInfo.a;
 		}
 	}
 
-	if (hitFound > 0.05f)
+	if (currentVoxelInfo.a > 0.05f)
 		return currentVoxelInfo.rgb;
 	
 	// Sample voxel grid 3
-	for (float i3 = 0.0f; i3 < ITERATIONS_3; i3 += 1.0f)
+	for (iter = 0; iter < ITERATIONS_3; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
 
-		if (hitFound < 0.05f)
+		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo3(GetVoxelPosition(currentPosition));
-			hitFound = currentVoxelInfo.a;
 		}
 	}
 
-	if (hitFound > 0.05f)
+	if (currentVoxelInfo.a > 0.05f)
 		return currentVoxelInfo.rgb;
 	
 	// Sample voxel grid 4
-	for (float i4 = 0.0f; i4 < ITERATIONS_4; i4 += 1.0f)
+	for (iter = 0; iter < ITERATIONS_4; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
 
-		if (hitFound < 0.05f)
+		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo4(GetVoxelPosition(currentPosition));
-			hitFound = currentVoxelInfo.a;
 		}
 	}
 
-	if (hitFound > 0.05f)
+	if (currentVoxelInfo.a > 0.05f)
 		return currentVoxelInfo.rgb;
 	
 	// Sample voxel grid 5
-	for (float i5 = 0.0f; i5 < ITERATIONS_5; i5 += 1.0f)
+	for (iter = 0; iter < ITERATIONS_5; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
 
-		if (hitFound < 0.05f)
+		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo5(GetVoxelPosition(currentPosition));
-			hitFound = currentVoxelInfo.a;
 		}
 	}
 

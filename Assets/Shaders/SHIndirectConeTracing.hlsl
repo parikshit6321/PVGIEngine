@@ -6,7 +6,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	// Compute the current cell's world space position
 	
 	// Find the position first in range [0..1]
-	float3 cellWorldPosition = ((float)id.xyz / (float)voxelResolution);
+	float3 cellWorldPosition = ((float)id.xyz / (float)gridResolution);
 	
 	// Convert [0..1] range to [-1..1] range
 	cellWorldPosition *= 2.0f;
@@ -22,25 +22,30 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float3 worldNormal = float3(0.0f, 1.0f, 0.0f);
 	
 	float3 direction1 = normalize(cross(worldNormal, RANDOM_VECTOR));
-	float3 direction2 = -direction1;
 	float3 direction3 = normalize(cross(worldNormal, direction1));	// Not used in cone tracing
-	float3 direction4 = -direction3; 								// Not used in cone tracing
-	float3 direction5 = lerp(direction1, direction3, 0.6667f);
-	float3 direction6 = -direction5;
-	float3 direction7 = lerp(direction2, direction3, 0.6667f);
-	float3 direction8 = -direction7;
+	
+	float direction1LerpValue = (direction1 * 0.3333f);
+	float direction3LerpValue = (direction3 * 0.6667f);
+	
+	float3 direction5 = normalize(direction3LerpValue + direction1LerpValue);
+	float3 direction7 = normalize(direction3LerpValue - direction1LerpValue);
+	
+	float3 worldNormalLerpValue = (worldNormal * 0.3333f);
+	direction1LerpValue = (direction1 * 0.6667f);
+	float3 direction5LerpValue = (direction5 * 0.6667f);
+	float3 direction7LerpValue = (direction7 * 0.6667f);
 	
 	float3 coneDirections[7];
 	coneDirections[0] = worldNormal;
-	coneDirections[1] = normalize(lerp(direction1, worldNormal, 0.3333f));
-	coneDirections[2] = normalize(lerp(direction2, worldNormal, 0.3333f));
-	coneDirections[3] = normalize(lerp(direction5, worldNormal, 0.3333f));
-	coneDirections[4] = normalize(lerp(direction6, worldNormal, 0.3333f));
-	coneDirections[5] = normalize(lerp(direction7, worldNormal, 0.3333f));
-	coneDirections[6] = normalize(lerp(direction8, worldNormal, 0.3333f));
+	coneDirections[1] = normalize(worldNormalLerpValue + direction1LerpValue);
+	coneDirections[2] = normalize(worldNormalLerpValue - direction1LerpValue);
+	coneDirections[3] = normalize(worldNormalLerpValue + direction5LerpValue);
+	coneDirections[4] = normalize(worldNormalLerpValue - direction5LerpValue);
+	coneDirections[5] = normalize(worldNormalLerpValue + direction7LerpValue);
+	coneDirections[6] = normalize(worldNormalLerpValue - direction7LerpValue);
 
-	float3 coneTracedColor = float3(0.0f, 0.0f, 0.0f);
-	float4 coeffs = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float3 coneTracedColor;
+	float4 coeffs;
 	
 	for (uint iter1 = 0; iter1 < 7; ++iter1)
 	{
@@ -60,7 +65,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 		accumulatedSHBlue += (coeffs * coneTracedColor.b);
 	}
 	
-	shGridRed[id.xyz] = accumulatedSHRed;
-	shGridGreen[id.xyz] = accumulatedSHGreen;
-	shGridBlue[id.xyz] = accumulatedSHBlue;
+	shGridRed[id.xyz] = accumulatedSHRed * PI_INVERSE;
+	shGridGreen[id.xyz] = accumulatedSHGreen * PI_INVERSE;
+	shGridBlue[id.xyz] = accumulatedSHBlue * PI_INVERSE;
 }
