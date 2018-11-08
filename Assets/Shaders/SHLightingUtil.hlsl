@@ -4,6 +4,8 @@
 #define SH_C0 0.282094792f // 1 / 2sqrt(pi)
 #define SH_C1 0.488602512f // sqrt(3/pi) / 2
 
+#define PI_INVERSE 0.31830988618f
+
 Texture3D	 SHGridRed				 : register(t5);
 Texture3D	 SHGridGreen			 : register(t6);
 Texture3D	 SHGridBlue				 : register(t7);
