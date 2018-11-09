@@ -1,6 +1,6 @@
-#define LUMA_THRESHOLD_FACTOR 0.05f // Higher = higher accuracy with higher flickering
-#define LUMA_DEPTH_FACTOR 50.0f 	// Higher = lesser variation with depth
-#define LUMA_VECTOR float3(0.299f, 0.587f, 0.114f)
+#define LUMA_THRESHOLD_FACTOR 0.02f // Higher = higher accuracy with higher flickering
+#define LUMA_DEPTH_FACTOR 100.0f 	// Higher = lesser variation with depth
+#define LUMA_FACTOR 1.9632107f
 
 cbuffer cbSettings : register(b0)
 {
@@ -38,7 +38,7 @@ inline uint3 GetVoxelPosition(float3 encodedPosition, uint resolution)
 // Function to get the luma value of the input color
 inline float GetLuma(float3 inputColor)
 {
-	return dot(LUMA_VECTOR, inputColor);
+	return ((inputColor.y * LUMA_FACTOR) + inputColor.x);
 }
 
 [numthreads(16, 16, 1)]
@@ -74,7 +74,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 
 	// Calculate difference between voxel and pixel luma
 	float currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	float lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	float lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
@@ -90,7 +90,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	// Calculate difference between voxel and pixel luma
 	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
@@ -106,7 +106,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	// Calculate difference between voxel and pixel luma
 	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
@@ -122,7 +122,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	// Calculate difference between voxel and pixel luma
 	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
@@ -138,7 +138,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	// Calculate difference between voxel and pixel luma
 	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
@@ -154,7 +154,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	// Calculate difference between voxel and pixel luma
 	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = abs(currentVoxelLuma - pixelLuma);
+	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
 	
 	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
