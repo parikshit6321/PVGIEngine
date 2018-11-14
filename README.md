@@ -9,6 +9,8 @@ Graphics Engine built in C++ and DirectX 12
 - Quad based sky.
 - Color grading support using 2D LUTs.
 - PCF based soft shadows.
-- Progressive voxelization using the compute shader (0.24 ms).
-- Two bounces of diffuse GI using cone tracing for every cell in a spherical harmonic grid and sampling SH grid using per-pixel normal (0.35 ms).
+- Progressive voxelization using depth and luma factors.
+- Single bounce diffuse GI using cone tracing for every cell in a spherical harmonic grid and sampling SH grid using per-pixel normal.
+- Single bounce specular GI using ray tracing through the voxel grids.
+- Total GI takes about 0.95 ms on Nvidia GTX 1060 Max-Q.
 - Anti-aliasing using FXAA.
