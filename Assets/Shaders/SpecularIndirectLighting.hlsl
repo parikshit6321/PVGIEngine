@@ -1,4 +1,4 @@
-#include "SHLightingUtil.hlsl"
+#include "RayTracingUtil.hlsl"
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
@@ -31,13 +31,16 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
+	float4 lighting = MainTex.Load(int3(pin.PosH.xy, 0));
 	float4 position = PositionDepthGBuffer.Load(int3(pin.PosH.xy, 0));
 	float4 normal = NormalRoughnessGBuffer.Load(int3(pin.PosH.xy, 0));
 	float4 albedo = DiffuseMetallicGBuffer.Load(int3(pin.PosH.xy, 0));
 	
-	float3 indirectDiffuse = SampleSHIndirectLighting(position.xyz, normal.xyz) * PI_INVERSE;
+	float3 view = normalize(gEyePosW - position.xyz);
 	
-	float3 finalResult = ((1.0f - albedo.a) * (1.0f - floor(position.a)) * albedo.rgb * indirectDiffuse);
+	float3 indirectSpecular = CalculateSpecularIndirectLighting(position.xyz, normal.xyz, view, (normal.w * normal.w), albedo.a, albedo.rgb);
 	
-	return float4(finalResult, 1.0f);
+	lighting.rgb += indirectSpecular;
+	
+	return lighting;
 }

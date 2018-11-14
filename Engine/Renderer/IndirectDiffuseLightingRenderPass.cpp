@@ -1,6 +1,6 @@
-#include "LightCompositeRenderPass.h"
+#include "IndirectDiffuseLightingRenderPass.h"
 
-void LightCompositeRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
+void IndirectDiffuseLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList, D3D12_CPU_DESCRIPTOR_HANDLE *depthStencilViewPtr,
 	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -21,8 +21,8 @@ void LightCompositeRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 		0,
 		rtvDescriptorSize), true, depthStencilViewPtr);
 
-	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
+	ID3D12DescriptorHeap* descriptorHeapsDeferredShading[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeapsDeferredShading), descriptorHeapsDeferredShading);
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
@@ -34,15 +34,16 @@ void LightCompositeRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void LightCompositeRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+void IndirectDiffuseLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
 	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0, false);
 }
 
-void LightCompositeRenderPass::BuildRootSignature()
+void IndirectDiffuseLightingRenderPass::BuildRootSignature()
 {
+	// 4 GBuffers + 1 Main Texture + 6 Voxel Grids
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 8, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
@@ -77,7 +78,7 @@ void LightCompositeRenderPass::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void LightCompositeRenderPass::BuildDescriptorHeaps()
+void IndirectDiffuseLightingRenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
@@ -130,7 +131,7 @@ void LightCompositeRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -150,21 +151,34 @@ void LightCompositeRenderPass::BuildDescriptorHeaps()
 
 	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	// Add the direct lighting texture to the srv heap
+	for (int i = 0; i < 4; ++i)
+	{
+		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
+
+		hDescriptor.Offset(1, cbvSrvDescriptorSize);
+	}
+
+	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
+
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 
-	hDescriptor.Offset(1, cbvSrvDescriptorSize);
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescVoxelGrid = {};
+	srvDescVoxelGrid.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescVoxelGrid.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+	srvDescVoxelGrid.Texture3D.MostDetailedMip = 0;
+	srvDescVoxelGrid.Texture3D.ResourceMinLODClamp = 0.0f;
+	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDescVoxelGrid.Texture3D.MipLevels = 1;
 
-	// Add the first bounce texture to the srv heap
-	md3dDevice->CreateShaderResourceView(mGBuffers[0].Get(), &srvDesc, hDescriptor);
+	for (int i = 0; i < 3; ++i)
+	{
+		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 
-	hDescriptor.Offset(1, cbvSrvDescriptorSize);
-
-	// Add the second bounce texture to the srv heap
-	md3dDevice->CreateShaderResourceView(mVoxelGrids[0].Get(), &srvDesc, hDescriptor);
+		md3dDevice->CreateShaderResourceView(mVoxelGrids[i].Get(), &srvDescVoxelGrid, hDescriptor);
+	}
 }
 
-void LightCompositeRenderPass::BuildPSOs()
+void IndirectDiffuseLightingRenderPass::BuildPSOs()
 {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	depthStencilDesc.DepthEnable = false;

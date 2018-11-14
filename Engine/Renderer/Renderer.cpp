@@ -3,13 +3,9 @@
 ShadowMapRenderPass Renderer::shadowMapRenderPass;
 GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
-VoxelInjectionRenderPass Renderer::voxelInjectionFirstBounceRenderPass;
-SHIndirectRenderPass Renderer::shIndirectFirstBounceRenderPass;
-IndirectLightingRenderPass Renderer::indirectLightingFirstBounceRenderPass;
-VoxelInjectionRenderPass Renderer::voxelInjectionSecondBounceRenderPass;
-SHIndirectRenderPass Renderer::shIndirectSecondBounceRenderPass;
-IndirectLightingRenderPass Renderer::indirectLightingSecondBounceRenderPass;
-LightCompositeRenderPass Renderer::lightCompositeRenderPass;
+VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
+SHIndirectRenderPass Renderer::shIndirectRenderPass;
+IndirectDiffuseLightingRenderPass Renderer::indirectDiffuseLightingRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
@@ -28,39 +24,21 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, 
 		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"DeferredShading.hlsl", L"");
 	
-	voxelInjectionFirstBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
 		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"VoxelInjection.hlsl", true);
 	
-	shIndirectFirstBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	shIndirectRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, 
-		voxelInjectionFirstBounceRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
+		voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
 
-	indirectLightingFirstBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	indirectDiffuseLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mOutputBuffers, shIndirectFirstBounceRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
-		L"IndirectLighting.hlsl", L"");
-
-	voxelInjectionSecondBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingFirstBounceRenderPass.mOutputBuffers,
-		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"VoxelInjection.hlsl", true);
-
-	shIndirectSecondBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr,
-		voxelInjectionSecondBounceRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
-
-	indirectLightingSecondBounceRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingFirstBounceRenderPass.mOutputBuffers,
-		gBufferRenderPass.mOutputBuffers, shIndirectSecondBounceRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer,
-		L"IndirectLighting.hlsl", L"");
-
-	lightCompositeRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers,
-		indirectLightingFirstBounceRenderPass.mOutputBuffers, indirectLightingSecondBounceRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mDepthStencilBuffer, L"LightComposite.hlsl", L"");
+		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
+		L"DiffuseIndirectLighting.hlsl", L"");
 
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, lightCompositeRenderPass.mOutputBuffers,
+		inputFormatBackBuffer, inputFormatDepthBuffer, indirectDiffuseLightingRenderPass.mOutputBuffers,
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
@@ -86,25 +64,13 @@ void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRI
 	deferredShadingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Inject lighting data into the voxel grids
-	voxelInjectionFirstBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	voxelInjectionRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	shIndirectFirstBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	shIndirectRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Sample SH grid to compute indirect lighting
-	indirectLightingFirstBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
-
-	// Inject lighting data into the voxel grids
-	voxelInjectionSecondBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
-
-	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	shIndirectSecondBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
-
-	// Sample SH grid to compute indirect lighting
-	indirectLightingSecondBounceRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
-
-	// Compute the final lighting
-	lightCompositeRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	indirectDiffuseLightingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);

@@ -429,9 +429,9 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.shadowViewProjMatrix, XMMatrixTranspose(shadowViewProjMatrix));
 	XMStoreFloat4x4(&mMainPassCB.shadowTransform, XMMatrixTranspose(S));
 
-	float lengthOfCone = (32.0f * Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionFirstBounceRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
+	float lengthOfCone = (32.0f * Renderer::voxelInjectionRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
 
-	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionFirstBounceRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
+	mMainPassCB.worldBoundary_R_ConeStep_G = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, (lengthOfCone / 64.0f), 0.0f, 0.0f };
 
 	mMainPassCB.SunLightDirection.x *= -1.0f;
 	mMainPassCB.SunLightDirection.y *= -1.0f;

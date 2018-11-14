@@ -81,9 +81,6 @@
     <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp">
-      <Filter>Engine\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
@@ -93,7 +90,7 @@
     <ClCompile Include="..\Engine\Renderer\SHIndirectRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\Renderer\LightCompositeRenderPass.cpp">
+    <ClCompile Include="..\Engine\Renderer\IndirectDiffuseLightingRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,9 +167,6 @@
     <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h">
-      <Filter>Engine\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
@@ -182,7 +176,7 @@
     <ClInclude Include="..\Engine\Renderer\SHIndirectRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Engine\Renderer\LightCompositeRenderPass.h">
+    <ClInclude Include="..\Engine\Renderer\IndirectDiffuseLightingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

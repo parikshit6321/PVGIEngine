@@ -1,12 +1,14 @@
 #pragma once
+
 #include "RenderPass.h"
-class LightCompositeRenderPass : public RenderPass
+
+class IndirectDiffuseLightingRenderPass : public RenderPass
 {
 public:
-	LightCompositeRenderPass() = default;
+	IndirectDiffuseLightingRenderPass() = default;
 	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*,
 		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) override;
-	~LightCompositeRenderPass() = default;
+	~IndirectDiffuseLightingRenderPass() = default;
 
 protected:
 	virtual void BuildRootSignature() override;
