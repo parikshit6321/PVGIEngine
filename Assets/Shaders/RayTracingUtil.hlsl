@@ -1,6 +1,6 @@
 #include "LightingUtil.hlsl"
 
-#define MAXIMUM_ITERATIONS 64.0f
+#define MAXIMUM_ITERATIONS 64
 
 #define RAY_STEP 0.2f
 #define RAY_OFFSET 0.2f
@@ -64,16 +64,16 @@ inline float4 GetVoxelInfo2(float3 voxelPosition)
 
 inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float LinearRoughness)
 {
-	float3 currentPosition = worldPosition + (rayDirection * RAY_OFFSET);
-	float3 currentVoxelPosition = float3(0.0f, 0.0f, 0.0f);
+	worldPosition += (rayDirection * RAY_OFFSET);
+	float3 currentVoxelPosition;
 	float4 currentVoxelInfo0 = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 currentVoxelInfo2 = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	// Ray tracing loop
-	for (float i = 0.0f; i < MAXIMUM_ITERATIONS; i += 1.0f)
+	for (uint i = 0; i < MAXIMUM_ITERATIONS; ++i)
 	{
-		currentPosition += (RAY_STEP * rayDirection);
-		currentVoxelPosition = GetVoxelPosition(currentPosition);
+		worldPosition += (RAY_STEP * rayDirection);
+		currentVoxelPosition = GetVoxelPosition(worldPosition);
 
 		if (currentVoxelInfo0.a < 0.05f)
 		{
@@ -91,7 +91,7 @@ inline float3 SpecularRayTrace(float3 worldPosition, float3 rayDirection, float 
 	return resultingColor;
 }
 
-inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, float3 V, float linearRoughness, float metallic, float3 albedo)
+inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, float3 V, float linearRoughness, float4 albedo)
 {
 	float3 reflectedDirection = normalize(-V - (2.0f * dot(-V, N) * N));
 	
@@ -108,8 +108,8 @@ inline float3 CalculateSpecularIndirectLighting(float3 worldPosition, float3 N, 
 	// BRDF : GGX Specular
 
 	float energyBias = lerp(0.0f, 0.5f, linearRoughness);
-	float fd90 = energyBias + 2.0f * LdotH * LdotH * linearRoughness ;
-	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
+	float fd90 = energyBias + (2.0f * LdotH * LdotH * linearRoughness);
+	float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, albedo.a);
 	
 	// Specular BRDF
 	float3 F = FresnelSchlick(f0, fd90, LdotH);

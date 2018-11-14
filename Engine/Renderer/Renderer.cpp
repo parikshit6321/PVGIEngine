@@ -6,6 +6,7 @@ DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
 SHIndirectRenderPass Renderer::shIndirectRenderPass;
 IndirectDiffuseLightingRenderPass Renderer::indirectDiffuseLightingRenderPass;
+IndirectSpecularLightingRenderPass Renderer::indirectSpecularLightingRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
@@ -37,8 +38,13 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
 		L"DiffuseIndirectLighting.hlsl", L"");
 
-	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	indirectSpecularLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, indirectDiffuseLightingRenderPass.mOutputBuffers,
+		gBufferRenderPass.mOutputBuffers, voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer,
+		L"SpecularIndirectLighting.hlsl", L"");
+
+	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+		inputFormatBackBuffer, inputFormatDepthBuffer, indirectSpecularLightingRenderPass.mOutputBuffers,
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
@@ -69,8 +75,11 @@ void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRI
 	// Cone trace indirect lighting and inject it into the spherical harmonic grids
 	shIndirectRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
-	// Sample SH grid to compute indirect lighting
+	// Sample SH grid to compute indirect diffuse lighting
 	indirectDiffuseLightingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+
+	// Ray trace through voxel grids to compute indirect specular lighting
+	indirectSpecularLightingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
 
 	// Render skybox on the background pixels using a quad
 	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);

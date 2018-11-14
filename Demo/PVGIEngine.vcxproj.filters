@@ -93,6 +93,9 @@
     <ClCompile Include="..\Engine\Renderer\IndirectDiffuseLightingRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\IndirectSpecularLightingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -177,6 +180,9 @@
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\IndirectDiffuseLightingRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\IndirectSpecularLightingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
