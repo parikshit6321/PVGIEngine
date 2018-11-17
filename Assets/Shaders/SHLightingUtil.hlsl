@@ -35,7 +35,7 @@ cbuffer cbPass : register(b0)
 	float4x4 gSkyBoxMatrix;
 	float4x4 gShadowViewProj;
 	float4x4 gShadowTransform;
-	float4 gWorldBoundary_R_ConeStep_G;
+	float4 worldBoundary_R_ConeStep_G_HalfCellWidth_B;
 };
 
 inline float4 dirToSH(float3 dir) {
@@ -45,7 +45,7 @@ inline float4 dirToSH(float3 dir) {
 // Function to get position of cell in the SH grid from world position
 inline float3 GetCellPosition (float3 worldPosition)
 {
-	float3 encodedPosition = worldPosition / gWorldBoundary_R_ConeStep_G.r;
+	float3 encodedPosition = worldPosition / worldBoundary_R_ConeStep_G_HalfCellWidth_B.r;
 	encodedPosition += float3(1.0f, 1.0f, 1.0f);
 	encodedPosition *= 0.5f;
 	return encodedPosition;
@@ -53,6 +53,8 @@ inline float3 GetCellPosition (float3 worldPosition)
 
 inline float3 SampleSHIndirectLighting(float3 worldPosition, float3 worldNormal)
 {
+	worldPosition += (worldNormal * worldBoundary_R_ConeStep_G_HalfCellWidth_B.b);
+
 	float3 cellPosition = GetCellPosition(worldPosition);
 
 	float4 currentCellRedSH = SHGridRed.Sample(gsamLinearWrap, cellPosition);

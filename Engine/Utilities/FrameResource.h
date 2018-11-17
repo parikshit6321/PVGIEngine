@@ -37,7 +37,7 @@ struct PassConstants
 	DirectX::XMFLOAT4X4 shadowViewProjMatrix = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 shadowTransform = MathHelper::Identity4x4();
 
-	DirectX::XMFLOAT4 worldBoundary_R_ConeStep_G = { 50.0f, 64.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT4 worldBoundary_R_ConeStep_G_HalfCellWidth_B = { 50.0f, 64.0f, 0.0f, 0.0f };
 };
 
 struct Vertex
