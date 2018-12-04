@@ -19,7 +19,7 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float4 ndcPosition = mul(float4(cellWorldPosition, 1.0f), gViewProj);
 	ndcPosition.xyz /= ndcPosition.w;
 	
-	if ((ndcPosition.x < -0.2f) || (ndcPosition.x > 0.2f) || (ndcPosition.y < -0.2f) || (ndcPosition.y > 0.2f))
+	if ((ndcPosition.x < -1.0f) || (ndcPosition.x > 1.0f) || (ndcPosition.y < -1.0f) || (ndcPosition.y > 1.0f))
 		return;
 	
 	float4 accumulatedSHRed = float4(0.0f, 0.0f, 0.0f, 0.0f);
