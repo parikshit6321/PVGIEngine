@@ -25,13 +25,15 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 	commandList->SetComputeRoot32BitConstants(0, 1, &worldVolumeBoundary, 1);
 	commandList->SetComputeRoot32BitConstants(0, 1, &coneStep, 2);
 
+	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-	commandList->SetComputeRootDescriptorTable(1, tex);
+	commandList->SetComputeRootDescriptorTable(2, tex);
 
 	tex.Offset(6, cbvSrvUavDescriptorSize);
 
-	commandList->SetComputeRootDescriptorTable(2, tex);
+	commandList->SetComputeRootDescriptorTable(3, tex);
 
 	commandList->Dispatch(gridResolution / 2, gridResolution / 2, gridResolution / 2);
 
@@ -55,17 +57,18 @@ void SHIndirectRenderPass::BuildRootSignature()
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 3, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstants(3, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable0);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
