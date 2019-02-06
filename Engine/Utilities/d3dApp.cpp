@@ -1,5 +1,6 @@
 #include "d3dApp.h"
 #include <WindowsX.h>
+#include <iostream>
 
 using Microsoft::WRL::ComPtr;
 using namespace std;
@@ -369,6 +370,51 @@ bool D3DApp::InitMainWindow()
 	return true;
 }
 
+bool D3DApp::IsRadeon(const wchar_t * adapterDesc)
+{
+	wchar_t query[7] = L"Radeon";
+
+	for (int i = 0; i < 20; ++i)
+	{
+		if (adapterDesc[i] == query[0])
+		{
+			bool found = true;
+
+			for (int j = 1; j < 6; ++j)
+			{
+				if (adapterDesc[i + j] != query[j])
+					found = false;
+			}
+
+			if (found)
+				return true;
+		}
+	}
+
+	return false;
+}
+
+IDXGIAdapter* D3DApp::FindAdapter()
+{
+	UINT i = 0;
+	IDXGIAdapter* adapter = nullptr;
+
+	while (mdxgiFactory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND)
+	{
+		DXGI_ADAPTER_DESC desc;
+		adapter->GetDesc(&desc);
+		
+		std::wstring text = desc.Description;
+
+		if (IsRadeon(text.c_str()))
+			return adapter;
+
+		++i;
+	}
+
+	return nullptr;
+}
+
 bool D3DApp::InitDirect3D()
 {
 #if defined(DEBUG) || defined(_DEBUG) 
@@ -391,7 +437,7 @@ bool D3DApp::InitDirect3D()
 	//ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
 
 	// Try to create hardware device.
-	ThrowIfFailed(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0,
+	ThrowIfFailed(D3D12CreateDevice(FindAdapter(), D3D_FEATURE_LEVEL_12_0,
 		IID_PPV_ARGS(&md3dDevice)));
 
 	ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,

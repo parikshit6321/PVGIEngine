@@ -49,7 +49,8 @@ protected:
 	bool InitDirect3D();
 	void CreateCommandObjects();
     void CreateSwapChain();
-
+	IDXGIAdapter* FindAdapter();
+	bool IsRadeon(const wchar_t *);
 	void FlushCommandQueue();
 
 	ID3D12Resource* CurrentBackBuffer()const;
