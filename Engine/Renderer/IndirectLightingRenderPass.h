@@ -2,12 +2,12 @@
 
 #include "RenderPass.h"
 
-class IndirectSpecularLightingRenderPass : public RenderPass
+class IndirectLightingRenderPass : public RenderPass
 {
 public:
-	IndirectSpecularLightingRenderPass() = default;
+	IndirectLightingRenderPass() = default;
 	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, FrameResource*) override;
-	~IndirectSpecularLightingRenderPass() = default;
+	~IndirectLightingRenderPass() = default;
 
 protected:
 	virtual void BuildRootSignature() override;
@@ -15,3 +15,4 @@ protected:
 	virtual void BuildPSOs() override;
 	virtual void Draw(ID3D12GraphicsCommandList*, ID3D12Resource*, ID3D12Resource*) override;
 };
+

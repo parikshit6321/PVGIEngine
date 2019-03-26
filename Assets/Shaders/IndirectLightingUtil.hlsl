@@ -6,12 +6,13 @@
 
 #define PI_INVERSE 0.31830988618f
 
-Texture3D	 SHGridRed				 : register(t5);
-Texture3D	 SHGridGreen			 : register(t6);
-Texture3D	 SHGridBlue				 : register(t7);
+Texture3D	 SHGridRed				 : register(t4);
+Texture3D	 SHGridGreen			 : register(t5);
+Texture3D	 SHGridBlue				 : register(t6);
+
+TextureCube  SkyBoxTex				 : register(t7);
 
 SamplerState gsamLinearWrap			 : register(s0);
-SamplerState gsamAnisotropicWrap	 : register(s1);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -51,19 +52,19 @@ inline float3 GetCellPosition (float3 worldPosition)
 	return encodedPosition;
 }
 
-inline float3 SampleSHIndirectLighting(float3 worldPosition, float3 worldNormal)
+inline float3 CalculateDiffuseIndirectLighting(float4 worldPosition, float3 worldNormal, float3 albedo)
 {
-	worldPosition += (worldNormal * worldBoundary_R_ConeStep_G_HalfCellWidth_B.b);
+	worldPosition.xyz += (worldNormal * worldBoundary_R_ConeStep_G_HalfCellWidth_B.b);
 
-	float3 cellPosition = GetCellPosition(worldPosition);
+	float3 cellPosition = GetCellPosition(worldPosition.xyz);
 
-	float4 currentCellRedSH = SHGridRed.Sample(gsamLinearWrap, cellPosition);
-	float4 currentCellGreenSH = SHGridGreen.Sample(gsamLinearWrap, cellPosition);
-	float4 currentCellBlueSH = SHGridBlue.Sample(gsamLinearWrap, cellPosition);
+	float4 currentCellRedSH = SHGridRed.SampleLevel(gsamLinearWrap, cellPosition, 0);
+	float4 currentCellGreenSH = SHGridGreen.SampleLevel(gsamLinearWrap, cellPosition, 0);
+	float4 currentCellBlueSH = SHGridBlue.SampleLevel(gsamLinearWrap, cellPosition, 0);
 
 	float4 SHintensity = dirToSH(-worldNormal);
 	
 	float3 indirect = float3(saturate(dot(SHintensity, currentCellRedSH)), saturate(dot(SHintensity, currentCellGreenSH)), saturate(dot(SHintensity, currentCellBlueSH)));
 	
-	return indirect;
+	return indirect * albedo * PI_INVERSE * (1.0f - floor(worldPosition.a));
 }

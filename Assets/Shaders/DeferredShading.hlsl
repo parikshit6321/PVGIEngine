@@ -86,14 +86,18 @@ float4 PS(VertexOut pin) : SV_Target
 	
 	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, albedo.a);
 	
+	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
+	float3 Fr = D * Vis * PI_INVERSE * F;
+	
+	float3 kS = F;
+	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= (1.0f - albedo.a);	
+	
 	// Diffuse BRDF (Lambertian)
-	float3 Fd = LambertianDiffuse(albedo.rgb) * (1.0f - albedo.a);
+	float3 Fd = LambertianDiffuse(albedo.rgb) * kD;
 	
 	// Calculate shadow
 	float shadow = CalculateShadow(shadowPosH, ShadowMap, gsamShadow);
-
-	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
-	float3 Fr = D * Vis * PI_INVERSE * F;
 	
 	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL * (1.0f - shadow)));
 	

@@ -5,8 +5,7 @@ GBufferRenderPass Renderer::gBufferRenderPass;
 DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
 SHIndirectRenderPass Renderer::shIndirectRenderPass;
-IndirectDiffuseLightingRenderPass Renderer::indirectDiffuseLightingRenderPass;
-IndirectSpecularLightingRenderPass Renderer::indirectSpecularLightingRenderPass;
+IndirectLightingRenderPass Renderer::indirectLightingRenderPass;
 SkyBoxRenderPass Renderer::skyBoxRenderPass;
 FXAARenderPass Renderer::fxaaRenderPass;
 ToneMappingRenderPass Renderer::toneMappingRenderPass;
@@ -33,18 +32,13 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, 
 		voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
 
-	indirectDiffuseLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	indirectLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
 		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
-		L"DiffuseIndirectLighting.hlsl", L"");
-
-	indirectSpecularLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectDiffuseLightingRenderPass.mOutputBuffers,
-		gBufferRenderPass.mOutputBuffers, voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer,
-		L"SpecularIndirectLighting.hlsl", L"");
+		L"", L"IndirectLighting.hlsl", true);
 
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, indirectSpecularLightingRenderPass.mOutputBuffers,
+		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers,
 		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"SkyBox.hlsl", true);
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
@@ -76,10 +70,7 @@ void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRI
 	shIndirectRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Sample SH grid to compute indirect diffuse lighting
-	indirectDiffuseLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
-
-	// Ray trace through voxel grids to compute indirect specular lighting
-	indirectSpecularLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
+	indirectLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Render skybox on the background pixels using a quad
 	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
