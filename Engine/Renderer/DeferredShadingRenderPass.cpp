@@ -1,8 +1,12 @@
 #include "DeferredShadingRenderPass.h"
 
 void DeferredShadingRenderPass::Execute(ID3D12GraphicsCommandList *commandList, D3D12_CPU_DESCRIPTOR_HANDLE *depthStencilViewPtr,
-	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+	FrameResource* mCurrFrameResource)
 {
+	auto passCB = mCurrFrameResource->PassCB->Resource();
+	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
+	auto matCB = mCurrFrameResource->MaterialCB->Resource();
+
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	commandList->SetPipelineState(mPSO.Get());

@@ -6,8 +6,7 @@ class VoxelInjectionRenderPass : public RenderPass
 {
 public:
 	VoxelInjectionRenderPass() = default;
-	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*,
-		ID3D12Resource*, ID3D12Resource*, ID3D12Resource*) override;
+	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, FrameResource*) override;
 	~VoxelInjectionRenderPass() = default;
 
 	// Highest resolution grid used only in specular GI

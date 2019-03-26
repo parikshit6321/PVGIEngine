@@ -45,7 +45,7 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, indirectSpecularLightingRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"SkyBox.hlsl", L"");
+		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"SkyBox.hlsl", true);
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers,
@@ -61,37 +61,37 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 }
 
 void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
-	ID3D12Resource * passCB, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+	FrameResource* mCurrFrameResource)
 {
 	// Render the gBuffers
-	gBufferRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	gBufferRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Compute the lighting using deferred shading
-	deferredShadingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	deferredShadingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Inject lighting data into the voxel grids
-	voxelInjectionRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	voxelInjectionRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Cone trace indirect lighting and inject it into the spherical harmonic grids
-	shIndirectRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	shIndirectRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Sample SH grid to compute indirect diffuse lighting
-	indirectDiffuseLightingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	indirectDiffuseLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Ray trace through voxel grids to compute indirect specular lighting
-	indirectSpecularLightingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	indirectSpecularLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Render skybox on the background pixels using a quad
-	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	skyBoxRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Perform anti-aliasing using FXAA
-	fxaaRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	fxaaRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Bring the texture down to LDR range from HDR using Uncharted 2 style tonemapping
-	toneMappingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	toneMappingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Use 2D LUTs for color grading
-	colorGradingRenderPass.Execute(commandList, depthStencilViewPtr, passCB, objectCB, matCB);
+	colorGradingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 }
 
 void Renderer::CopyToBackBuffer(ID3D12GraphicsCommandList* commandList, ID3D12Resource * backBuffer)

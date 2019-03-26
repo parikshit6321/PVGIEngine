@@ -169,10 +169,7 @@ void DemoApp::Update(const GameTimer& gt)
 void DemoApp::Draw(const GameTimer& gt)
 {
     auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
-	auto passCB = mCurrFrameResource->PassCB->Resource();
-	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
-	auto matCB = mCurrFrameResource->MaterialCB->Resource();
-
+	
     // Reuse the memory associated with command recording.
     // We can only reset when the associated command lists have finished execution on the GPU.
     ThrowIfFailed(cmdListAlloc->Reset());
@@ -182,7 +179,7 @@ void DemoApp::Draw(const GameTimer& gt)
     ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::gBufferRenderPass.mPSO.Get()));
 
 	// Draw shadows
-	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), mCurrFrameResource);
 
 	// Reset viewports and scissor rects after shadow map render passs
     mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -192,7 +189,7 @@ void DemoApp::Draw(const GameTimer& gt)
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Execute all the render passes
-	Renderer::Execute(mCommandList.Get(), &DepthStencilView(), passCB, objectCB, matCB);
+	Renderer::Execute(mCommandList.Get(), &DepthStencilView(), mCurrFrameResource);
 
 	// Copy the contents of the off-screen texture to the back buffer
 	Renderer::CopyToBackBuffer(mCommandList.Get(), CurrentBackBuffer());

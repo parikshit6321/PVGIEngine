@@ -1,9 +1,10 @@
-Texture2D    MainTex				 : register(t0);
+Texture2D    Input					 : register(t0);
 Texture2D  	 DepthMap				 : register(t1);
 TextureCube  SkyBoxTex				 : register(t2);
 
+RWTexture2D<float4>	Output			 : register(u0);
+
 SamplerState gsamLinearWrap			 : register(s0);
-SamplerState gsamAnisotropicWrap	 : register(s1);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -29,44 +30,25 @@ cbuffer cbPass : register(b0)
 	float4x4 gShadowTransform;
 };
 
-struct VertexIn
+[numthreads(16, 16, 1)]
+void CS(uint3 id : SV_DispatchThreadID)
 {
-	float3 PosL    : POSITION;
-	float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentU : TANGENT;
-};
-
-struct VertexOut
-{
-	float4 PosH : SV_POSITION;
-	float3 PosV : POSITION;
-};
-
-VertexOut VS(VertexIn vin)
-{
-	VertexOut vout;
-
-	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f * vin.TexC.x - 1.0f, 1.0f - 2.0f * vin.TexC.y, 0.0f, 1.0f);
+	float4 inputColor = Input[id.xy];
+	float depth = DepthMap[id.xy].x;
+	
+	float2 texCoord = float2(((float)id.x * gInvRenderTargetSize.x), ((float)id.y * gInvRenderTargetSize.y));
+	texCoord.x = ((texCoord.x * 2.0f) - 1.0f);
+	texCoord.y = (1.0f - (texCoord.y * 2.0f));
+	
+	float4 PosH = float4(texCoord, 1.0f, 1.0f);
 
 	// Transform quad corners to view space near plane.
-	float4 ph = mul(vout.PosH, gInvProj);
+	float4 ph = mul(PosH, gInvProj);
 	ph.xyz /= ph.w;
 	
-	vout.PosV = mul(float4(ph.xyz, 1.0f), gSkyBoxMatrix).xyz;
-
-	return vout;
-}
-
-float4 PS(VertexOut pin) : SV_Target
-{
-	float4 pixelColor = MainTex.Load(int3(pin.PosH.xy, 0));
-	float depth = DepthMap.Load(int3(pin.PosH.xy, 0)).r;
-
-	float4 skyBoxColor = pow(SkyBoxTex.Sample(gsamLinearWrap, pin.PosV), 2.2f);
+	float3 PosV = mul(ph, gSkyBoxMatrix).xyz;
 	
-	float4 result = lerp(pixelColor, skyBoxColor, floor(depth));
-
-	return result;
+	float4 skyBoxColor = pow(SkyBoxTex.SampleLevel(gsamLinearWrap, PosV, 0), 2.2f);
+	
+	Output[id.xy] = lerp(inputColor, skyBoxColor, floor(depth));
 }
