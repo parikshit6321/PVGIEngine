@@ -85,7 +85,6 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
-	// Construct the RTV Heap first
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
 
 	D3D12_RESOURCE_DESC resourceDesc;

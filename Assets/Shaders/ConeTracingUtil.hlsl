@@ -5,31 +5,6 @@ cbuffer cbSettings : register(b0)
 	float coneStep;
 };
 
-// Constant data that varies per material.
-cbuffer cbPass : register(b1)
-{
-	float4x4 gView;
-	float4x4 gInvView;
-	float4x4 gProj;
-	float4x4 gInvProj;
-	float4x4 gViewProj;
-	float4x4 gInvViewProj;
-	float3 gEyePosW;
-	float userLUTContribution;
-	float2 gRenderTargetSize;
-	float2 gInvRenderTargetSize;
-	float gNearZ;
-	float gFarZ;
-	float gTotalTime;
-	float gDeltaTime;
-	float4 gSunLightStrength;
-	float4 gSunLightDirection;
-	float4x4 gSkyBoxMatrix;
-	float4x4 gShadowViewProj;
-	float4x4 gShadowTransform;
-	float4 worldBoundary_R_ConeStep_G_HalfCellWidth_B;
-};
-
 Texture3D VoxelGrid0 			: register(t0);
 Texture3D VoxelGrid1 			: register(t1);
 Texture3D VoxelGrid2 			: register(t2);

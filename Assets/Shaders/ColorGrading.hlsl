@@ -5,11 +5,12 @@
 #define DIMENSION_MINUS_1 15.0f
 #define DIMENSION_MINUS_1_DIV_DIMENSION 0.9375f
 
-Texture2D    MainTex  : register(t0);
-Texture2D	 UserLUT  : register(t1);
+Texture2D Input  			: register(t0);
+Texture2D UserLUT  			: register(t1);
 
-SamplerState gsamLinearWrap			 : register(s0);
-SamplerState gsamAnisotropicWrap	 : register(s1);
+RWTexture2D<float4> Output	: register(u0);
+
+SamplerState gsamLinearWrap	: register(s0);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -35,32 +36,10 @@ cbuffer cbPass : register(b0)
 	float4x4 gShadowTransform;
 };
 
-struct VertexIn
+[numthreads(16, 16, 1)]
+void CS(uint3 id : SV_DispatchThreadID)
 {
-	float3 PosL    : POSITION;
-	float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentU : TANGENT;
-};
-
-struct VertexOut
-{
-	float4 PosH : SV_POSITION;
-};
-
-VertexOut VS(VertexIn vin)
-{
-	VertexOut vout;
-
-	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vin.TexC.x - 1.0f, 1.0f - 2.0f*vin.TexC.y, 0.0f, 1.0f);
-
-	return vout;
-}
-
-float4 PS(VertexOut pin) : SV_Target
-{
-	float4 inputColor = MainTex.Load(int3(pin.PosH.xy, 0));
+	float4 inputColor = Input[id.xy];
 
 	float blueCell = inputColor.b * DIMENSION_MINUS_1;
 	
@@ -70,12 +49,10 @@ float4 PS(VertexOut pin) : SV_Target
 	float2 positionInLUTLower = float2((floor(blueCell) * ONE_DIV_DIMENSION) + rComponentOffset, gComponentOffset);
 	float2 positionInLUTUpper = float2((ceil(blueCell) * ONE_DIV_DIMENSION) + rComponentOffset, gComponentOffset);
 
-	float4 gradedColorLower = UserLUT.Sample(gsamLinearWrap, positionInLUTLower);
-	float4 gradedColorUpper = UserLUT.Sample(gsamLinearWrap, positionInLUTUpper);
+	float4 gradedColorLower = UserLUT.SampleLevel(gsamLinearWrap, positionInLUTLower, 0);
+	float4 gradedColorUpper = UserLUT.SampleLevel(gsamLinearWrap, positionInLUTUpper, 0);
 
 	float4 gradedColor = lerp(gradedColorLower, gradedColorUpper, frac(blueCell));
 
-	float4 result = lerp(inputColor, gradedColor, userLUTContribution);
-
-	return result;
+	Output[id.xy] = lerp(inputColor, gradedColor, userLUTContribution);
 }

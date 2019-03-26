@@ -49,15 +49,15 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"ToneMapping.hlsl", L"");
+		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"ToneMapping.hlsl", true);
 
 	fxaaRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"FXAA.hlsl", L"");
+		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"FXAA.hlsl", true);
 	
 	colorGradingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, fxaaRenderPass.mOutputBuffers, 
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"ColorGrading.hlsl", L"");
+		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"ColorGrading.hlsl", true);
 }
 
 void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,

@@ -1,10 +1,9 @@
-// Include structures and functions for lighting.
 #include "FXAAUtil.hlsl"
 
-Texture2D    MainTex				 : register(t0);
+Texture2D Input				 	: register(t0);
+RWTexture2D<float4> Output		: register(u0);
 
-SamplerState gsamLinearWrap			 : register(s0);
-SamplerState gsamAnisotropicWrap	 : register(s1);
+SamplerState gsamLinearWrap		: register(s0);
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -30,48 +29,19 @@ cbuffer cbPass : register(b0)
 	float4x4 gShadowTransform;
 };
 
-struct VertexIn
+inline float4 FXAA(int2 texC)
 {
-	float3 PosL    : POSITION;
-	float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentU : TANGENT;
-};
-
-struct VertexOut
-{
-	float4 PosH : SV_POSITION;
-	float2 TexC : TEXCOORD0;
-};
-
-VertexOut VS(VertexIn vin)
-{
-	VertexOut vout;
-
-	vout.TexC = vin.TexC;
-
-	// Quad covering screen in NDC space.
-	vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
-
-	return vout;
-}
-
-float4 PS(VertexOut pin) : SV_Target
-{
-	// Compute the integer tex coords
-	int3 texC = int3(pin.PosH.xy, 0);
-	
 	// Get the input pixel color
-	float4 inputColor = MainTex.Load(texC);
+	float4 inputColor = Input[texC];
 	
 	// Find luma at the current pixel
 	float lumaCenter = GetColorLuma(inputColor.rgb);
 
 	// Find luma at the four direct neighbouring pixels
-	float lumaUp = GetColorLuma(MainTex.Load(texC + int3(0, 1, 0)).rgb);
-	float lumaDown = GetColorLuma(MainTex.Load(texC + int3(0, -1, 0)).rgb);
-	float lumaLeft = GetColorLuma(MainTex.Load(texC + int3(-1, 0, 0)).rgb);
-	float lumaRight = GetColorLuma(MainTex.Load(texC + int3(1, 0, 0)).rgb);
+	float lumaUp = GetColorLuma(Input[texC + int2(0, 1)].rgb);
+	float lumaDown = GetColorLuma(Input[texC + int2(0, -1)].rgb);
+	float lumaLeft = GetColorLuma(Input[texC + int2(-1, 0)].rgb);
+	float lumaRight = GetColorLuma(Input[texC + int2(1, 0)].rgb);
 	
 	// Find maximum and minimum luma 
 	float lumaMin = min(lumaCenter, min(min(lumaUp, lumaDown), min(lumaLeft, lumaRight)));
@@ -88,10 +58,10 @@ float4 PS(VertexOut pin) : SV_Target
 	}
 	
 	// Find luma of the four corner pixels
-	float lumaDownLeft = GetColorLuma(MainTex.Load(texC + int3(-1, -1, 0)).rgb);
-	float lumaUpRight = GetColorLuma(MainTex.Load(texC + int3(1, 1, 0)).rgb);
-	float lumaUpLeft = GetColorLuma(MainTex.Load(texC + int3(-1, 1, 0)).rgb);
-	float lumaDownRight = GetColorLuma(MainTex.Load(texC + int3(1, -1, 0)).rgb);
+	float lumaDownLeft = GetColorLuma(Input[texC + int2(-1, -1)].rgb);
+	float lumaUpRight = GetColorLuma(Input[texC + int2(1, 1)].rgb);
+	float lumaUpLeft = GetColorLuma(Input[texC + int2(-1, 1)].rgb);
+	float lumaDownRight = GetColorLuma(Input[texC + int2(1, -1)].rgb);
 
 	// Combine the four edges lumas
 	float lumaDownUp = lumaDown + lumaUp;
@@ -139,7 +109,7 @@ float4 PS(VertexOut pin) : SV_Target
 	}
 
 	// Shift UV in the correct direction by half a pixel
-	float2 currentUV = pin.TexC;
+	float2 currentUV = float2((texC.x * gInvRenderTargetSize.x), (texC.y * gInvRenderTargetSize.y));
 	if(isHorizontal){
 		currentUV.y += stepLength;
 	} else {
@@ -156,8 +126,8 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// Read the lumas at both current extremities of the exploration segment,
 	// and compute the delta with respect to the local average luma.
-	float lumaEnd1 = GetColorLuma(MainTex.Sample(gsamLinearWrap, uv1).rgb) - lumaLocalAverage;
-	float lumaEnd2 = GetColorLuma(MainTex.Sample(gsamLinearWrap, uv2).rgb) - lumaLocalAverage;
+	float lumaEnd1 = GetColorLuma(Input.SampleLevel(gsamLinearWrap, uv1, 0).rgb) - lumaLocalAverage;
+	float lumaEnd2 = GetColorLuma(Input.SampleLevel(gsamLinearWrap, uv2, 0).rgb) - lumaLocalAverage;
 	
 	// If the luma deltas at the current extremities are larger 
 	// than the local gradient, we have reached the side of the edge
@@ -179,10 +149,10 @@ float4 PS(VertexOut pin) : SV_Target
 		for(int i = 2; i < ITERATIONS; ++i){
 			
 			// If needed, read luma in first direction and compute delta
-			lumaEnd1 = (reached1) ? lumaEnd1 : (GetColorLuma(MainTex.Sample(gsamLinearWrap, uv1).rgb) - lumaLocalAverage);
+			lumaEnd1 = (reached1) ? lumaEnd1 : (GetColorLuma(Input.SampleLevel(gsamLinearWrap, uv1, 0).rgb) - lumaLocalAverage);
 			
 			// If needed, read luma in opposite direction and compute delta
-			lumaEnd2 = (reached2) ? lumaEnd2 : (GetColorLuma(MainTex.Sample(gsamLinearWrap, uv2).rgb) - lumaLocalAverage);
+			lumaEnd2 = (reached2) ? lumaEnd2 : (GetColorLuma(Input.SampleLevel(gsamLinearWrap, uv2, 0).rgb) - lumaLocalAverage);
 			
 			// If the luma deltas at the current extremities are larger 
 			// than the local gradient, we have reached the side of the edge
@@ -206,8 +176,8 @@ float4 PS(VertexOut pin) : SV_Target
 	}
 	
 	// Compute the distance to each extremity of the edge
-	float distance1 = isHorizontal ? (pin.TexC.x - uv1.x) : (pin.TexC.y - uv1.y);
-	float distance2 = isHorizontal ? (uv2.x - pin.TexC.x) : (uv2.y - pin.TexC.y);
+	float distance1 = isHorizontal ? ((texC.x * gInvRenderTargetSize.x) - uv1.x) : ((texC.y * gInvRenderTargetSize.y) - uv1.y);
+	float distance2 = isHorizontal ? (uv2.x - (texC.x * gInvRenderTargetSize.x)) : (uv2.y - (texC.y * gInvRenderTargetSize.y));
 
 	// Find the direction in which the extremity of the edge is closer
 	bool isDirection1 = distance1 < distance2;
@@ -241,10 +211,11 @@ float4 PS(VertexOut pin) : SV_Target
 	float subPixelOffsetFinal = subPixelOffset2 * subPixelOffset2 * SUBPIXEL_QUALITY;
 
 	// Pick the biggest of the two offsets
-	finalOffset = max(finalOffset,subPixelOffsetFinal);
+	finalOffset = max(finalOffset, subPixelOffsetFinal);
 	
 	// Compute the final UV coordinates.
-	float2 finalUV = pin.TexC;
+	float2 finalUV = float2((texC.x * gInvRenderTargetSize.x), (texC.y * gInvRenderTargetSize.y));
+	
 	if(isHorizontal){
 		finalUV.y += (finalOffset * stepLength);
 	} else {
@@ -252,7 +223,13 @@ float4 PS(VertexOut pin) : SV_Target
 	}
 
 	// Sample the input texture using the new offset
-	float4 finalColor = MainTex.Sample(gsamLinearWrap, finalUV);
+	float4 finalColor = Input.SampleLevel(gsamLinearWrap, finalUV, 0);
 	
 	return finalColor;
+}
+
+[numthreads(16, 16, 1)]
+void CS(uint3 id : SV_DispatchThreadID)
+{
+	Output[id.xy] = FXAA(id.xy);
 }

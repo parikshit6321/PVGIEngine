@@ -15,13 +15,6 @@ void CS(uint3 id : SV_DispatchThreadID)
 	// Convert [-1..1] range to [-worldVolumeBoundary..worldVolumeBoundary] range
 	cellWorldPosition *= worldVolumeBoundary;
 	
-	// Perform frustum culling
-	float4 ndcPosition = mul(float4(cellWorldPosition, 1.0f), gViewProj);
-	ndcPosition.xyz /= ndcPosition.w;
-	
-	if ((ndcPosition.x < -1.0f) || (ndcPosition.x > 1.0f) || (ndcPosition.y < -1.0f) || (ndcPosition.y > 1.0f))
-		return;
-	
 	float4 accumulatedSHRed = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 accumulatedSHGreen = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 accumulatedSHBlue = float4(0.0f, 0.0f, 0.0f, 0.0f);

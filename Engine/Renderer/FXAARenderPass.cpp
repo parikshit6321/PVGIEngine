@@ -7,58 +7,58 @@ void FXAARenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialCB->Resource();
 
-	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	commandList->SetPipelineState(mPSO.Get());
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		rtvDescriptorSize), Colors::Black, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(1, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		0,
-		rtvDescriptorSize), true, depthStencilViewPtr);
-
-	ID3D12DescriptorHeap* descriptorHeapsToneMapping[] = { mSrvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeapsToneMapping), descriptorHeapsToneMapping);
-
-	commandList->SetGraphicsRootSignature(mRootSignature.Get());
-
-	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-
-	Draw(commandList, objectCB, matCB);
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+
+	commandList->SetComputeRootSignature(mRootSignature.Get());
+
+	commandList->SetComputeRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+	commandList->SetComputeRootDescriptorTable(1, tex);
+
+	tex.Offset(1, cbvSrvUavDescriptorSize);
+
+	commandList->SetComputeRootDescriptorTable(2, tex);
+
+	commandList->Dispatch(mClientWidth / 16, mClientHeight / 16, 1);
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[0].Get(),
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
 void FXAARenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
-	SceneManager::GetScenePtr()->mQuadrObject->Draw(commandList, nullptr, nullptr, mSrvDescriptorHeap, 0, 0, 0, false);
 }
 
 void FXAARenderPass::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable0);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -85,7 +85,6 @@ void FXAARenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
-	// Construct the RTV Heap first
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
 
 	D3D12_RESOURCE_DESC resourceDesc;
@@ -100,41 +99,16 @@ void FXAARenderPass::BuildDescriptorHeaps()
 	resourceDesc.Width = mClientWidth;
 	resourceDesc.Height = mClientHeight;
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-	D3D12_CLEAR_VALUE clearVal;
-	clearVal.Color[0] = 0.0f;
-	clearVal.Color[1] = 0.0f;
-	clearVal.Color[2] = 0.0f;
-	clearVal.Color[3] = 1.0f;
-	clearVal.Format = mBackBufferFormat;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
-		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
-
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 1;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
-		&rtvHeapDesc, IID_PPV_ARGS(mRtvDescriptorHeap.GetAddressOf())));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvhDescriptor(mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = mBackBufferFormat;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
-
-	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
+		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
 
 	//
-	// Create the SRV heap.
+	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.NumDescriptors = 2;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -152,42 +126,33 @@ void FXAARenderPass::BuildDescriptorHeaps()
 	srvDesc.Format = mBackBufferFormat;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	// Add the input texture to the srv heap
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+
+	uavDesc.Format = mBackBufferFormat;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+	uavDesc.Texture2D.PlaneSlice = 0;
+
+	md3dDevice->CreateUnorderedAccessView(mOutputBuffers[0].Get(), nullptr, &uavDesc, hDescriptor);
 }
 
 void FXAARenderPass::BuildPSOs()
 {
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	depthStencilDesc.DepthEnable = false;
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePSODesc = {};
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	psoDesc.pRootSignature = mRootSignature.Get();
-	psoDesc.VS =
+	computePSODesc.pRootSignature = mRootSignature.Get();
+	computePSODesc.CS =
 	{
-		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()),
-		mVertexShader->GetBufferSize()
+		reinterpret_cast<BYTE*>(mComputeShader->GetBufferPointer()),
+		mComputeShader->GetBufferSize()
 	};
-	psoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()),
-		mPixelShader->GetBufferSize()
-	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = depthStencilDesc;
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = mBackBufferFormat;
-	psoDesc.SampleDesc.Count = 1;
-	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = mDepthStencilFormat;
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
+	computePSODesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&computePSODesc, IID_PPV_ARGS(&mPSO)));
 }
