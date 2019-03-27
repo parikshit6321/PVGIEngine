@@ -9,8 +9,31 @@ cbuffer cbSettings : register(b0)
 	uint rsmDownsample;
 };
 
-Texture2D lightingTexture           : register(t0);
-Texture2D positionDepthTexture     	: register(t1);
+// Constant data that varies per material.
+cbuffer cbPass : register(b1)
+{
+	float4x4 gView;
+	float4x4 gInvView;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	float3 gEyePosW;
+	float userLUTContribution;
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+	float gNearZ;
+	float gFarZ;
+	float gTotalTime;
+	float gDeltaTime;
+	float4 gSunLightStrength;
+	float4 gSunLightDirection;
+	float4x4 gSkyBoxMatrix;
+	float4x4 gShadowViewProj;
+	float4x4 gShadowTransform;
+};
+
+Texture2D lightingDepthTexture      : register(t0);
 
 RWTexture3D<float4> voxelGrid0 		: register(u0);
 RWTexture3D<float4> voxelGrid1 		: register(u1);
@@ -18,6 +41,24 @@ RWTexture3D<float4> voxelGrid2 		: register(u2);
 RWTexture3D<float4> voxelGrid3 		: register(u3);
 RWTexture3D<float4> voxelGrid4 		: register(u4);
 RWTexture3D<float4> voxelGrid5 		: register(u5);
+
+// Get the world position from linear depth
+float3 GetWorldPosition(float depth, uint2 id)
+{
+    float z = depth * 2.0f - 1.0f;
+
+	float2 texCoord = float2(((float)id.x * gInvRenderTargetSize.x), ((float)id.y * gInvRenderTargetSize.y));
+
+    float4 clipSpacePosition = float4(texCoord * 2.0f - 1.0f, z, 1.0f);
+    float4 viewSpacePosition = mul(clipSpacePosition, gInvProj);
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    float4 worldSpacePosition = mul(viewSpacePosition, gInvView);
+
+    return worldSpacePosition.xyz;
+}
 
 // Function to encode worldPosition in [0..1] range
 inline float3 EncodePosition(float3 worldPosition)
@@ -44,18 +85,20 @@ inline float GetLuma(float3 inputColor)
 [numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
-	// World space position in [0..1] range
-	float3 encodedPosition = EncodePosition(positionDepthTexture[id.xy * rsmDownsample].rgb);
+	float4 lightingDepth = lightingDepthTexture[id.xy];
 	
 	// Extract the pixel's depth
-	float depth = positionDepthTexture[id.xy].a;
+	float depth = lightingDepth.a;
 
 	// Only carry on with injection if voxels don't already have the most accurate data
 	if (depth <= 0.1f)
 		return;
+
+	// World space position in [0..1] range
+	float3 encodedPosition = EncodePosition(GetWorldPosition(depth, id.xy * rsmDownsample));
 	
 	// Color of the current voxel with lighting
-	float3 lightingColor = lightingTexture[id.xy * rsmDownsample].rgb;
+	float3 lightingColor = lightingDepth.rgb;
 	
 	// Calculate depth based luma threshold (decreases with increasing depth)
 	float lumaThreshold = LUMA_THRESHOLD_FACTOR * (1.0f / max(depth * LUMA_DEPTH_FACTOR, 0.1f));

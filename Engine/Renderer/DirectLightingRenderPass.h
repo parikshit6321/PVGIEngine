@@ -2,13 +2,13 @@
 
 #include "RenderPass.h"
 
-class GBufferRenderPass : public RenderPass
+class DirectLightingRenderPass : public RenderPass
 {
 public:
-	GBufferRenderPass() = default;
+	DirectLightingRenderPass() = default;
 	virtual void Execute(ID3D12GraphicsCommandList*, D3D12_CPU_DESCRIPTOR_HANDLE*, FrameResource*) override;
 	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView();
-	~GBufferRenderPass() = default;
+	~DirectLightingRenderPass() = default;
 
 protected:
 	virtual void BuildRootSignature() override;

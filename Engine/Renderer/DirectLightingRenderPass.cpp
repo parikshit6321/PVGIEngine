@@ -1,12 +1,13 @@
-#include "GBufferRenderPass.h"
+#include "DirectLightingRenderPass.h"
 
-void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE* depthStencilViewPtr,
+void DirectLightingRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE* depthStencilViewPtr,
 	FrameResource* mCurrFrameResource)
 {
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialCB->Resource();
 
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvhDescriptor(mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -18,14 +19,14 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	commandList->ClearDepthStencilView(dsvhDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Indicate a state transition on the resource usage.
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	}
 
 	// Clear the back buffer and depth buffer.
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		commandList->ClearRenderTargetView(CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -34,7 +35,7 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 	}
 
 	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(4, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
+	commandList->OMSetRenderTargets(3, &CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		mRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		0,
 		rtvDescriptorSize), true, &dsvhDescriptor);
@@ -44,12 +45,17 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	tex.Offset((2 * SceneManager::GetScenePtr()->numberOfUniqueObjects), cbvSrvUavDescriptorSize);
+
+	commandList->SetGraphicsRootDescriptorTable(1, tex);
+
+	commandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
 
 	Draw(commandList, objectCB, matCB);
 
 	// Indicate a state transition on the resource usage.
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffers[i].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
@@ -59,9 +65,9 @@ void GBufferRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_C
 		D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
+void DirectLightingRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resource* objectCB, ID3D12Resource* matCB)
 {
-	auto cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
@@ -71,29 +77,33 @@ void GBufferRenderPass::Draw(ID3D12GraphicsCommandList* commandList, ID3D12Resou
 	}
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GBufferRenderPass::DepthStencilView()
+D3D12_CPU_DESCRIPTOR_HANDLE DirectLightingRenderPass::DepthStencilView()
 {
 	return mDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-void GBufferRenderPass::BuildRootSignature()
+void DirectLightingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE shadowTexTable;
+	shadowTexTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
-	slotRootParameter[3].InitAsConstantBufferView(2);
+	slotRootParameter[1].InitAsDescriptorTable(1, &shadowTexTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[2].InitAsConstantBufferView(0);
+	slotRootParameter[3].InitAsConstantBufferView(1);
+	slotRootParameter[4].InitAsConstantBufferView(2);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -116,9 +126,9 @@ void GBufferRenderPass::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void GBufferRenderPass::BuildDescriptorHeaps()
+void DirectLightingRenderPass::BuildDescriptorHeaps()
 {
-	mOutputBuffers = new ComPtr<ID3D12Resource>[4];
+	mOutputBuffers = new ComPtr<ID3D12Resource>[3];
 
 	// Construct the RTV Heap first
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
@@ -144,13 +154,13 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[3] = 1.0f;
 	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 3; i++) {
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[i].GetAddressOf())));
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = 4;
+	rtvHeapDesc.NumDescriptors = 3;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
@@ -167,11 +177,11 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		md3dDevice->CreateRenderTargetView(mOutputBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
 
-		if (i != 3)
+		if (i != 2)
 			rtvhDescriptor.Offset(1, rtvDescriptorSize);
 	}
 
@@ -179,7 +189,7 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = (2 * SceneManager::GetScenePtr()->numberOfUniqueObjects);
+	srvHeapDesc.NumDescriptors = (2 * SceneManager::GetScenePtr()->numberOfUniqueObjects) + 1;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -189,14 +199,14 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
+	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	UINT cbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	
 	for (UINT i = 0; i < (2 * SceneManager::GetScenePtr()->numberOfUniqueObjects); ++i)
 	{
 		srvDesc.Format = SceneManager::GetScenePtr()->mTextures[i]->Resource->GetDesc().Format;
@@ -206,6 +216,18 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 
 		hDescriptor.Offset(1, cbvSrvDescriptorSize);
 	}
+
+	// Create SRV to resource so we can sample the shadow map in a shader program.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescShadowMap = {};
+	srvDescShadowMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescShadowMap.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDescShadowMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescShadowMap.Texture2D.MostDetailedMip = 0;
+	srvDescShadowMap.Texture2D.MipLevels = 1;
+	srvDescShadowMap.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDescShadowMap.Texture2D.PlaneSlice = 0;
+
+	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDescShadowMap, hDescriptor);
 
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
@@ -253,7 +275,7 @@ void GBufferRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, dsvhDescriptor);
 }
 
-void GBufferRenderPass::BuildPSOs()
+void DirectLightingRenderPass::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 
@@ -275,11 +297,10 @@ void GBufferRenderPass::BuildPSOs()
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 4;
+	psoDesc.NumRenderTargets = 3;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.RTVFormats[3] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;

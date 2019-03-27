@@ -25,7 +25,7 @@ void SkyBoxRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CP
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(3, cbvSrvUavDescriptorSize);
+	tex.Offset(2, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -42,7 +42,7 @@ void SkyBoxRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resou
 void SkyBoxRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -108,7 +108,7 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 4;
+	srvHeapDesc.NumDescriptors = 3;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -130,20 +130,6 @@ void SkyBoxRenderPass::BuildDescriptorHeaps()
 
 	// Add the input texture to the srv heap
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-
-	// Create SRV to resource so we can sample the depth map in a shader program.
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescDepthMap = {};
-	srvDescDepthMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDescDepthMap.Format = DXGI_FORMAT_R32_FLOAT;
-	srvDescDepthMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDescDepthMap.Texture2D.MostDetailedMip = 0;
-	srvDescDepthMap.Texture2D.MipLevels = 1;
-	srvDescDepthMap.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvDescDepthMap.Texture2D.PlaneSlice = 0;
-
-	md3dDevice->CreateShaderResourceView(mDepthStencilBuffer.Get(), &srvDescDepthMap, hDescriptor);
 
 	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
 

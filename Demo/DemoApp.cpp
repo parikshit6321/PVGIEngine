@@ -176,7 +176,7 @@ void DemoApp::Draw(const GameTimer& gt)
 
     // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
     // Reusing the command list reuses memory.
-    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::gBufferRenderPass.mPSO.Get()));
+    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::directLightingRenderPass.mPSO.Get()));
 
 	// Draw shadows
 	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), mCurrFrameResource);

@@ -6,11 +6,11 @@
 
 #define PI_INVERSE 0.31830988618f
 
-Texture3D	 SHGridRed				 : register(t4);
-Texture3D	 SHGridGreen			 : register(t5);
-Texture3D	 SHGridBlue				 : register(t6);
+Texture3D	 SHGridRed				 : register(t3);
+Texture3D	 SHGridGreen			 : register(t4);
+Texture3D	 SHGridBlue				 : register(t5);
 
-TextureCube  SkyBoxTex				 : register(t7);
+TextureCube  SkyBoxTex				 : register(t6);
 
 SamplerState gsamLinearWrap			 : register(s0);
 

@@ -26,11 +26,9 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 	commandList->SetComputeRoot32BitConstants(0, 1, &worldVolumeBoundary, 1);
 	commandList->SetComputeRoot32BitConstants(0, 1, &rsmDownsample, 2);
 
+	commandList->SetComputeRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-
-	commandList->SetComputeRootDescriptorTable(1, tex);
-
-	tex.Offset(1, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -56,9 +54,6 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
 	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE srvTable1;
-	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 6, 0);
 
@@ -67,8 +62,8 @@ void VoxelInjectionRenderPass::BuildRootSignature()
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstants(3, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
-	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable1);
+	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable0);
 	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable0);
 
 	auto staticSamplers = GetStaticSamplers();
@@ -159,14 +154,6 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 
 	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	// next descriptor
-	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-
-	srvDesc.Texture2D.MipLevels = mGBuffers[2].Get()->GetDesc().MipLevels;
-
-	// Position and depth texture as an SRV
-	md3dDevice->CreateShaderResourceView(mGBuffers[2].Get(), &srvDesc, hDescriptor);
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 

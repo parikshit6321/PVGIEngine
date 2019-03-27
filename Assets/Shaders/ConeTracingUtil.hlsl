@@ -16,7 +16,7 @@ RWTexture3D<float4> shGridRed	: register(u0);
 RWTexture3D<float4> shGridGreen	: register(u1);
 RWTexture3D<float4> shGridBlue	: register(u2);
 
-SamplerState gsamLinearWrap	: register(s0);
+SamplerState gsamLinearWrap		: register(s0);
 
 // For maximum 64 iterations
 #define ITERATIONS_0 2

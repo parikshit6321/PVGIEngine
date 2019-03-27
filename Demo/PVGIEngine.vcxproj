@@ -22,7 +22,7 @@
     <ClCompile Include="..\Engine\Renderer\ColorGradingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp" />
-    <ClCompile Include="..\Engine\Renderer\GBufferRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\DirectLightingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp" />
     <ClCompile Include="..\Engine\Renderer\RenderPass.cpp" />
@@ -49,7 +49,7 @@
     <ClInclude Include="..\Engine\Renderer\ColorGradingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h" />
-    <ClInclude Include="..\Engine\Renderer\GBufferRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\DirectLightingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\Renderer.h" />
     <ClInclude Include="..\Engine\Renderer\RenderPass.h" />

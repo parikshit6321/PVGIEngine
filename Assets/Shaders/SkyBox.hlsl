@@ -1,6 +1,5 @@
 Texture2D    Input					 : register(t0);
-Texture2D  	 DepthMap				 : register(t1);
-TextureCube  SkyBoxTex				 : register(t2);
+TextureCube  SkyBoxTex				 : register(t1);
 
 RWTexture2D<float4>	Output			 : register(u0);
 
@@ -34,7 +33,6 @@ cbuffer cbPass : register(b0)
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	float4 inputColor = Input[id.xy];
-	float depth = DepthMap[id.xy].x;
 	
 	float2 texCoord = float2(((float)id.x * gInvRenderTargetSize.x), ((float)id.y * gInvRenderTargetSize.y));
 	texCoord.x = ((texCoord.x * 2.0f) - 1.0f);
@@ -50,5 +48,5 @@ void CS(uint3 id : SV_DispatchThreadID)
 	
 	float4 skyBoxColor = pow(SkyBoxTex.SampleLevel(gsamLinearWrap, PosV, 0), 2.2f);
 	
-	Output[id.xy] = lerp(inputColor, skyBoxColor, floor(depth));
+	Output[id.xy] = float4(lerp(inputColor.rgb, skyBoxColor.rgb, floor(inputColor.a)), inputColor.a);
 }

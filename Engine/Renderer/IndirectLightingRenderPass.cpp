@@ -25,7 +25,7 @@ void IndirectLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList,
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(8, cbvSrvUavDescriptorSize);
+	tex.Offset(7, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -42,7 +42,7 @@ void IndirectLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, I
 void IndirectLightingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 8, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -108,7 +108,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 9;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -128,7 +128,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 
 	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (int i = 0; i < 3; ++i)
+	for (int i = 1; i < 3; ++i)
 	{
 		md3dDevice->CreateShaderResourceView(mGBuffers[i].Get(), &srvDesc, hDescriptor);
 

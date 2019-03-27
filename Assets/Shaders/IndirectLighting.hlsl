@@ -2,16 +2,33 @@
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
-Texture2D	 PositionDepthGBuffer	 : register(t2);
-Texture2D	 Input				 	 : register(t3);
+Texture2D	 Input				 	 : register(t2);
 
 RWTexture2D<float4> Output			 : register(u0);
+
+// Get the world position from linear depth
+float3 GetWorldPosition(float depth, uint2 id)
+{
+    float z = depth * 2.0f - 1.0f;
+
+	float2 texCoord = float2(((float)id.x * gInvRenderTargetSize.x), ((float)id.y * gInvRenderTargetSize.y));
+
+    float4 clipSpacePosition = float4(texCoord * 2.0f - 1.0f, z, 1.0f);
+    float4 viewSpacePosition = mul(clipSpacePosition, gInvProj);
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    float4 worldSpacePosition = mul(viewSpacePosition, gInvView);
+
+    return worldSpacePosition.xyz;
+}
 
 [numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	float4 lighting = Input[id.xy];
-	float4 position = PositionDepthGBuffer[id.xy];
+	float4 position = float4(GetWorldPosition(lighting.a, id.xy), lighting.a);
 	float4 normal = NormalRoughnessGBuffer[id.xy];
 	float4 albedo = DiffuseMetallicGBuffer[id.xy];
 	

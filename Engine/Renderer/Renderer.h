@@ -1,8 +1,7 @@
 #pragma once
 
 #include "ShadowMapRenderPass.h"
-#include "GBufferRenderPass.h"
-#include "DeferredShadingRenderPass.h"
+#include "DirectLightingRenderPass.h"
 #include "VoxelInjectionRenderPass.h"
 #include "SHIndirectRenderPass.h"
 #include "IndirectLightingRenderPass.h"
@@ -22,8 +21,7 @@ public:
 	static void CopyToBackBuffer(ID3D12GraphicsCommandList*, ID3D12Resource*);
 
 	static ShadowMapRenderPass shadowMapRenderPass;
-	static GBufferRenderPass gBufferRenderPass;
-	static DeferredShadingRenderPass deferredShadingRenderPass;
+	static DirectLightingRenderPass directLightingRenderPass;
 	static VoxelInjectionRenderPass voxelInjectionRenderPass;
 	static SHIndirectRenderPass shIndirectRenderPass;
 	static IndirectLightingRenderPass indirectLightingRenderPass;

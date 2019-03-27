@@ -1,8 +1,7 @@
 #include "Renderer.h"
 
 ShadowMapRenderPass Renderer::shadowMapRenderPass;
-GBufferRenderPass Renderer::gBufferRenderPass;
-DeferredShadingRenderPass Renderer::deferredShadingRenderPass;
+DirectLightingRenderPass Renderer::directLightingRenderPass;
 VoxelInjectionRenderPass Renderer::voxelInjectionRenderPass;
 SHIndirectRenderPass Renderer::shIndirectRenderPass;
 IndirectLightingRenderPass Renderer::indirectLightingRenderPass;
@@ -17,51 +16,45 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 	shadowMapRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, nullptr, nullptr, L"ShadowMap.hlsl", L"");
 	
-	gBufferRenderPass.Initialize(inputDevice, inputWidth, inputHeight, 
-		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, nullptr, nullptr, L"GBufferWrite.hlsl", L"");
-	
-	deferredShadingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
+	directLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight, 
 		inputFormatBackBuffer, inputFormatDepthBuffer, shadowMapRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"DeferredShading.hlsl", L"");
+		nullptr, nullptr, nullptr, L"DirectLighting.hlsl", L"");
 	
 	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mOutputBuffers, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"VoxelInjection.hlsl", true);
+		inputFormatBackBuffer, inputFormatDepthBuffer, directLightingRenderPass.mOutputBuffers, 
+		nullptr, nullptr, nullptr, L"", L"VoxelInjection.hlsl", true);
 	
 	shIndirectRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, 
-		voxelInjectionRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, L"", L"SHIndirectConeTracing.hlsl", true);
+		voxelInjectionRenderPass.mOutputBuffers, nullptr, L"", L"SHIndirectConeTracing.hlsl", true);
 
 	indirectLightingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
-		inputFormatBackBuffer, inputFormatDepthBuffer, deferredShadingRenderPass.mOutputBuffers, 
-		gBufferRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, gBufferRenderPass.mDepthStencilBuffer, 
+		inputFormatBackBuffer, inputFormatDepthBuffer, directLightingRenderPass.mOutputBuffers,
+		directLightingRenderPass.mOutputBuffers, shIndirectRenderPass.mOutputBuffers, directLightingRenderPass.mDepthStencilBuffer, 
 		L"", L"IndirectLighting.hlsl", true);
 
 	skyBoxRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, indirectLightingRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"SkyBox.hlsl", true);
+		nullptr, nullptr, nullptr, L"", L"SkyBox.hlsl", true);
 
 	toneMappingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, skyBoxRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"ToneMapping.hlsl", true);
+		nullptr, nullptr, nullptr, L"", L"ToneMapping.hlsl", true);
 
 	fxaaRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, toneMappingRenderPass.mOutputBuffers,
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"FXAA.hlsl", true);
+		nullptr, nullptr, nullptr, L"", L"FXAA.hlsl", true);
 	
 	colorGradingRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, fxaaRenderPass.mOutputBuffers, 
-		nullptr, nullptr, gBufferRenderPass.mDepthStencilBuffer, L"", L"ColorGrading.hlsl", true);
+		nullptr, nullptr, nullptr, L"", L"ColorGrading.hlsl", true);
 }
 
 void Renderer::Execute(ID3D12GraphicsCommandList * commandList, D3D12_CPU_DESCRIPTOR_HANDLE * depthStencilViewPtr,
 	FrameResource* mCurrFrameResource)
 {
 	// Render the gBuffers
-	gBufferRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
-
-	// Compute the lighting using deferred shading
-	deferredShadingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
+	directLightingRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);
 
 	// Inject lighting data into the voxel grids
 	voxelInjectionRenderPass.Execute(commandList, depthStencilViewPtr, mCurrFrameResource);

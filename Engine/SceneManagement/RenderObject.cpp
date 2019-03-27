@@ -27,8 +27,8 @@ void RenderObject::Draw(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* obje
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + Mat->MatCBIndex*matCBByteSize;
 
 			cmdList->SetGraphicsRootDescriptorTable(0, tex);
-			cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-			cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+			cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+			cmdList->SetGraphicsRootConstantBufferView(4, matCBAddress);
 		}
 
 		cmdList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);

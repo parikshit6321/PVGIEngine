@@ -1,8 +1,13 @@
+// Include structures and functions for lighting.
+#include "LightingUtil.hlsl"
+
 Texture2D    gDiffuseOpacityMap		 : register(t0);
 Texture2D	 gNormalRoughnessMap	 : register(t1);
+Texture2D	 ShadowMap				 : register(t2);
 
 SamplerState gsamLinearWrap			 : register(s0);
 SamplerState gsamAnisotropicWrap	 : register(s1);
+SamplerComparisonState gsamShadow	 : register(s2);
 
 // Constant data that varies per frame.
 cbuffer cbPerObject : register(b0)
@@ -59,10 +64,9 @@ struct VertexOut
 
 struct PixelOut
 {
-	float4 DiffuseMetallicGBuffer	: SV_TARGET0;
-	float4 NormalRoughnessGBuffer	: SV_TARGET1;
-	float4 PositionDepthGBuffer		: SV_TARGET2;
-	float4 ShadowPosHGBuffer	 	: SV_TARGET3;
+	float4 DirectLightingDepth 		: SV_TARGET0;
+	float4 DiffuseMetallicGBuffer	: SV_TARGET1;
+	float4 NormalRoughnessGBuffer	: SV_TARGET2;
 };
 
 VertexOut VS(VertexIn vin)
@@ -104,21 +108,9 @@ PixelOut PS(VertexOut pin)
 	// Store the global metallic flag in alpha channel
 	albedo.a = gMetallic.r;
 	
-	// Diffuse + Metallic G-Buffer value
-	output.DiffuseMetallicGBuffer = albedo;
-	
 	// Do the perspective divide
 	pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
 	
-	// Compute depth after perspective divide
-	pin.PosW.w = (pin.PosH.z / pin.PosH.w);
-	
-	// Position + Depth G-Buffer value
-	output.PositionDepthGBuffer = pin.PosW;
-
-	// Shadow Coords G-Buffer value
-	output.ShadowPosHGBuffer = pin.ShadowPosH;
-
 	// Build orthonormal basis.
 	float3 N = normalize(pin.NormalW);
 	float3 T = normalize(pin.TangentW - (dot(pin.TangentW, N) * N));
@@ -131,6 +123,46 @@ PixelOut PS(VertexOut pin)
 
 	// Transform from tangent space to world space.
 	pixelNormal.xyz = normalize(mul(normalT, TBN));
+
+	float3 V = normalize(gEyePosW - pin.PosW.xyz);
+	float3 L = normalize(gSunLightDirection.xyz);
+	float3 H = normalize(V + L);
+	float LdotH = saturate(dot(L ,H));
+	
+	N = pixelNormal.xyz;
+	float linearRoughness = pixelNormal.a * pixelNormal.a;
+	float NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
+	float NdotL = saturate(dot(N ,L));
+	float NdotH = saturate(dot(N ,H));
+	
+	float fd90 = linearRoughness * (0.5f + (2.0f * LdotH * LdotH));
+	
+	// Specular BRDF (GGX)
+	float Vis = SmithGGXCorrelated(NdotV, NdotL, linearRoughness);
+	float D = D_GGX(NdotH, linearRoughness);
+	
+	float3 specularF0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, albedo.a);
+	
+	float3 F = FresnelSchlick(specularF0, fd90, LdotH);
+	float3 Fr = D * Vis * PI_INVERSE * F;
+	
+	float3 kS = F;
+	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= (1.0f - albedo.a);	
+	
+	// Diffuse BRDF (Lambertian)
+	float3 Fd = LambertianDiffuse(albedo.rgb) * kD;
+	
+	// Calculate shadow
+	float shadow = CalculateShadow(pin.ShadowPosH, ShadowMap, gsamShadow);
+	
+	float3 directLight = ((Fd + Fr) * (gSunLightStrength.rgb * gSunLightStrength.a * NdotL * (1.0f - shadow)));
+
+	// Direct lighting value
+	output.DirectLightingDepth = float4(directLight, (pin.PosH.z / pin.PosH.w));
+
+	// Diffuse + Metallic G-Buffer value
+	output.DiffuseMetallicGBuffer = albedo;
 	
 	// Normal + Roughness G-Buffer value
 	output.NormalRoughnessGBuffer = pixelNormal;
