@@ -1,4 +1,5 @@
 #include "IndirectLightingUtil.hlsl"
+#include "CommonUtil.hlsl"
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
@@ -7,7 +8,7 @@ Texture2D	 Input				 	 : register(t2);
 RWTexture2D<float4> Output			 : register(u0);
 
 // Get the world position from linear depth
-float3 GetWorldPosition(float depth, uint2 id)
+inline float3 GetWorldPosition(float depth, uint2 id)
 {
     float z = depth * 2.0f - 1.0f;
 
@@ -31,6 +32,8 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float4 position = float4(GetWorldPosition(lighting.a, id.xy), lighting.a);
 	float4 normal = NormalRoughnessGBuffer[id.xy];
 	float4 albedo = DiffuseMetallicGBuffer[id.xy];
+	
+	normal.xyz = UnpackNormal(normal.xyz);
 	
 	float linearRoughness = (normal.w * normal.w);
 	

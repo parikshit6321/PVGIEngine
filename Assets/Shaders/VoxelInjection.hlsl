@@ -43,7 +43,7 @@ RWTexture3D<float4> voxelGrid4 		: register(u4);
 RWTexture3D<float4> voxelGrid5 		: register(u5);
 
 // Get the world position from linear depth
-float3 GetWorldPosition(float depth, uint2 id)
+inline float3 GetWorldPosition(float depth, uint2 id)
 {
     float z = depth * 2.0f - 1.0f;
 

@@ -6,6 +6,7 @@
 #include "SHIndirectRenderPass.h"
 #include "IndirectLightingRenderPass.h"
 #include "SkyBoxRenderPass.h"
+#include "VolumetricLightingRenderPass.h"
 #include "FXAARenderPass.h"
 #include "ToneMappingRenderPass.h"
 #include "ColorGradingRenderPass.h"
@@ -26,7 +27,11 @@ public:
 	static SHIndirectRenderPass shIndirectRenderPass;
 	static IndirectLightingRenderPass indirectLightingRenderPass;
 	static SkyBoxRenderPass skyBoxRenderPass;
+	static VolumetricLightingRenderPass volumetricLightingRenderPass;
 	static FXAARenderPass fxaaRenderPass;
 	static ToneMappingRenderPass toneMappingRenderPass;
 	static ColorGradingRenderPass colorGradingRenderPass;
+
+	static bool bPerformConeTracing;
+	static bool bPerformShadowMapping;
 };

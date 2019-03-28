@@ -1,5 +1,6 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
+#include "CommonUtil.hlsl"
 
 Texture2D    gDiffuseOpacityMap		 : register(t0);
 Texture2D	 gNormalRoughnessMap	 : register(t1);
@@ -163,6 +164,8 @@ PixelOut PS(VertexOut pin)
 
 	// Diffuse + Metallic G-Buffer value
 	output.DiffuseMetallicGBuffer = albedo;
+	
+	pixelNormal.xyz = PackNormal(pixelNormal.xyz);
 	
 	// Normal + Roughness G-Buffer value
 	output.NormalRoughnessGBuffer = pixelNormal;

@@ -33,9 +33,6 @@
     <ClCompile Include="..\Engine\Utilities\GameTimer.cpp">
       <Filter>Engine\Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp">
-      <Filter>Engine\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\Engine\Renderer\Renderer.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
@@ -93,6 +90,9 @@
     <ClCompile Include="..\Engine\Renderer\DirectLightingRenderPass.cpp">
       <Filter>Engine\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Engine\Renderer\VolumetricLightingRenderPass.cpp">
+      <Filter>Engine\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Utilities\d3dApp.h">
@@ -103,9 +103,6 @@
     </ClInclude>
     <ClInclude Include="..\Engine\Utilities\d3dx12.h">
       <Filter>Engine\Utilities</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h">
-      <Filter>Engine\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Utilities\FrameResource.h">
       <Filter>Engine\Utilities</Filter>
@@ -177,6 +174,9 @@
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="..\Engine\Renderer\DirectLightingRenderPass.h">
+      <Filter>Engine\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\Renderer\VolumetricLightingRenderPass.h">
       <Filter>Engine\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

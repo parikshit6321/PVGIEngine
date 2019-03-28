@@ -154,10 +154,17 @@ void DirectLightingRenderPass::BuildDescriptorHeaps()
 	clearVal.Color[3] = 1.0f;
 	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	for (int i = 0; i < 3; i++) {
-		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
-			&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[i].GetAddressOf())));
-	}
+	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
+		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[0].GetAddressOf())));
+
+	resourceDesc.Format = mBackBufferFormat;
+	clearVal.Format = mBackBufferFormat;
+
+	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
+		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[1].GetAddressOf())));
+
+	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
+		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[2].GetAddressOf())));
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 	rtvHeapDesc.NumDescriptors = 3;
@@ -177,13 +184,17 @@ void DirectLightingRenderPass::BuildDescriptorHeaps()
 
 	UINT rtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	for (int i = 0; i < 3; ++i)
-	{
-		md3dDevice->CreateRenderTargetView(mOutputBuffers[i].Get(), &rtvDesc, rtvhDescriptor);
+	md3dDevice->CreateRenderTargetView(mOutputBuffers[0].Get(), &rtvDesc, rtvhDescriptor);
 
-		if (i != 2)
-			rtvhDescriptor.Offset(1, rtvDescriptorSize);
-	}
+	rtvhDescriptor.Offset(1, rtvDescriptorSize);
+
+	rtvDesc.Format = mBackBufferFormat;
+
+	md3dDevice->CreateRenderTargetView(mOutputBuffers[1].Get(), &rtvDesc, rtvhDescriptor);
+
+	rtvhDescriptor.Offset(1, rtvDescriptorSize);
+
+	md3dDevice->CreateRenderTargetView(mOutputBuffers[2].Get(), &rtvDesc, rtvhDescriptor);
 
 	//
 	// Create the SRV heap.
@@ -299,8 +310,8 @@ void DirectLightingRenderPass::BuildPSOs()
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 3;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	psoDesc.RTVFormats[1] = mBackBufferFormat;
+	psoDesc.RTVFormats[2] = mBackBufferFormat;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;

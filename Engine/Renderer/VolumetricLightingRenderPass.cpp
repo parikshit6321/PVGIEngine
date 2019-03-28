@@ -1,6 +1,6 @@
-#include "IndirectLightingRenderPass.h"
+#include "VolumetricLightingRenderPass.h"
 
-void IndirectLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList, D3D12_CPU_DESCRIPTOR_HANDLE *depthStencilViewPtr,
+void VolumetricLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList, D3D12_CPU_DESCRIPTOR_HANDLE *depthStencilViewPtr,
 	FrameResource* mCurrFrameResource)
 {
 	auto passCB = mCurrFrameResource->PassCB->Resource();
@@ -25,7 +25,7 @@ void IndirectLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList,
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(7, cbvSrvUavDescriptorSize);
+	tex.Offset(2, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -35,14 +35,14 @@ void IndirectLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList,
 		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void IndirectLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
+void VolumetricLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, ID3D12Resource * objectCB, ID3D12Resource * matCB)
 {
 }
 
-void IndirectLightingRenderPass::BuildRootSignature()
+void VolumetricLightingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -81,7 +81,7 @@ void IndirectLightingRenderPass::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void IndirectLightingRenderPass::BuildDescriptorHeaps()
+void VolumetricLightingRenderPass::BuildDescriptorHeaps()
 {
 	mOutputBuffers = new ComPtr<ID3D12Resource>[1];
 
@@ -108,7 +108,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 8;
+	srvHeapDesc.NumDescriptors = 3;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -117,58 +117,31 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	// Fill out the heap with actual descriptors.
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvDesc.Format = mBackBufferFormat;
-	srvDesc.Texture2D.MipLevels = 1;
-
-	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	md3dDevice->CreateShaderResourceView(mGBuffers[1].Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-	
-	md3dDevice->CreateShaderResourceView(mGBuffers[2].Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-
 	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-
 	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
 
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescVoxelGrid = {};
-	srvDescVoxelGrid.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDescVoxelGrid.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-	srvDescVoxelGrid.Texture3D.MostDetailedMip = 0;
-	srvDescVoxelGrid.Texture3D.ResourceMinLODClamp = 0.0f;
-	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	srvDescVoxelGrid.Texture3D.MipLevels = 1;
-
-	for (int i = 0; i < 3; ++i)
-	{
-		hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
-
-		md3dDevice->CreateShaderResourceView(mVoxelGrids[i].Get(), &srvDescVoxelGrid, hDescriptor);
-	}
-
+	
 	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescCubeMap = {};
-	srvDescCubeMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDescCubeMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-	srvDescCubeMap.TextureCube.MostDetailedMip = 0;
-	srvDescCubeMap.TextureCube.MipLevels = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource->GetDesc().MipLevels;
-	srvDescCubeMap.TextureCube.ResourceMinLODClamp = 0.0f;
-	srvDescCubeMap.Format = SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource->GetDesc().Format;
+	// Create SRV to resource so we can sample the shadow map in a shader program.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescShadowMap = {};
+	srvDescShadowMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescShadowMap.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDescShadowMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescShadowMap.Texture2D.MostDetailedMip = 0;
+	srvDescShadowMap.Texture2D.MipLevels = 1;
+	srvDescShadowMap.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDescShadowMap.Texture2D.PlaneSlice = 0;
 
-	md3dDevice->CreateShaderResourceView(SceneManager::GetScenePtr()->mTextures[2 * SceneManager::GetScenePtr()->numberOfUniqueObjects]->Resource.Get(),
-		&srvDescCubeMap, hDescriptor);
+	md3dDevice->CreateShaderResourceView(mGBuffers[0].Get(), &srvDescShadowMap, hDescriptor);
 
 	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
 
@@ -182,7 +155,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateUnorderedAccessView(mOutputBuffers[0].Get(), nullptr, &uavDesc, hDescriptor);
 }
 
-void IndirectLightingRenderPass::BuildPSOs()
+void VolumetricLightingRenderPass::BuildPSOs()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC computePSODesc = {};
 

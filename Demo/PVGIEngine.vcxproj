@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Engine\Renderer\ColorGradingRenderPass.cpp" />
-    <ClCompile Include="..\Engine\Renderer\DeferredShadingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\FXAARenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\DirectLightingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\IndirectLightingRenderPass.cpp" />
@@ -30,6 +29,7 @@
     <ClCompile Include="..\Engine\Renderer\SHIndirectRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\SkyBoxRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\ToneMappingRenderPass.cpp" />
+    <ClCompile Include="..\Engine\Renderer\VolumetricLightingRenderPass.cpp" />
     <ClCompile Include="..\Engine\Renderer\VoxelInjectionRenderPass.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\MeshGeometry.cpp" />
     <ClCompile Include="..\Engine\SceneManagement\MeshLoader.cpp" />
@@ -47,7 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Renderer\ColorGradingRenderPass.h" />
-    <ClInclude Include="..\Engine\Renderer\DeferredShadingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\FXAARenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\DirectLightingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\IndirectLightingRenderPass.h" />
@@ -57,6 +56,7 @@
     <ClInclude Include="..\Engine\Renderer\SHIndirectRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\SkyBoxRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\ToneMappingRenderPass.h" />
+    <ClInclude Include="..\Engine\Renderer\VolumetricLightingRenderPass.h" />
     <ClInclude Include="..\Engine\Renderer\VoxelInjectionRenderPass.h" />
     <ClInclude Include="..\Engine\SceneManagement\Material.h" />
     <ClInclude Include="..\Engine\SceneManagement\MeshGeometry.h" />

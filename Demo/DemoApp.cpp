@@ -178,9 +178,14 @@ void DemoApp::Draw(const GameTimer& gt)
     // Reusing the command list reuses memory.
     ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), Renderer::directLightingRenderPass.mPSO.Get()));
 
-	// Draw shadows
-	Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), mCurrFrameResource);
-
+	// Render shadows only once
+	if (Renderer::bPerformShadowMapping)
+	{
+		// Draw shadows
+		Renderer::shadowMapRenderPass.Execute(mCommandList.Get(), &DepthStencilView(), mCurrFrameResource);
+		Renderer::bPerformShadowMapping = false;
+	}
+	
 	// Reset viewports and scissor rects after shadow map render passs
     mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
