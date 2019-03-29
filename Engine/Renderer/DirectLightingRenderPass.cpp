@@ -163,6 +163,9 @@ void DirectLightingRenderPass::BuildDescriptorHeaps()
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[1].GetAddressOf())));
 
+	resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+	clearVal.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &clearVal, IID_PPV_ARGS(mOutputBuffers[2].GetAddressOf())));
 
@@ -193,6 +196,8 @@ void DirectLightingRenderPass::BuildDescriptorHeaps()
 	md3dDevice->CreateRenderTargetView(mOutputBuffers[1].Get(), &rtvDesc, rtvhDescriptor);
 
 	rtvhDescriptor.Offset(1, rtvDescriptorSize);
+
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
 
 	md3dDevice->CreateRenderTargetView(mOutputBuffers[2].Get(), &rtvDesc, rtvhDescriptor);
 
@@ -311,7 +316,7 @@ void DirectLightingRenderPass::BuildPSOs()
 	psoDesc.NumRenderTargets = 3;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	psoDesc.RTVFormats[1] = mBackBufferFormat;
-	psoDesc.RTVFormats[2] = mBackBufferFormat;
+	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_SNORM;
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;

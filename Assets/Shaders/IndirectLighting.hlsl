@@ -1,5 +1,4 @@
 #include "IndirectLightingUtil.hlsl"
-#include "CommonUtil.hlsl"
 
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
@@ -32,8 +31,6 @@ void CS(uint3 id : SV_DispatchThreadID)
 	float4 position = float4(GetWorldPosition(lighting.a, id.xy), lighting.a);
 	float4 normal = NormalRoughnessGBuffer[id.xy];
 	float4 albedo = DiffuseMetallicGBuffer[id.xy];
-	
-	normal.xyz = UnpackNormal(normal.xyz);
 	
 	float linearRoughness = (normal.w * normal.w);
 	

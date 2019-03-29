@@ -1,6 +1,5 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
-#include "CommonUtil.hlsl"
 
 Texture2D	 Input				 	 : register(t0);
 Texture2D	 ShadowMap			 	 : register(t1);

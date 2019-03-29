@@ -130,6 +130,8 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 
 	md3dDevice->CreateShaderResourceView(mGBuffers[1].Get(), &srvDesc, hDescriptor);
 
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+
 	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
 	
 	md3dDevice->CreateShaderResourceView(mGBuffers[2].Get(), &srvDesc, hDescriptor);
