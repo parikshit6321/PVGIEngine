@@ -26,7 +26,7 @@ void Renderer::Initialize(ComPtr<ID3D12Device> inputDevice, int inputWidth, int 
 	
 	voxelInjectionRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, directLightingRenderPass.mOutputBuffers, 
-		nullptr, nullptr, nullptr, L"", L"VoxelInjection.hlsl", true);
+		nullptr, nullptr, directLightingRenderPass.mDepthStencilBuffer, L"", L"VoxelInjection.hlsl", true);
 	
 	shIndirectRenderPass.Initialize(inputDevice, inputWidth, inputHeight,
 		inputFormatBackBuffer, inputFormatDepthBuffer, nullptr, nullptr, 

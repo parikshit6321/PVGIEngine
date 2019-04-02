@@ -25,7 +25,7 @@ void VolumetricLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandLis
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(2, cbvSrvUavDescriptorSize);
+	tex.Offset(3, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -42,7 +42,7 @@ void VolumetricLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList,
 void VolumetricLightingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -108,7 +108,7 @@ void VolumetricLightingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 4;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -142,6 +142,10 @@ void VolumetricLightingRenderPass::BuildDescriptorHeaps()
 	srvDescShadowMap.Texture2D.PlaneSlice = 0;
 
 	md3dDevice->CreateShaderResourceView(mGBuffers[0].Get(), &srvDescShadowMap, hDescriptor);
+
+	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+
+	md3dDevice->CreateShaderResourceView(mDepthStencilBuffer.Get(), &srvDescShadowMap, hDescriptor);
 
 	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
 

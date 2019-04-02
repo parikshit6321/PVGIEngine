@@ -25,7 +25,7 @@ void IndirectLightingRenderPass::Execute(ID3D12GraphicsCommandList *commandList,
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(7, cbvSrvUavDescriptorSize);
+	tex.Offset(8, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -42,7 +42,7 @@ void IndirectLightingRenderPass::Draw(ID3D12GraphicsCommandList * commandList, I
 void IndirectLightingRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 8, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -108,7 +108,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 8;
+	srvHeapDesc.NumDescriptors = 9;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -143,6 +143,20 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	srvDesc.Texture2D.MipLevels = mInputBuffers[0].Get()->GetDesc().MipLevels;
 
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+
+	// Create SRV to depth map so we can compute world-space position
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescDepthMap = {};
+	srvDescDepthMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescDepthMap.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDescDepthMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescDepthMap.Texture2D.MostDetailedMip = 0;
+	srvDescDepthMap.Texture2D.MipLevels = 1;
+	srvDescDepthMap.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDescDepthMap.Texture2D.PlaneSlice = 0;
+
+	md3dDevice->CreateShaderResourceView(mDepthStencilBuffer.Get(), &srvDescDepthMap, hDescriptor);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescVoxelGrid = {};
 	srvDescVoxelGrid.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

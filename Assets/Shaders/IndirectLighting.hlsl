@@ -3,6 +3,7 @@
 Texture2D    DiffuseMetallicGBuffer  : register(t0);
 Texture2D	 NormalRoughnessGBuffer  : register(t1);
 Texture2D	 Input				 	 : register(t2);
+Texture2D	 DepthMap				 : register(t3);
 
 RWTexture2D<float4> Output			 : register(u0);
 
@@ -28,7 +29,8 @@ inline float3 GetWorldPosition(float depth, uint2 id)
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	float4 lighting = Input[id.xy];
-	float4 position = float4(GetWorldPosition(lighting.a, id.xy), lighting.a);
+	float depth = DepthMap[id.xy];
+	float4 position = float4(GetWorldPosition(depth, id.xy), depth);
 	float4 normal = NormalRoughnessGBuffer[id.xy];
 	float4 albedo = DiffuseMetallicGBuffer[id.xy];
 	

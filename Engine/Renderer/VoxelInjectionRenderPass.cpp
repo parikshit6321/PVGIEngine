@@ -32,7 +32,7 @@ void VoxelInjectionRenderPass::Execute(ID3D12GraphicsCommandList * commandList, 
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
-	tex.Offset(1, cbvSrvUavDescriptorSize);
+	tex.Offset(2, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(3, tex);
 
@@ -52,7 +52,7 @@ void VoxelInjectionRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource 
 void VoxelInjectionRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 6, 0);
@@ -141,6 +141,8 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	//
 	// Fill out the heap with texture descriptors.
 	//
+	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -153,7 +155,18 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	// Lighting texture as an SRV
 	md3dDevice->CreateShaderResourceView(mInputBuffers[0].Get(), &srvDesc, hDescriptor);
 
-	UINT cbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescDepthMap = {};
+	srvDescDepthMap.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescDepthMap.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDescDepthMap.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescDepthMap.Texture2D.MostDetailedMip = 0;
+	srvDescDepthMap.Texture2D.MipLevels = 1;
+	srvDescDepthMap.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDescDepthMap.Texture2D.PlaneSlice = 0;
+
+	hDescriptor.Offset(1, cbvSrvUavDescriptorSize);
+
+	md3dDevice->CreateShaderResourceView(mDepthStencilBuffer.Get(), &srvDescDepthMap, hDescriptor);
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 

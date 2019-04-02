@@ -33,7 +33,8 @@ cbuffer cbPass : register(b1)
 	float4x4 gShadowTransform;
 };
 
-Texture2D lightingDepthTexture      : register(t0);
+Texture2D LightingTexture      		: register(t0);
+Texture2D DepthMapTexture	   		: register(t1);
 
 RWTexture3D<float4> voxelGrid0 		: register(u0);
 RWTexture3D<float4> voxelGrid1 		: register(u1);
@@ -85,10 +86,10 @@ inline float GetLuma(float3 inputColor)
 [numthreads(16, 16, 1)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
-	float4 lightingDepth = lightingDepthTexture[id.xy];
+	float4 lightingDepth = LightingTexture[id.xy];
 	
 	// Extract the pixel's depth
-	float depth = lightingDepth.a;
+	float depth = DepthMapTexture[id.xy];
 
 	// Only carry on with injection if voxels don't already have the most accurate data
 	if (depth <= 0.1f)
