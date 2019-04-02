@@ -41,7 +41,6 @@ RWTexture3D<float4> voxelGrid1 		: register(u1);
 RWTexture3D<float4> voxelGrid2 		: register(u2);
 RWTexture3D<float4> voxelGrid3 		: register(u3);
 RWTexture3D<float4> voxelGrid4 		: register(u4);
-RWTexture3D<float4> voxelGrid5 		: register(u5);
 
 // Get the world position from linear depth
 inline float3 GetWorldPosition(float depth, uint2 id)
@@ -188,21 +187,5 @@ void CS(uint3 id : SV_DispatchThreadID)
 	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
 	{
 		voxelGrid4[voxelPosition] = injectionValue;
-	}
-	
-	// Enter data into the fifth voxel grid
-	voxelPosition = GetVoxelPosition(encodedPosition, (voxelResolution >> 5));
-
-	// Inject the current voxel's information into the grid
-	currentVoxelInfo = voxelGrid5[voxelPosition];
-	
-	// Calculate difference between voxel and pixel luma
-	currentVoxelLuma = GetLuma(currentVoxelInfo.rgb);
-	lumaDiff = saturate(currentVoxelLuma - pixelLuma);
-	
-	// Only inject if currently voxel is either 1. unoccupied or 2. of a lesser depth and passes luma test
-	if ((currentVoxelInfo.a == 0.0f) || ((depth < currentVoxelInfo.a) && (lumaDiff < lumaThreshold)))
-	{
-		voxelGrid5[voxelPosition] = injectionValue;
 	}
 }

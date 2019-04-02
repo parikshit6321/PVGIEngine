@@ -10,7 +10,6 @@ Texture3D VoxelGrid1 			: register(t1);
 Texture3D VoxelGrid2 			: register(t2);
 Texture3D VoxelGrid3 			: register(t3);
 Texture3D VoxelGrid4 			: register(t4);
-Texture3D VoxelGrid5 			: register(t5);
 
 RWTexture3D<float4> shGridRed	: register(u0);
 RWTexture3D<float4> shGridGreen	: register(u1);
@@ -19,12 +18,12 @@ RWTexture3D<float4> shGridBlue	: register(u2);
 SamplerState gsamLinearWrap		: register(s0);
 
 // For maximum 64 iterations
+#define INITIAL_ITERATIONS 2
 #define ITERATIONS_0 2
-#define ITERATIONS_1 2
-#define ITERATIONS_2 4
-#define ITERATIONS_3 8
-#define ITERATIONS_4 16
-#define ITERATIONS_5 32
+#define ITERATIONS_1 4
+#define ITERATIONS_2 8
+#define ITERATIONS_3 16
+#define ITERATIONS_4 32
 
 #define MAXIMUM_ITERATIONS 64
 
@@ -89,22 +88,29 @@ inline float4 GetVoxelInfo4(float3 voxelPosition)
 	return info;
 }
 
-// Returns the voxel information from grid 5
-inline float4 GetVoxelInfo5(float3 voxelPosition)
-{
-	float4 info = VoxelGrid5.SampleLevel(gsamLinearWrap, voxelPosition, 0);
-	return info;
-}
-
 inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 {
-	float3 currentPosition = worldPosition + (coneDirection * coneStep * ITERATIONS_0);
+	float3 currentPosition = worldPosition + (coneDirection * coneStep * INITIAL_ITERATIONS);
 
 	float4 currentVoxelInfo = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	// Sample voxel grid 1
+	// Sample voxel grid 0
 	uint iter;
 	
+	for (iter = 0; iter < ITERATIONS_0; ++iter)
+	{
+		currentPosition += (coneStep * coneDirection);
+
+		if (currentVoxelInfo.a < 0.05f)
+		{
+			currentVoxelInfo = GetVoxelInfo0(GetVoxelPosition(currentPosition));
+		}
+	}
+	
+	if (currentVoxelInfo.a > 0.05f)
+		return currentVoxelInfo.rgb;
+
+	// Sample voxel grid 1
 	for (iter = 0; iter < ITERATIONS_1; ++iter)
 	{
 		currentPosition += (coneStep * coneDirection);
@@ -114,10 +120,10 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 			currentVoxelInfo = GetVoxelInfo1(GetVoxelPosition(currentPosition));
 		}
 	}
-	
+
 	if (currentVoxelInfo.a > 0.05f)
 		return currentVoxelInfo.rgb;
-
+	
 	// Sample voxel grid 2
 	for (iter = 0; iter < ITERATIONS_2; ++iter)
 	{
@@ -154,20 +160,6 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 		if (currentVoxelInfo.a < 0.05f)
 		{
 			currentVoxelInfo = GetVoxelInfo4(GetVoxelPosition(currentPosition));
-		}
-	}
-
-	if (currentVoxelInfo.a > 0.05f)
-		return currentVoxelInfo.rgb;
-	
-	// Sample voxel grid 5
-	for (iter = 0; iter < ITERATIONS_5; ++iter)
-	{
-		currentPosition += (coneStep * coneDirection);
-
-		if (currentVoxelInfo.a < 0.05f)
-		{
-			currentVoxelInfo = GetVoxelInfo5(GetVoxelPosition(currentPosition));
 		}
 	}
 

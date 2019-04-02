@@ -33,7 +33,7 @@ void SHIndirectRenderPass::Execute(ID3D12GraphicsCommandList * commandList, D3D1
 
 	commandList->SetComputeRootDescriptorTable(1, tex);
 
-	tex.Offset(6, cbvSrvUavDescriptorSize);
+	tex.Offset(5, cbvSrvUavDescriptorSize);
 
 	commandList->SetComputeRootDescriptorTable(2, tex);
 
@@ -53,7 +53,7 @@ void SHIndirectRenderPass::Draw(ID3D12GraphicsCommandList *, ID3D12Resource *, I
 void SHIndirectRenderPass::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0);
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 3, 0);
@@ -126,7 +126,7 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	// Create the SRV and UAV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 9;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -146,7 +146,7 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	srvDescVoxelGrid.Texture3D.MipLevels = 1;
 
-	for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		md3dDevice->CreateShaderResourceView(mVoxelGrids[i].Get(), &srvDescVoxelGrid, hDescriptor);
 
