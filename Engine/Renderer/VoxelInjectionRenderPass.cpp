@@ -101,18 +101,11 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
 	texDesc.Alignment = 0;
 	texDesc.MipLevels = 1;
-	texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	texDesc.SampleDesc.Count = 1;
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-	D3D12_CLEAR_VALUE clearVal;
-	clearVal.Color[0] = 0.0f;
-	clearVal.Color[1] = 0.0f;
-	clearVal.Color[2] = 0.0f;
-	clearVal.Color[3] = 0.0f;
-	clearVal.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
 	for (int i = 0; i < 5; ++i)
 	{
@@ -170,7 +163,7 @@ void VoxelInjectionRenderPass::BuildDescriptorHeaps()
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
-	uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
 	uavDesc.Texture3D.MipSlice = 0;
 	uavDesc.Texture3D.FirstWSlice = 0;

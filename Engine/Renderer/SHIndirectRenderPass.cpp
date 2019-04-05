@@ -101,7 +101,7 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
 	texDesc.Alignment = 0;
 	texDesc.MipLevels = 1;
-	texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	texDesc.SampleDesc.Count = 1;
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -143,7 +143,7 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 	srvDescVoxelGrid.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 	srvDescVoxelGrid.Texture3D.MostDetailedMip = 0;
 	srvDescVoxelGrid.Texture3D.ResourceMinLODClamp = 0.0f;
-	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDescVoxelGrid.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDescVoxelGrid.Texture3D.MipLevels = 1;
 
 	for (int i = 0; i < 5; ++i)
@@ -155,7 +155,7 @@ void SHIndirectRenderPass::BuildDescriptorHeaps()
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
-	uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
 	uavDesc.Texture3D.MipSlice = 0;
 	uavDesc.Texture3D.FirstWSlice = 0;

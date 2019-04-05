@@ -163,7 +163,7 @@ void IndirectLightingRenderPass::BuildDescriptorHeaps()
 	srvDescVoxelGrid.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 	srvDescVoxelGrid.Texture3D.MostDetailedMip = 0;
 	srvDescVoxelGrid.Texture3D.ResourceMinLODClamp = 0.0f;
-	srvDescVoxelGrid.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDescVoxelGrid.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDescVoxelGrid.Texture3D.MipLevels = 1;
 
 	for (int i = 0; i < 3; ++i)
