@@ -73,6 +73,7 @@
     <ClInclude Include="..\Engine\Utilities\FrameResource.h" />
     <ClInclude Include="..\Engine\Utilities\GameTimer.h" />
     <ClInclude Include="..\Engine\Utilities\MathHelper.h" />
+    <ClInclude Include="..\Engine\Utilities\PVGIDecl.h" />
     <ClInclude Include="..\Engine\Utilities\UploadBuffer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

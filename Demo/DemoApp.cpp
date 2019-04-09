@@ -81,8 +81,12 @@ DemoApp::DemoApp(HINSTANCE hInstance)
 
 DemoApp::~DemoApp()
 {
-    if(md3dDevice != nullptr)
-        FlushCommandQueue();
+	if (md3dDevice != nullptr)
+	{
+		FlushCommandQueue();
+		SceneManager::ReleaseMemory();
+	}
+        
 }
 
 /// <summary>
@@ -433,10 +437,11 @@ void DemoApp::UpdateMainPassCB(const GameTimer& gt)
 
 	float lengthOfCone = (32.0f * Renderer::voxelInjectionRenderPass.worldVolumeBoundary) / ((Renderer::voxelInjectionRenderPass.voxelResolution / 2) * tan(MathHelper::Pi / 6.0f));
 
-	mMainPassCB.worldBoundary_R_ConeStep_G_HalfCellWidth_B = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, 
-															   (lengthOfCone / 64.0f), 
-															   (Renderer::voxelInjectionRenderPass.worldVolumeBoundary / 
-															   Renderer::shIndirectRenderPass.gridResolution), 0.0f };
+	mMainPassCB.worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A = { Renderer::voxelInjectionRenderPass.worldVolumeBoundary, 
+																				(lengthOfCone / 64.0f), 
+																				(Renderer::voxelInjectionRenderPass.worldVolumeBoundary / 
+																				Renderer::shIndirectRenderPass.gridResolution), 
+																				(float)Renderer::voxelInjectionRenderPass.voxelResolution };
 
 	mMainPassCB.SunLightDirection.x *= -1.0f;
 	mMainPassCB.SunLightDirection.y *= -1.0f;

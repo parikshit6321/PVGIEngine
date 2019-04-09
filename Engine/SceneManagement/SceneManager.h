@@ -28,7 +28,7 @@ struct Scene
 	UINT						numberOfObjects;
 	UINT						numberOfUniqueObjects;
 
-	SceneObject*				objectsInScene;
+	SceneObject* mObjectsInScene;
 
 	std::unique_ptr<Texture>* mTextures;
 	std::unique_ptr<Material>* mMaterials;
@@ -47,6 +47,7 @@ public:
 
 	static void LoadScene(std::string, Microsoft::WRL::ComPtr<ID3D12Device>, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>);
 	static Scene* GetScenePtr();
+	static void ReleaseMemory();
 
 	~SceneManager() = default;
 

@@ -100,6 +100,7 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 	optClear.Format = DXGI_FORMAT_D32_FLOAT;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
+
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -131,32 +132,35 @@ void ShadowMapRenderPass::BuildDescriptorHeaps()
 void ShadowMapRenderPass::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	psoDesc.pRootSignature = mRootSignature.Get();
-	psoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()),
-		mVertexShader->GetBufferSize()
+		
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));							
+	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };					
+	psoDesc.pRootSignature = mRootSignature.Get();												
+	
+	psoDesc.VS = 
+	{																							
+		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()), 
+		mVertexShader->GetBufferSize()															
+	};																							
+	
+	psoDesc.PS = 
+	{																							
+		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()), 
+		mPixelShader->GetBufferSize()															
 	};
-	psoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()),
-		mPixelShader->GetBufferSize()
-	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.RasterizerState.DepthBias = 100000;
-	psoDesc.RasterizerState.DepthBiasClamp = 0.0f;
-	psoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 0;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
-	psoDesc.SampleDesc.Count = 1;
-	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);							
+	psoDesc.RasterizerState.DepthBias = 100000;													
+	psoDesc.RasterizerState.DepthBiasClamp = 0.0f;												
+	psoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;										
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);										
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);						
+	psoDesc.SampleMask = UINT_MAX;																
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;						
+	psoDesc.NumRenderTargets = 0;																
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;												
+	psoDesc.SampleDesc.Count = 1;																
+	psoDesc.SampleDesc.Quality = 0;																
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;													
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }

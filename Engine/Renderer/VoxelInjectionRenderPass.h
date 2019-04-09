@@ -11,8 +11,7 @@ public:
 
 	UINT voxelResolution = 64;
 	float worldVolumeBoundary = 50.0f;
-	int rsmDownsample = 1;
-
+	
 protected:
 	virtual void BuildRootSignature() override;
 	virtual void BuildDescriptorHeaps() override;

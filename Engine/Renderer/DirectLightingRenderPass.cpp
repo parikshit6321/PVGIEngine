@@ -293,32 +293,35 @@ void DirectLightingRenderPass::BuildDescriptorHeaps()
 
 void DirectLightingRenderPass::BuildPSOs()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	psoDesc.pRootSignature = mRootSignature.Get();
-	psoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()),
-		mVertexShader->GetBufferSize()
-	};
-	psoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()),
-		mPixelShader->GetBufferSize()
-	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 3;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.RTVFormats[1] = mBackBufferFormat;
-	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_SNORM;
-	psoDesc.SampleDesc.Count = 1;
-	psoDesc.SampleDesc.Quality = 0;
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;					
+	
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));							
+	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };					
+	psoDesc.pRootSignature = mRootSignature.Get();												
+	
+	psoDesc.VS = 
+	{																							
+		reinterpret_cast<BYTE*>(mVertexShader->GetBufferPointer()), 
+		mVertexShader->GetBufferSize()															
+	};																							
+	
+	psoDesc.PS = 
+	{																							
+		reinterpret_cast<BYTE*>(mPixelShader->GetBufferPointer()), 
+		mPixelShader->GetBufferSize()															
+	};	
+	
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);							
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);										
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);						
+	psoDesc.SampleMask = UINT_MAX;																
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;						
+	psoDesc.NumRenderTargets = 3;																
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;										
+	psoDesc.RTVFormats[1] = mBackBufferFormat;													
+	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_SNORM;											
+	psoDesc.SampleDesc.Count = 1;																
+	psoDesc.SampleDesc.Quality = 0;																
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;													
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }

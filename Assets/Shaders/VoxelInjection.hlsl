@@ -2,15 +2,8 @@
 #define LUMA_DEPTH_FACTOR 100.0f 	// Higher = lesser variation with depth
 #define LUMA_FACTOR 1.9632107f
 
-cbuffer cbSettings : register(b0)
-{
-	uint voxelResolution;
-	float worldVolumeBoundary;
-	uint rsmDownsample;
-};
-
-// Constant data that varies per material.
-cbuffer cbPass : register(b1)
+// Constant data that varies per pass.
+cbuffer cbPass : register(b0)
 {
 	float4x4 gView;
 	float4x4 gInvView;
@@ -31,6 +24,7 @@ cbuffer cbPass : register(b1)
 	float4x4 gSkyBoxMatrix;
 	float4x4 gShadowViewProj;
 	float4x4 gShadowTransform;
+	float4 worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A;
 };
 
 Texture2D LightingTexture      		: register(t0);
@@ -63,7 +57,7 @@ inline float3 GetWorldPosition(float depth, uint2 id)
 // Function to encode worldPosition in [0..1] range
 inline float3 EncodePosition(float3 worldPosition)
 {
-	float3 encodedPosition = worldPosition / worldVolumeBoundary;
+	float3 encodedPosition = worldPosition / worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.r;
 	encodedPosition += float3(1.0f, 1.0f, 1.0f);
 	encodedPosition *= 0.5f;
 	return encodedPosition;
@@ -94,8 +88,10 @@ void CS(uint3 id : SV_DispatchThreadID)
 	if (depth <= 0.1f)
 		return;
 
+	uint voxelResolution = worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.a;
+
 	// World space position in [0..1] range
-	float3 encodedPosition = EncodePosition(GetWorldPosition(depth, id.xy * rsmDownsample));
+	float3 encodedPosition = EncodePosition(GetWorldPosition(depth, id.xy));
 	
 	// Color of the current voxel with lighting
 	float3 lightingColor = lightingDepth.rgb;

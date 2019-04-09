@@ -1,19 +1,19 @@
 #include "ConeTracingUtil.hlsl"
 
-[numthreads(2, 2, 2)]
+[numthreads(4, 4, 4)]
 void CS(uint3 id : SV_DispatchThreadID)
 {
 	// Compute the current cell's world space position
 	
 	// Find the position first in range [0..1]
-	float3 cellWorldPosition = ((float)id.xyz / (float)gridResolution);
+	float3 cellWorldPosition = ((float)id.xyz / (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.r / worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.b));
 	
 	// Convert [0..1] range to [-1..1] range
 	cellWorldPosition *= 2.0f;
 	cellWorldPosition -= float3(1.0f, 1.0f, 1.0f);
 	
 	// Convert [-1..1] range to [-worldVolumeBoundary..worldVolumeBoundary] range
-	cellWorldPosition *= worldVolumeBoundary;
+	cellWorldPosition *= worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.r;
 	
 	float4 accumulatedSHRed = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 accumulatedSHGreen = float4(0.0f, 0.0f, 0.0f, 0.0f);

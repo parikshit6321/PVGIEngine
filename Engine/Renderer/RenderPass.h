@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../SceneManagement/SceneManager.h"
+#include "../Utilities/PVGIDecl.h"
 
 using Microsoft::WRL::ComPtr;
 

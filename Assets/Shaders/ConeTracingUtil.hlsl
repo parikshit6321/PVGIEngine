@@ -1,8 +1,26 @@
-cbuffer cbSettings : register(b0)
+// Constant data that varies per pass.
+cbuffer cbPass : register(b0)
 {
-	uint gridResolution;
-	float worldVolumeBoundary;
-	float coneStep;
+	float4x4 gView;
+	float4x4 gInvView;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	float3 gEyePosW;
+	float userLUTContribution;
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+	float gNearZ;
+	float gFarZ;
+	float gTotalTime;
+	float gDeltaTime;
+	float4 gSunLightStrength;
+	float4 gSunLightDirection;
+	float4x4 gSkyBoxMatrix;
+	float4x4 gShadowViewProj;
+	float4x4 gShadowTransform;
+	float4 worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A;
 };
 
 Texture3D VoxelGrid0 			: register(t0);
@@ -47,7 +65,7 @@ inline float4 dirToCosineLobe(float3 dir) {
 // Returns the voxel position in the grids
 inline float3 GetVoxelPosition(float3 worldPosition)
 {
-	float3 voxelPosition = worldPosition / worldVolumeBoundary;
+	float3 voxelPosition = worldPosition / worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.r;
 	voxelPosition += float3(1.0f, 1.0f, 1.0f);
 	voxelPosition *= 0.5f;
 	return voxelPosition;
@@ -90,7 +108,7 @@ inline float4 GetVoxelInfo4(float3 voxelPosition)
 
 inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 {
-	float3 currentPosition = worldPosition + (coneDirection * coneStep * INITIAL_ITERATIONS);
+	float3 currentPosition = worldPosition + (coneDirection * worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * INITIAL_ITERATIONS);
 
 	float4 currentVoxelInfo = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -99,7 +117,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	
 	for (iter = 0; iter < ITERATIONS_0; ++iter)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * coneDirection);
 
 		if (currentVoxelInfo.a < 0.05f)
 		{
@@ -113,7 +131,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	// Sample voxel grid 1
 	for (iter = 0; iter < ITERATIONS_1; ++iter)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * coneDirection);
 
 		if (currentVoxelInfo.a < 0.05f)
 		{
@@ -127,7 +145,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	// Sample voxel grid 2
 	for (iter = 0; iter < ITERATIONS_2; ++iter)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * coneDirection);
 
 		if (currentVoxelInfo.a < 0.05f)
 		{
@@ -141,7 +159,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	// Sample voxel grid 3
 	for (iter = 0; iter < ITERATIONS_3; ++iter)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * coneDirection);
 
 		if (currentVoxelInfo.a < 0.05f)
 		{
@@ -155,7 +173,7 @@ inline float3 DiffuseConeTrace(float3 worldPosition, float3 coneDirection)
 	// Sample voxel grid 4
 	for (iter = 0; iter < ITERATIONS_4; ++iter)
 	{
-		currentPosition += (coneStep * coneDirection);
+		currentPosition += (worldBoundary_R_ConeStep_G_HalfCellWidth_B_voxelResolution_A.g * coneDirection);
 
 		if (currentVoxelInfo.a < 0.05f)
 		{
